@@ -4,11 +4,11 @@ LIBS=
 .PHONY: all
 all: ebasm bmi
 
-ebasm: ebasm.c bm.c
-	$(CC) $(CFLAGS) -o ebasm ebasm.c $(LIBS)
+ebasm: ./src/ebasm.c ./src/bm.c
+	$(CC) $(CFLAGS) -o ebasm ./src/ebasm.c $(LIBS)
 
-bmi: bmi.c bm.c
-	$(CC) $(CFLAGS) -o bmi bmi.c $(LIBS)
+bmi: ./src/bmi.c ./src/bm.c
+	$(CC) $(CFLAGS) -o bmi ./src/bmi.c $(LIBS)
 
 
 .PHONY: examples
