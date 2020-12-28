@@ -14,8 +14,8 @@ bmi: ./src/bmi.c ./src/bm.c
 .PHONY: examples
 examples: ./examples/fib.bm ./examples/123.bm
 
-./examples/fib.bm: ./examples/fib.ebasm
+./examples/fib.bm: ebasm ./examples/fib.ebasm
 	./ebasm ./examples/fib.ebasm ./examples/fib.bm
 
-./examples/123.bm: ./examples/123.ebasm
+./examples/123.bm: ebasm ./examples/123.ebasm
 	./ebasm ./examples/123.ebasm ./examples/123.bm
