@@ -62,17 +62,6 @@ typedef struct {
     int halt;
 } Bm;
 
-// TODO: Replace MAKE_INST_* macros with functions
-// They are not that useful anymore since we can load/save programs to/from files
-#define MAKE_INST_PUSH(value) {.type = INST_PUSH, .operand = (value)}
-#define MAKE_INST_PLUS        {.type = INST_PLUS}
-#define MAKE_INST_MINUS       {.type = INST_MINUS}
-#define MAKE_INST_MULT        {.type = INST_MULT}
-#define MAKE_INST_DIV         {.type = INST_DIV}
-#define MAKE_INST_JMP(addr)   {.type = INST_JMP, .operand = (addr)}
-#define MAKE_INST_DUP(addr)   {.type = INST_DUP, .operand = (addr)}
-#define MAKE_INST_HALT        {.type = INST_HALT, .operand = (addr)}
-
 Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
 void bm_dump_stack(FILE *stream, const Bm *bm);
