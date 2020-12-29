@@ -6,7 +6,7 @@ Bm bm = {0};
 int main(int argc, char **argv)
 {
     if (argc < 3) {
-        fprintf(stderr, "Usage: ./ebasm <input.ebasm> <output.bm>\n");
+        fprintf(stderr, "Usage: ./basm <input.basm> <output.bm>\n");
         fprintf(stderr, "ERROR: expected input and output\n");
         exit(1);
     }

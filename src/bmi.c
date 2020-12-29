@@ -12,6 +12,7 @@ int main(int argc, char **argv)
     }
 
     bm_load_program_from_file(&bm, argv[1]);
+    // TODO: introduce bm_execute_program()
     for (int i = 0; i < 69 && !bm.halt; ++i) {
         Err err = bm_execute_inst(&bm);
         bm_dump_stack(stdout, &bm);
