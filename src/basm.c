@@ -2,8 +2,9 @@
 #include "./bm.h"
 
 Bm bm = {0};
+Basm basm = {0};
 
-char *shift(int *argc, char ***argv)
+static char *shift(int *argc, char ***argv)
 {
     assert(*argc > 0);
     char *result = **argv;
@@ -12,7 +13,7 @@ char *shift(int *argc, char ***argv)
     return result;
 }
 
-void usage(FILE *stream, const char *program)
+static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s <input.basm> <output.bm>\n", program);
 }
@@ -37,10 +38,7 @@ int main(int argc, char **argv)
 
     String_View source = sv_slurp_file(input_file_path);
 
-    bm.program_size = bm_translate_source(source,
-                                          bm.program,
-                                          BM_PROGRAM_CAPACITY);
-
+    bm_translate_source(source, &bm, &basm);
     bm_save_program_to_file(&bm, output_file_path);
 
     return 0;

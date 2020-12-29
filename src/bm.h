@@ -12,6 +12,8 @@
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
+#define LABEL_CAPACITY 1024
+#define DEFERED_OPERANDS_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -92,9 +94,28 @@ int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
 String_View sv_slurp_file(const char *file_path);
 
-Inst bm_translate_line(String_View line);
-size_t bm_translate_source(String_View source,
-                           Inst *program, size_t program_capacity);
+typedef struct {
+    String_View name;
+    Word addr;
+} Label;
+
+typedef struct {
+    Word addr;
+    String_View label;
+} Defered_Operand;
+
+typedef struct {
+    Label labels[LABEL_CAPACITY];
+    size_t labels_size;
+    Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
+    size_t defered_operands_size;
+} Basm;
+
+Word basm_find_label_addr(const Basm *basm, String_View name);
+void basm_push_label(Basm *basm, String_View name, Word addr);
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label);
+
+void bm_translate_source(String_View source, Bm *bm, Basm *basm);
 
 #endif  // BM_H_
 
@@ -450,42 +471,103 @@ int sv_to_int(String_View sv)
     return result;
 }
 
-Inst bm_translate_line(String_View line)
+Word basm_find_label_addr(const Basm *basm, String_View name)
 {
-    line = sv_trim_left(line);
-    String_View inst_name = sv_chop_by_delim(&line, ' ');
-    String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
-
-    if (sv_eq(inst_name, cstr_as_sv("push"))) {
-        line = sv_trim_left(line);
-        return (Inst) { .type = INST_PUSH, .operand = sv_to_int(operand) };
-    } else if (sv_eq(inst_name, cstr_as_sv("dup"))) {
-        line = sv_trim_left(line);
-        return (Inst) { .type = INST_DUP, .operand = sv_to_int(operand) };
-    } else if (sv_eq(inst_name, cstr_as_sv("plus"))) {
-        return (Inst) { .type = INST_PLUS };
-    } else if (sv_eq(inst_name, cstr_as_sv("jmp"))) {
-        line = sv_trim_left(line);
-        return (Inst) { .type = INST_JMP, .operand = sv_to_int(operand) };
-    } else {
-        fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-                (int) inst_name.count, inst_name.data);
-        exit(1);
-    }
-}
-
-size_t bm_translate_source(String_View source,
-                           Inst *program, size_t program_capacity)
-{
-    size_t program_size = 0;
-    while (source.count > 0) {
-        assert(program_size < program_capacity);
-        String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
-        if (line.count > 0 && *line.data != '#') {
-            program[program_size++] = bm_translate_line(line);
+    for (size_t i = 0; i < basm->labels_size; ++i) {
+        if (sv_eq(basm->labels[i].name, name)) {
+            return basm->labels[i].addr;
         }
     }
-    return program_size;
+
+    fprintf(stderr, "ERROR: label `%.*s` does not exist\n",
+            (int) name.count, name.data);
+    exit(1);
+}
+
+void basm_push_label(Basm *basm, String_View name, Word addr)
+{
+    assert(basm->labels_size < LABEL_CAPACITY);
+    basm->labels[basm->labels_size++] = (Label) {.name = name, .addr = addr};
+}
+
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label)
+{
+    assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
+    basm->defered_operands[basm->defered_operands_size++] =
+        (Defered_Operand) {.addr = addr, .label = label};
+}
+
+void bm_translate_source(String_View source, Bm *bm, Basm *basm)
+{
+    bm->program_size = 0;
+
+    // First pass
+    while (source.count > 0) {
+        assert(bm->program_size < BM_PROGRAM_CAPACITY);
+        String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
+        if (line.count > 0 && *line.data != '#') {
+            String_View inst_name = sv_chop_by_delim(&line, ' ');
+
+            if (inst_name.count > 0 && inst_name.data[inst_name.count - 1] == ':') {
+                String_View label = {
+                    .count = inst_name.count - 1,
+                    .data = inst_name.data
+                };
+
+                basm_push_label(basm, label, bm->program_size);
+
+                inst_name = sv_trim(sv_chop_by_delim(&line, ' '));
+            }
+
+            if (inst_name.count > 0) {
+                String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
+
+                if (sv_eq(inst_name, cstr_as_sv("nop"))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_NOP,
+                    };
+                } else if (sv_eq(inst_name, cstr_as_sv("push"))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_PUSH,
+                        .operand = sv_to_int(operand)
+                    };
+                } else if (sv_eq(inst_name, cstr_as_sv("dup"))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_DUP,
+                        .operand = sv_to_int(operand)
+                    };
+                } else if (sv_eq(inst_name, cstr_as_sv("plus"))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_PLUS
+                    };
+                } else if (sv_eq(inst_name, cstr_as_sv("jmp"))) {
+                    if (operand.count > 0 && isdigit(*operand.data)) {
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_JMP,
+                            .operand = sv_to_int(operand),
+                        };
+                    } else {
+                        basm_push_defered_operand(
+                            basm, bm->program_size, operand);
+
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_JMP
+                        };
+                    }
+                } else {
+                    fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
+                            (int) inst_name.count, inst_name.data);
+                    exit(1);
+                }
+            }
+        }
+    }
+
+    // Second pass
+    for (size_t i = 0; i < basm->defered_operands_size; ++i) {
+        Word addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
+        bm->program[basm->defered_operands[i].addr].operand = addr;
+    }
 }
 
 String_View sv_slurp_file(const char *file_path)
