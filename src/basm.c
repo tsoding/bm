@@ -20,7 +20,7 @@ int main(int argc, char **argv)
                                           bm.program,
                                           BM_PROGRAM_CAPACITY);
 
-    bm_save_program_to_file(bm.program, bm.program_size, output_file_path);
+    bm_save_program_to_file(&bm, output_file_path);
 
     return 0;
 }

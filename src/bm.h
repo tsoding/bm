@@ -76,8 +76,7 @@ Err bm_execute_inst(Bm *bm);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
-void bm_save_program_to_file(Inst *program, size_t program_size,
-                             const char *file_path);
+void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 typedef struct {
     size_t count;
@@ -333,8 +332,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
 }
 
 
-void bm_save_program_to_file(Inst *program, size_t program_size,
-                             const char *file_path)
+void bm_save_program_to_file(const Bm *bm, const char *file_path)
 {
     FILE *f = fopen(file_path, "wb");
     if (f == NULL) {
@@ -343,7 +341,7 @@ void bm_save_program_to_file(Inst *program, size_t program_size,
         exit(1);
     }
 
-    fwrite(program, sizeof(program[0]), program_size, f);
+    fwrite(bm->program, sizeof(bm->program[0]), bm->program_size, f);
 
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
