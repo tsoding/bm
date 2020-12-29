@@ -13,7 +13,7 @@
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define LABEL_CAPACITY 1024
-#define UNRESOLVED_JMPS_CAPACITY 1024
+#define DEFERED_OPERANDS_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -102,20 +102,20 @@ typedef struct {
 typedef struct {
     Word addr;
     String_View label;
-} Unresolved_Jmp;
+} Defered_Operand;
 
 typedef struct {
     Label labels[LABEL_CAPACITY];
     size_t labels_size;
-    Unresolved_Jmp unresolved_jmps[UNRESOLVED_JMPS_CAPACITY];
-    size_t unresolved_jmps_size;
-} Label_Table;
+    Defered_Operand defered_operands[DEFERED_OPERANDS_CAPACITY];
+    size_t defered_operands_size;
+} Basm;
 
-Word label_table_find(const Label_Table *lt, String_View name);
-void label_table_push(Label_Table *lt, String_View name, Word addr);
-void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label);
+Word basm_find_label_addr(const Basm *basm, String_View name);
+void basm_push_label(Basm *basm, String_View name, Word addr);
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label);
 
-void bm_translate_source(String_View source, Bm *bm, Label_Table *lt);
+void bm_translate_source(String_View source, Bm *bm, Basm *basm);
 
 #endif  // BM_H_
 
@@ -471,11 +471,11 @@ int sv_to_int(String_View sv)
     return result;
 }
 
-Word label_table_find(const Label_Table *lt, String_View name)
+Word basm_find_label_addr(const Basm *basm, String_View name)
 {
-    for (size_t i = 0; i < lt->labels_size; ++i) {
-        if (sv_eq(lt->labels[i].name, name)) {
-            return lt->labels[i].addr;
+    for (size_t i = 0; i < basm->labels_size; ++i) {
+        if (sv_eq(basm->labels[i].name, name)) {
+            return basm->labels[i].addr;
         }
     }
 
@@ -484,20 +484,20 @@ Word label_table_find(const Label_Table *lt, String_View name)
     exit(1);
 }
 
-void label_table_push(Label_Table *lt, String_View name, Word addr)
+void basm_push_label(Basm *basm, String_View name, Word addr)
 {
-    assert(lt->labels_size < LABEL_CAPACITY);
-    lt->labels[lt->labels_size++] = (Label) {.name = name, .addr = addr};
+    assert(basm->labels_size < LABEL_CAPACITY);
+    basm->labels[basm->labels_size++] = (Label) {.name = name, .addr = addr};
 }
 
-void label_table_push_unresolved_jmp(Label_Table *lt, Word addr, String_View label)
+void basm_push_defered_operand(Basm *basm, Word addr, String_View label)
 {
-    assert(lt->unresolved_jmps_size < UNRESOLVED_JMPS_CAPACITY);
-    lt->unresolved_jmps[lt->unresolved_jmps_size++] =
-        (Unresolved_Jmp) {.addr = addr, .label = label};
+    assert(basm->defered_operands_size < DEFERED_OPERANDS_CAPACITY);
+    basm->defered_operands[basm->defered_operands_size++] =
+        (Defered_Operand) {.addr = addr, .label = label};
 }
 
-void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
+void bm_translate_source(String_View source, Bm *bm, Basm *basm)
 {
     bm->program_size = 0;
 
@@ -514,7 +514,7 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
                     .data = inst_name.data
                 };
 
-                label_table_push(lt, label, bm->program_size);
+                basm_push_label(basm, label, bm->program_size);
 
                 inst_name = sv_trim(sv_chop_by_delim(&line, ' '));
             }
@@ -547,8 +547,8 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
                             .operand = sv_to_int(operand),
                         };
                     } else {
-                        label_table_push_unresolved_jmp(
-                            lt, bm->program_size, operand);
+                        basm_push_defered_operand(
+                            basm, bm->program_size, operand);
 
                         bm->program[bm->program_size++] = (Inst) {
                             .type = INST_JMP
@@ -564,9 +564,9 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
     }
 
     // Second pass
-    for (size_t i = 0; i < lt->unresolved_jmps_size; ++i) {
-        Word addr = label_table_find(lt, lt->unresolved_jmps[i].label);
-        bm->program[lt->unresolved_jmps[i].addr].operand = addr;
+    for (size_t i = 0; i < basm->defered_operands_size; ++i) {
+        Word addr = basm_find_label_addr(basm, basm->defered_operands[i].label);
+        bm->program[basm->defered_operands[i].addr].operand = addr;
     }
 }
 
