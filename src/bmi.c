@@ -1,4 +1,7 @@
-#include "./bm.c"
+#define BM_IMPLEMENTATION
+#include "./bm.h"
+
+Bm bm = {0};
 
 int main(int argc, char **argv)
 {

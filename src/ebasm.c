@@ -1,4 +1,7 @@
-#include "./bm.c"
+#define BM_IMPLEMENTATION
+#include "./bm.h"
+
+Bm bm = {0};
 
 int main(int argc, char **argv)
 {
@@ -11,7 +14,7 @@ int main(int argc, char **argv)
     const char *input_file_path = argv[1];
     const char *output_file_path = argv[2];
 
-    String_View source = slurp_file(input_file_path);
+    String_View source = sv_slurp_file(input_file_path);
 
     bm.program_size = bm_translate_source(source,
                                           bm.program,
