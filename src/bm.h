@@ -516,6 +516,10 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
                 };
 
                 label_table_push(lt, label, bm->program_size);
+            } else if (sv_eq(inst_name, cstr_as_sv("nop"))) {
+                bm->program[bm->program_size++] = (Inst) {
+                    .type = INST_NOP,
+                };
             } else if (sv_eq(inst_name, cstr_as_sv("push"))) {
                 bm->program[bm->program_size++] = (Inst) {
                     .type = INST_PUSH,
