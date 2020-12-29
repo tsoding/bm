@@ -12,7 +12,6 @@
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
-#define BM_EXECUTION_LIMIT 69
 
 typedef enum {
     ERR_OK = 0,
@@ -73,6 +72,7 @@ typedef struct {
 #define MAKE_INST_HALT        {.type = INST_HALT, .operand = (addr)}
 
 Err bm_execute_inst(Bm *bm);
+Err bm_execute_program(Bm *bm, int limit);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
@@ -139,6 +139,21 @@ const char *inst_type_as_cstr(Inst_Type type)
     case INST_DUP:         return "INST_DUP";
     default: assert(0 && "inst_type_as_cstr: unreachable");
     }
+}
+
+Err bm_execute_program(Bm *bm, int limit)
+{
+    while (limit != 0 && !bm->halt) {
+        Err err = bm_execute_inst(bm);
+        if (err != ERR_OK) {
+            return err;
+        }
+        if (limit > 0) {
+            --limit;
+        }
+    }
+
+    return ERR_OK;
 }
 
 Err bm_execute_inst(Bm *bm)
