@@ -535,12 +535,19 @@ void bm_translate_source(String_View source, Bm *bm, Label_Table *lt)
                     .type = INST_PLUS
                 };
             } else if (sv_eq(inst_name, cstr_as_sv("jmp"))) {
-                label_table_push_unresolved_jmp(
-                    lt, bm->program_size, operand);
+                if (operand.count > 0 && isdigit(*operand.data)) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_JMP,
+                        .operand = sv_to_int(operand),
+                    };
+                } else {
+                    label_table_push_unresolved_jmp(
+                        lt, bm->program_size, operand);
 
-                bm->program[bm->program_size++] = (Inst) {
-                    .type = INST_JMP
-                };
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_JMP
+                    };
+                }
             } else {
                 fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
                         (int) inst_name.count, inst_name.data);
