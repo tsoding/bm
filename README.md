@@ -11,3 +11,9 @@ $ make
 $ make examples
 $ ./bmi ./examples/fibs.bm
 ```
+
+## Components
+
+### basm
+
+Assembly language for the Virtual Machine. For examples see [./examples/](./examples) folder.
