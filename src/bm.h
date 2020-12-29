@@ -543,6 +543,10 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                             .type = INST_JMP
                         };
                     }
+                } else if (sv_eq(inst_name, cstr_as_sv("halt"))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_HALT
+                    };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
                             (int) inst_name.count, inst_name.data);
