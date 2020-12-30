@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
     bm_load_program_from_file(&bm, input_file_path);
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
-        printf("%s", inst_names[bm.program[i].type]);
-        if (inst_has_operand[bm.program[i].type]) {
+        printf("%s", inst_name(bm.program[i].type));
+        if (inst_has_operand(bm.program[i].type)) {
             printf(" %ld", bm.program[i].operand.as_i64);
         }
         printf("\n");

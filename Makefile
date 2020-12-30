@@ -14,10 +14,13 @@ debasm: ./src/debasm.c ./src/bm.h
 	$(CC) $(CFLAGS) -o debasm ./src/debasm.c $(LIBS)
 
 .PHONY: examples
-examples: ./examples/fib.bm ./examples/123.bm
+examples: ./examples/fib.bm ./examples/123i.bm ./examples/123f.bm
 
 ./examples/fib.bm: basm ./examples/fib.basm
 	./basm ./examples/fib.basm ./examples/fib.bm
 
-./examples/123.bm: basm ./examples/123.basm
-	./basm ./examples/123.basm ./examples/123.bm
+./examples/123i.bm: basm ./examples/123i.basm
+	./basm ./examples/123i.basm ./examples/123i.bm
+
+./examples/123f.bm: basm ./examples/123f.basm
+	./basm ./examples/123f.basm ./examples/123f.bm
