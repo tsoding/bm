@@ -1,0 +1,44 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-linux-gcc:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: build toolchain
+        run: |
+          make all
+        env:
+          CC: gcc
+          CXX: g++
+      - name: assemble examples
+        run: |
+          make examples
+  build-linux-clang:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: build toolchain
+        run: |
+          make all
+        env:
+          CC: gcc
+          CXX: g++
+      - name: assemble examples
+        run: |
+          make examples
+  build-macos:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: build toolchain
+        run: |
+          make all
+        env:
+          CC: gcc
+          CXX: g++
+      - name: assemble examples
+        run: |
+          make examples
+# TODO: there is no CI build for windows or FreeBSD
