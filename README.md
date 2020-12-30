@@ -10,6 +10,7 @@ Birtual Machine for [Ebisp](https://github.com/tsoding/ebisp)
 $ make
 $ make examples
 $ ./bme -i ./examples/fib.bm -l 69
+$ ./bme -i ./examples/e.bm
 ```
 
 ## Components
