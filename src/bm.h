@@ -18,6 +18,8 @@
 #define DEFERRED_OPERANDS_CAPACITY 1024
 #define NUMBER_LITERAL_CAPACITY 1024
 
+#define BM_MAGIC_MARKER "BirtualMachine "
+
 typedef enum {
     ERR_OK = 0,
     ERR_STACK_OVERFLOW,
@@ -103,6 +105,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_save_program_to_file(const Bm *bm, const char *file_path);
+void check_file_error(const char *file_path, const char *action, FILE *f);
 
 typedef struct {
     size_t count;
@@ -532,7 +535,14 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
-    bm->program_size = fread(bm->program, sizeof(bm->program[0]), m / sizeof(bm->program[0]), f);
+    Inst *instructions = calloc(m, sizeof(Inst));
+    if (instructions == NULL) {
+        fprintf(stderr, "ERROR: Could not allocate memory for programm: %s\n",
+                strerror(errno));
+        exit(1);
+    }
+    Inst *program_start = instructions;
+    size_t program_size = fread(instructions, sizeof(Inst), m / sizeof(Inst), f);
 
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not consume file %s: %s\n",
@@ -540,9 +550,27 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
+    // Eventually, when versioning is supported, program_start and program_size
+    // will be assigned unconditionally
+    // For noe, skip magic marker and version fields
+    if (strcmp(BM_MAGIC_MARKER, (const char *) instructions) == 0) {
+        program_start = &instructions[2];
+        program_size -= 2 * sizeof(instructions[0]);
+    }
+
+    memcpy(bm->program, program_start, m);
+    bm->program_size = program_size;
+
     fclose(f);
 }
 
+void check_file_error(const char *file_path, const char *action, FILE *f) {
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not %s file `%s`: %s\n",
+                action, file_path, strerror(errno));
+        exit(1);
+    }
+}
 
 void bm_save_program_to_file(const Bm *bm, const char *file_path)
 {
@@ -553,13 +581,16 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path)
         exit(1);
     }
 
+    char *bm_magic_marker = BM_MAGIC_MARKER;
+    fwrite(bm_magic_marker, sizeof(BM_MAGIC_MARKER), 1, f);
+    check_file_error(file_path, "write", f);
+    uint64_t version = 0LL; // version is 0 for the moment
+    fwrite(&version, sizeof(uint64_t), 1, f);
+    check_file_error(file_path, "write", f);
+    uint64_t padding = 0LL;
+    fwrite(&padding, sizeof(uint64_t), 1, f);
     fwrite(bm->program, sizeof(bm->program[0]), bm->program_size, f);
-
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
-                file_path, strerror(errno));
-        exit(1);
-    }
+    check_file_error(file_path, "write", f);
 
     fclose(f);
 }
