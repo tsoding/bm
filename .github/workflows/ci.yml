@@ -23,8 +23,8 @@ jobs:
         run: |
           make all
         env:
-          CC: gcc
-          CXX: g++
+          CC: clang
+          CXX: clang++
       - name: assemble examples
         run: |
           make examples
@@ -36,8 +36,8 @@ jobs:
         run: |
           make all
         env:
-          CC: gcc
-          CXX: g++
+          CC: clang
+          CXX: clang++
       - name: assemble examples
         run: |
           make examples
