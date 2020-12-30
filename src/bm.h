@@ -31,6 +31,7 @@ typedef enum {
     INST_NOP = 0,
     INST_PUSH,
     INST_DUP,
+    INST_SWAP,
     INST_PLUSI,
     INST_MINUSI,
     INST_MULTI,
@@ -149,6 +150,7 @@ int inst_has_operand(Inst_Type type)
     case INST_EQ:          return 0;
     case INST_HALT:        return 0;
     case INST_PRINT_DEBUG: return 0;
+    case INST_SWAP:        return 0;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
     }
@@ -173,6 +175,7 @@ const char *inst_name(Inst_Type type)
     case INST_EQ:          return "eq";
     case INST_HALT:        return "halt";
     case INST_PRINT_DEBUG: return "print_debug";
+    case INST_SWAP:        return "swap";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
     }
@@ -219,6 +222,7 @@ const char *inst_type_as_cstr(Inst_Type type)
     case INST_EQ:          return "INST_EQ";
     case INST_PRINT_DEBUG: return "INST_PRINT_DEBUG";
     case INST_DUP:         return "INST_DUP";
+    case INST_SWAP:        return "INST_SWAP";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_type_as_cstr: unreachable");
     }
@@ -392,6 +396,17 @@ Err bm_execute_inst(Bm *bm)
 
         bm->stack[bm->stack_size] = bm->stack[bm->stack_size - 1 - inst.operand.as_u64];
         bm->stack_size += 1;
+        bm->ip += 1;
+        break;
+
+    case INST_SWAP:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        Word t = bm->stack[bm->stack_size - 1];
+        bm->stack[bm->stack_size - 1] = bm->stack[bm->stack_size - 2];
+        bm->stack[bm->stack_size - 2] = t;
         bm->ip += 1;
         break;
 
@@ -691,6 +706,14 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DIVF)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_DIVF
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MULTF)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_MULTF
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_SWAP)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_SWAP
                     };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
