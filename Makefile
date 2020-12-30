@@ -16,7 +16,7 @@ debasm: ./src/debasm.c ./src/bm.h
 	$(CC) $(CFLAGS) -o debasm ./src/debasm.c $(LIBS)
 
 .PHONY: examples
-examples: $(EXAMPLES)
+examples: basm $(EXAMPLES)
 
 %.bm: %.basm
 	./basm $< $@
