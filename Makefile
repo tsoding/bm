@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -std=c11
 LIBS=
 
-EXAMPLES=./examples/fib.bm ./examples/123i.bm ./examples/123f.bm ./examples/e.bm
+EXAMPLES=./examples/fib.bm ./examples/123i.bm ./examples/123f.bm ./examples/e.bm ./examples/pi.bm
 
 .PHONY: all
 all: basm bme debasm
