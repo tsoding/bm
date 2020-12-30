@@ -15,47 +15,13 @@ int main(int argc, char *argv[])
 
     bm_load_program_from_file(&bm, input_file_path);
 
-    for (Word i = 0; i < bm.program_size; ++i) {
-        switch (bm.program[i].type) {
-        case INST_NOP:
-            printf("nop\n");
-            break;
-        case INST_PUSH:
-            printf("push %ld\n", bm.program[i].operand);
-            break;
-        case INST_DUP:
-            printf("dup %ld\n", bm.program[i].operand);
-            break;
-        case INST_PLUS:
-            printf("plus\n");
-            break;
-        case INST_MINUS:
-            printf("minus\n");
-            break;
-        case INST_MULT:
-            printf("mult\n");
-            break;
-        case INST_DIV:
-            printf("div\n");
-            break;
-        case INST_JMP:
-            printf("jmp %ld\n", bm.program[i].operand);
-            break;
-        case INST_JMP_IF:
-            printf("jmp_if %ld\n", bm.program[i].operand);
-            break;
-        case INST_EQ:
-            printf("eq\n");
-            break;
-        case INST_HALT:
-            printf("halt\n");
-            break;
-        case INST_PRINT_DEBUG:
-            printf("print_debug\n");
-            break;
+    for (Inst_Addr i = 0; i < bm.program_size; ++i) {
+        printf("%s", inst_name(bm.program[i].type));
+        if (inst_has_operand(bm.program[i].type)) {
+            printf(" %ld", bm.program[i].operand.as_i64);
         }
+        printf("\n");
     }
 
     return 0;
 }
-
