@@ -31,16 +31,46 @@ typedef enum {
     INST_NOP = 0,
     INST_PUSH,
     INST_DUP,
-    INST_PLUS,
-    INST_MINUS,
-    INST_MULT,
-    INST_DIV,
+    INST_PLUSI,
+    INST_MINUSI,
+    INST_MULTI,
+    INST_DIVI,
     INST_JMP,
     INST_JMP_IF,
     INST_EQ,
     INST_HALT,
     INST_PRINT_DEBUG,
 } Inst_Type;
+
+const char * const inst_names[] = {
+    [INST_NOP]         = "nop",
+    [INST_PUSH]        = "push",
+    [INST_DUP]         = "dup",
+    [INST_PLUSI]       = "plusi",
+    [INST_MINUSI]      = "minusi",
+    [INST_MULTI]       = "multi",
+    [INST_DIVI]        = "divi",
+    [INST_JMP]         = "jmp",
+    [INST_JMP_IF]      = "jmp_if",
+    [INST_EQ]          = "eq",
+    [INST_HALT]        = "halt",
+    [INST_PRINT_DEBUG] = "print_debug",
+};
+
+const int inst_has_operand[] = {
+    [INST_NOP]         = 0,
+    [INST_PUSH]        = 1,
+    [INST_DUP]         = 1,
+    [INST_PLUSI]       = 0,
+    [INST_MINUSI]      = 0,
+    [INST_MULTI]       = 0,
+    [INST_DIVI]        = 0,
+    [INST_JMP]         = 1,
+    [INST_JMP_IF]      = 1,
+    [INST_EQ]          = 0,
+    [INST_HALT]        = 0,
+    [INST_PRINT_DEBUG] = 0,
+};
 
 const char *inst_type_as_cstr(Inst_Type type);
 
@@ -53,8 +83,8 @@ typedef union {
     void *as_ptr;
 } Word;
 
-static_assert(sizeof(Word) == 8,
-              "The BM's Word is expected to be 64 bits");
+// static_assert(sizeof(Word) == 8,
+//               "The BM's Word is expected to be 64 bits");
 
 typedef struct {
     Inst_Type type;
@@ -147,10 +177,10 @@ const char *inst_type_as_cstr(Inst_Type type)
     switch (type) {
     case INST_NOP:         return "INST_NOP";
     case INST_PUSH:        return "INST_PUSH";
-    case INST_PLUS:        return "INST_PLUS";
-    case INST_MINUS:       return "INST_MINUS";
-    case INST_MULT:        return "INST_MULT";
-    case INST_DIV:         return "INST_DIV";
+    case INST_PLUSI:        return "INST_PLUSI";
+    case INST_MINUSI:       return "INST_MINUSI";
+    case INST_MULTI:        return "INST_MULTI";
+    case INST_DIVI:         return "INST_DIVI";
     case INST_JMP:         return "INST_JMP";
     case INST_HALT:        return "INST_HALT";
     case INST_JMP_IF:      return "INST_JMP_IF";
@@ -197,7 +227,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_PLUS:
+    case INST_PLUSI:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -206,7 +236,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_MINUS:
+    case INST_MINUSI:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -215,7 +245,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_MULT:
+    case INST_MULTI:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -224,7 +254,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_DIV:
+    case INST_DIVI:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -521,25 +551,25 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
             if (inst_name.count > 0) {
                 String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
 
-                if (sv_eq(inst_name, cstr_as_sv("nop"))) {
+                if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_NOP]))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_NOP,
                     };
-                } else if (sv_eq(inst_name, cstr_as_sv("push"))) {
+                } else if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_PUSH]))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_PUSH,
                         .operand = { .as_i64 = sv_to_int(operand) }
                     };
-                } else if (sv_eq(inst_name, cstr_as_sv("dup"))) {
+                } else if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_DUP]))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_DUP,
                         .operand = { .as_i64 = sv_to_int(operand) }
                     };
-                } else if (sv_eq(inst_name, cstr_as_sv("plus"))) {
+                } else if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_PLUSI]))) {
                     bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PLUS
+                        .type = INST_PLUSI
                     };
-                } else if (sv_eq(inst_name, cstr_as_sv("jmp"))) {
+                } else if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_JMP]))) {
                     if (operand.count > 0 && isdigit(*operand.data)) {
                         bm->program[bm->program_size++] = (Inst) {
                             .type = INST_JMP,
@@ -553,7 +583,7 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                             .type = INST_JMP
                         };
                     }
-                } else if (sv_eq(inst_name, cstr_as_sv("halt"))) {
+                } else if (sv_eq(inst_name, cstr_as_sv(inst_names[INST_HALT]))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_HALT
                     };
