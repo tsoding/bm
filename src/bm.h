@@ -44,6 +44,8 @@ typedef enum {
     INST_JMP_IF,
     INST_EQ,
     INST_HALT,
+    INST_NOT,
+    INST_GEF,
     INST_PRINT_DEBUG,
     NUMBER_OF_INSTS,
 } Inst_Type;
@@ -62,8 +64,8 @@ typedef union {
     void *as_ptr;
 } Word;
 
-// static_assert(sizeof(Word) == 8,
-//               "The BM's Word is expected to be 64 bits");
+static_assert(sizeof(Word) == 8,
+              "The BM's Word is expected to be 64 bits");
 
 typedef struct {
     Inst_Type type;
@@ -150,7 +152,9 @@ int inst_has_operand(Inst_Type type)
     case INST_EQ:          return 0;
     case INST_HALT:        return 0;
     case INST_PRINT_DEBUG: return 0;
-    case INST_SWAP:        return 0;
+    case INST_SWAP:        return 1;
+    case INST_NOT:         return 0;
+    case INST_GEF:         return 0;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
     }
@@ -176,6 +180,8 @@ const char *inst_name(Inst_Type type)
     case INST_HALT:        return "halt";
     case INST_PRINT_DEBUG: return "print_debug";
     case INST_SWAP:        return "swap";
+    case INST_NOT:         return "not";
+    case INST_GEF:         return "gef";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
     }
@@ -223,6 +229,8 @@ const char *inst_type_as_cstr(Inst_Type type)
     case INST_PRINT_DEBUG: return "INST_PRINT_DEBUG";
     case INST_DUP:         return "INST_DUP";
     case INST_SWAP:        return "INST_SWAP";
+    case INST_NOT:         return "INST_NOT";
+    case INST_GEF:         return "INST_GEF";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_type_as_cstr: unreachable");
     }
@@ -363,24 +371,39 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
+    case INST_GEF:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 >= bm->stack[bm->stack_size - 2].as_f64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
     case INST_JMP_IF:
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
 
         if (bm->stack[bm->stack_size - 1].as_u64) {
-            bm->stack_size -= 1;
             bm->ip = inst.operand.as_u64;
         } else {
             bm->ip += 1;
         }
+
+        bm->stack_size -= 1;
         break;
 
     case INST_PRINT_DEBUG:
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
-        printf("%lu\n", bm->stack[bm->stack_size - 1].as_u64);
+        fprintf(stdout, "  u64: %lu, i64: %ld, f64: %lf, ptr: %p\n",
+                bm->stack[bm->stack_size - 1].as_u64,
+                bm->stack[bm->stack_size - 1].as_i64,
+                bm->stack[bm->stack_size - 1].as_f64,
+                bm->stack[bm->stack_size - 1].as_ptr);
         bm->stack_size -= 1;
         bm->ip += 1;
         break;
@@ -400,13 +423,25 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_SWAP:
-        if (bm->stack_size < 2) {
+        if (inst.operand.as_u64 >= bm->stack_size) {
             return ERR_STACK_UNDERFLOW;
         }
 
-        Word t = bm->stack[bm->stack_size - 1];
-        bm->stack[bm->stack_size - 1] = bm->stack[bm->stack_size - 2];
-        bm->stack[bm->stack_size - 2] = t;
+        const uint64_t a = bm->stack_size - 1;
+        const uint64_t b = bm->stack_size - 1 - inst.operand.as_u64;
+
+        Word t = bm->stack[a];
+        bm->stack[a] = bm->stack[b];
+        bm->stack[b] = t;
+        bm->ip += 1;
+        break;
+
+    case INST_NOT:
+        if (bm->stack_size < 1) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 1].as_u64 = !bm->stack[bm->stack_size - 1].as_u64;
         bm->ip += 1;
         break;
 
@@ -695,6 +730,20 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                             .type = INST_JMP
                         };
                     }
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_JMP_IF)))) {
+                    if (operand.count > 0 && isdigit(*operand.data)) {
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_JMP_IF,
+                            .operand = { .as_i64 = sv_to_int(operand) },
+                        };
+                    } else {
+                        basm_push_deferred_operand(
+                            basm, bm->program_size, operand);
+
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_JMP_IF,
+                        };
+                    }
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_HALT
@@ -713,7 +762,24 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                     };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_SWAP)))) {
                     bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_SWAP
+                        .type = INST_SWAP,
+                        .operand = { .as_i64 = sv_to_int(operand) },
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_EQ)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_EQ,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_GEF)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_GEF,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_NOT)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_NOT,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_PRINT_DEBUG,
                     };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
