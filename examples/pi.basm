@@ -48,10 +48,7 @@ loop:
     jmp_if loop
 
 # clean the stack and only have pi left
-
-multi           # top of stack is 0 so this operation will result in 0
-                # and get rids of the `denominator` on the stack
-minusi          # subtract 0 so that the last item on the stack
-                # will be `acc`, which is pi
+drop
+drop
 
 halt
