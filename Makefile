@@ -21,4 +21,10 @@ examples: $(EXAMPLES)
 %.bm: %.basm basm
 	./basm $< $@
 
+.PHONY: clean
+clean:
+	rm -fr basm bme debasm
 
+.PHONY: clean-examples
+clean-examples:
+	rm -f examples/*.bm
