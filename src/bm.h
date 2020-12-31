@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
@@ -403,7 +404,7 @@ Err bm_execute_inst(Bm *bm)
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
-        fprintf(stdout, "  u64: %llu, i64: %lld, f64: %lf, ptr: %p\n",
+        fprintf(stdout, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
                 bm->stack[bm->stack_size - 1].as_u64,
                 bm->stack[bm->stack_size - 1].as_i64,
                 bm->stack[bm->stack_size - 1].as_f64,
@@ -463,7 +464,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm)
     fprintf(stream, "Stack:\n");
     if (bm->stack_size > 0) {
         for (Inst_Addr i = 0; i < bm->stack_size; ++i) {
-            fprintf(stream, "  u64: %llu, i64: %lld, f64: %lf, ptr: %p\n",
+            fprintf(stream, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
                     bm->stack[i].as_u64,
                     bm->stack[i].as_i64,
                     bm->stack[i].as_f64,

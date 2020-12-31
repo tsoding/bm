@@ -1,5 +1,6 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
+#include <inttypes.h>
 
 Bm bm = {0};
 
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
         printf("%s", inst_name(bm.program[i].type));
         if (inst_has_operand(bm.program[i].type)) {
-            printf(" %lld", bm.program[i].operand.as_i64);
+            printf(" %" PRIu64, bm.program[i].operand.as_i64);
         }
         printf("\n");
     }
