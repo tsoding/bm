@@ -15,6 +15,7 @@
 #define BM_PROGRAM_CAPACITY 1024
 #define LABEL_CAPACITY 1024
 #define DEFERRED_OPERANDS_CAPACITY 1024
+#define NUMBER_LITERAL_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -657,8 +658,8 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
 
 Word number_literal_as_word(String_View sv)
 {
-    assert(sv.count < 1024);
-    char cstr[1024];
+    assert(sv.count < NUMBER_LITERAL_CAPACITY);
+    char cstr[NUMBER_LITERAL_CAPACITY + 1];
     char *endptr = 0;
 
     memcpy(cstr, sv.data, sv.count);
