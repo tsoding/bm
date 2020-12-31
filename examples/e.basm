@@ -29,6 +29,9 @@ loop:
 
    jmp_if loop
 
-   print_debug
+   swap 1
+   drop
+   swap 1
+   drop
    
    halt
