@@ -2,3 +2,7 @@
 bme
 basm
 debasm
+*.exe
+*.ilk
+*.obj
+*.pdb
