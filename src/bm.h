@@ -716,6 +716,18 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_PLUSI
                     };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MINUSI)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_MINUSI
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DIVI)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_DIVI
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MULTI)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_MULTI
+                    };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_JMP)))) {
                     if (operand.count > 0 && isdigit(*operand.data)) {
                         bm->program[bm->program_size++] = (Inst) {
@@ -751,6 +763,10 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PLUSF)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_PLUSF
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MINUSF)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_MINUSF
                     };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DIVF)))) {
                     bm->program[bm->program_size++] = (Inst) {

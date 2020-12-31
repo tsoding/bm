@@ -11,6 +11,7 @@ $ make
 $ make examples
 $ ./bme -i ./examples/fib.bm -l 69
 $ ./bme -i ./examples/e.bm
+$ ./bme -i ./examples/pi.bm
 ```
 
 ## Components
