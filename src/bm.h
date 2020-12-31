@@ -483,20 +483,20 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     FILE *f = fopen(file_path, "rb");
     if (f == NULL) {
         fprintf(stderr, "ERROR: Could not open file `%s`: %s\n",
-                file_path, strerror(errno));
+            file_path, strerror(errno));
         exit(1);
     }
 
     if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+        fprintf(stderr, "ERROR: Could not set position at end of file %s: %s\n",
+            file_path, strerror(errno));
         exit(1);
     }
 
     long m = ftell(f);
     if (m < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+        fprintf(stderr, "ERROR: Could not determine length of file %s: %s\n",
+            file_path, strerror(errno));
         exit(1);
     }
 
@@ -504,16 +504,16 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     assert((size_t) m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
 
     if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+        fprintf(stderr, "ERROR: Could not rewind file %s: %s\n",
+            file_path, strerror(errno));
         exit(1);
     }
 
     bm->program_size = fread(bm->program, sizeof(bm->program[0]), m / sizeof(bm->program[0]), f);
 
     if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+        fprintf(stderr, "ERROR: Could not consume file %s: %s\n",
+            file_path, strerror(errno));
         exit(1);
     }
 
