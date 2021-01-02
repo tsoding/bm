@@ -8,12 +8,14 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define LABEL_CAPACITY 1024
 #define DEFERRED_OPERANDS_CAPACITY 1024
+#define NUMBER_LITERAL_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -157,6 +159,7 @@ int inst_has_operand(Inst_Type type)
     case INST_GEF:         return 0;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
+        exit(1);
     }
 }
 
@@ -184,6 +187,7 @@ const char *inst_name(Inst_Type type)
     case INST_GEF:         return "gef";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
+        exit(1);
     }
 }
 
@@ -206,6 +210,7 @@ const char *err_as_cstr(Err err)
         return "ERR_DIV_BY_ZERO";
     default:
         assert(0 && "err_as_cstr: Unreachable");
+        exit(1);
     }
 }
 
@@ -233,6 +238,7 @@ const char *inst_type_as_cstr(Inst_Type type)
     case INST_GEF:         return "INST_GEF";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_type_as_cstr: unreachable");
+        exit(1);
     }
 }
 
@@ -399,7 +405,7 @@ Err bm_execute_inst(Bm *bm)
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
-        fprintf(stdout, "  u64: %lu, i64: %ld, f64: %lf, ptr: %p\n",
+        fprintf(stdout, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
                 bm->stack[bm->stack_size - 1].as_u64,
                 bm->stack[bm->stack_size - 1].as_i64,
                 bm->stack[bm->stack_size - 1].as_f64,
@@ -459,7 +465,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm)
     fprintf(stream, "Stack:\n");
     if (bm->stack_size > 0) {
         for (Inst_Addr i = 0; i < bm->stack_size; ++i) {
-            fprintf(stream, "  u64: %lu, i64: %ld, f64: %lf, ptr: %p\n",
+            fprintf(stream, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
                     bm->stack[i].as_u64,
                     bm->stack[i].as_i64,
                     bm->stack[i].as_f64,
@@ -652,8 +658,8 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
 
 Word number_literal_as_word(String_View sv)
 {
-    assert(sv.count < 1024);
-    char cstr[sv.count + 1];
+    assert(sv.count < NUMBER_LITERAL_CAPACITY);
+    char cstr[NUMBER_LITERAL_CAPACITY + 1];
     char *endptr = 0;
 
     memcpy(cstr, sv.data, sv.count);
