@@ -32,6 +32,7 @@ const char *err_as_cstr(Err err);
 typedef enum {
     INST_NOP = 0,
     INST_PUSH,
+    INST_DROP,
     INST_DUP,
     INST_SWAP,
     INST_PLUSI,
@@ -140,6 +141,7 @@ int inst_has_operand(Inst_Type type)
     switch (type) {
     case INST_NOP:         return 0;
     case INST_PUSH:        return 1;
+    case INST_DROP:        return 0;
     case INST_DUP:         return 1;
     case INST_PLUSI:       return 0;
     case INST_MINUSI:      return 0;
@@ -168,6 +170,7 @@ const char *inst_name(Inst_Type type)
     switch (type) {
     case INST_NOP:         return "nop";
     case INST_PUSH:        return "push";
+    case INST_DROP:        return "drop";
     case INST_DUP:         return "dup";
     case INST_PLUSI:       return "plusi";
     case INST_MINUSI:      return "minusi";
@@ -219,6 +222,7 @@ const char *inst_type_as_cstr(Inst_Type type)
     switch (type) {
     case INST_NOP:         return "INST_NOP";
     case INST_PUSH:        return "INST_PUSH";
+    case INST_DROP:        return "INST_DROP";
     case INST_PLUSI:       return "INST_PLUSI";
     case INST_MINUSI:      return "INST_MINUSI";
     case INST_MULTI:       return "INST_MULTI";
@@ -275,6 +279,14 @@ Err bm_execute_inst(Bm *bm)
             return ERR_STACK_OVERFLOW;
         }
         bm->stack[bm->stack_size++] = inst.operand;
+        bm->ip += 1;
+        break;
+
+    case INST_DROP:
+        if (bm->stack_size >= BM_STACK_CAPACITY) {
+            return ERR_STACK_OVERFLOW;
+        }
+        bm->stack_size -= 1;
         bm->ip += 1;
         break;
 
@@ -798,6 +810,10 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_NOT)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_NOT,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DROP)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_DROP,
                     };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
                     bm->program[bm->program_size++] = (Inst) {
