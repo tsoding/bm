@@ -694,11 +694,13 @@ Word number_literal_as_word(String_View sv)
 void bm_translate_source(String_View source, Bm *bm, Basm *basm)
 {
     bm->program_size = 0;
+    int line_number = 0;
 
     // First pass
     while (source.count > 0) {
         assert(bm->program_size < BM_PROGRAM_CAPACITY);
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
+        line_number += 1;
         if (line.count > 0 && *line.data != '#') {
             String_View token = sv_chop_by_delim(&line, ' ');
 
@@ -820,8 +822,8 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                         .type = INST_PRINT_DEBUG,
                     };
                 } else {
-                    fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-                            (int) token.count, token.data);
+                    fprintf(stderr, "ERROR: unknown instruction `%.*s` on line %d\n",
+                            (int) token.count, token.data, line_number);
                     exit(1);
                 }
             }
