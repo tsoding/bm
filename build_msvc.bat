@@ -5,7 +5,10 @@ rem launch this from msvc-enabled console
 set CFLAGS=/std:c11 /O2 /FC /W4 /WX /wd4996 /nologo
 set LIBS=
 
-set EXAMPLES=./examples/fib.bm ./examples/123i.bm ./examples/123f.bm ./examples/e.bm
+for /f "delims=" %%i in ('findstr "EXAMPLES=" "Makefile"') do (
+    set result=%%i
+)
+set EXAMPLES=%result:~9%
 
 cl.exe %CFLAGS% ./src/basm.c
 
