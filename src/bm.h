@@ -684,7 +684,7 @@ Word number_literal_as_word(String_View sv)
     if ((size_t) (endptr - cstr) != sv.count) {
         result.as_f64 = strtod(cstr, &endptr);
         if ((size_t) (endptr - cstr) != sv.count) {
-            // TODO: invalid literal basm error does not print its location
+            // TODO(#44): invalid literal basm error does not print its location
             fprintf(stderr, "ERROR: `%s` is not a number literal\n", cstr);
             exit(1);
         }
