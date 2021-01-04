@@ -45,6 +45,8 @@ typedef enum {
     INST_DIVF,
     INST_JMP,
     INST_JMP_IF,
+    INST_RET,
+    INST_CALL,
     INST_EQ,
     INST_HALT,
     INST_NOT,
@@ -55,8 +57,6 @@ typedef enum {
 
 const char *inst_name(Inst_Type type);
 int inst_has_operand(Inst_Type type);
-
-const char *inst_type_as_cstr(Inst_Type type);
 
 typedef uint64_t Inst_Addr;
 
@@ -159,6 +159,8 @@ int inst_has_operand(Inst_Type type)
     case INST_SWAP:        return 1;
     case INST_NOT:         return 0;
     case INST_GEF:         return 0;
+    case INST_RET:         return 0;
+    case INST_CALL:        return 1;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
@@ -188,6 +190,8 @@ const char *inst_name(Inst_Type type)
     case INST_SWAP:        return "swap";
     case INST_NOT:         return "not";
     case INST_GEF:         return "gef";
+    case INST_RET:         return "ret";
+    case INST_CALL:        return "call";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
         exit(1);
@@ -213,35 +217,6 @@ const char *err_as_cstr(Err err)
         return "ERR_DIV_BY_ZERO";
     default:
         assert(0 && "err_as_cstr: Unreachable");
-        exit(1);
-    }
-}
-
-const char *inst_type_as_cstr(Inst_Type type)
-{
-    switch (type) {
-    case INST_NOP:         return "INST_NOP";
-    case INST_PUSH:        return "INST_PUSH";
-    case INST_DROP:        return "INST_DROP";
-    case INST_PLUSI:       return "INST_PLUSI";
-    case INST_MINUSI:      return "INST_MINUSI";
-    case INST_MULTI:       return "INST_MULTI";
-    case INST_DIVI:        return "INST_DIVI";
-    case INST_PLUSF:       return "INST_PLUSF";
-    case INST_MINUSF:      return "INST_MINUSF";
-    case INST_MULTF:       return "INST_MULTF";
-    case INST_DIVF:        return "INST_DIVF";
-    case INST_JMP:         return "INST_JMP";
-    case INST_HALT:        return "INST_HALT";
-    case INST_JMP_IF:      return "INST_JMP_IF";
-    case INST_EQ:          return "INST_EQ";
-    case INST_PRINT_DEBUG: return "INST_PRINT_DEBUG";
-    case INST_DUP:         return "INST_DUP";
-    case INST_SWAP:        return "INST_SWAP";
-    case INST_NOT:         return "INST_NOT";
-    case INST_GEF:         return "INST_GEF";
-    case NUMBER_OF_INSTS:
-    default: assert(0 && "inst_type_as_cstr: unreachable");
         exit(1);
     }
 }
@@ -372,6 +347,24 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_JMP:
+        bm->ip = inst.operand.as_u64;
+        break;
+
+    case INST_RET:
+        if (bm->stack_size < 1) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->ip = bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        break;
+
+    case INST_CALL:
+        if (bm->stack_size >= BM_STACK_CAPACITY) {
+            return ERR_STACK_OVERFLOW;
+        }
+
+        bm->stack[bm->stack_size++].as_u64 = bm->ip + 1;
         bm->ip = inst.operand.as_u64;
         break;
 
@@ -774,6 +767,20 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                             .type = INST_JMP_IF,
                         };
                     }
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_CALL)))) {
+                    if (operand.count > 0 && isdigit(*operand.data)) {
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_CALL,
+                            .operand = { .as_i64 = sv_to_int(operand) },
+                        };
+                    } else {
+                        basm_push_deferred_operand(
+                            basm, bm->program_size, operand);
+
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_CALL,
+                        };
+                    }
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_HALT
@@ -818,6 +825,10 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_PRINT_DEBUG,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_RET,
                     };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
