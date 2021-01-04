@@ -650,6 +650,7 @@ Inst_Addr basm_find_label_addr(const Basm *basm, String_View name)
         }
     }
 
+    // TODO(#43): unknown label basm error does not print its location
     fprintf(stderr, "ERROR: label `%.*s` does not exist\n",
             (int) name.count, name.data);
     exit(1);
@@ -683,6 +684,7 @@ Word number_literal_as_word(String_View sv)
     if ((size_t) (endptr - cstr) != sv.count) {
         result.as_f64 = strtod(cstr, &endptr);
         if ((size_t) (endptr - cstr) != sv.count) {
+            // TODO: invalid literal basm error does not print its location
             fprintf(stderr, "ERROR: `%s` is not a number literal\n", cstr);
             exit(1);
         }
