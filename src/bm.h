@@ -272,6 +272,9 @@ Err bm_execute_inst(Bm *bm)
         if (bm->stack_size >= BM_STACK_CAPACITY) {
             return ERR_STACK_OVERFLOW;
         }
+        if (bm->stack_size < 1) {
+            return ERR_STACK_UNDERFLOW;
+        }
         bm->stack_size -= 1;
         bm->ip += 1;
         break;
