@@ -1,17 +1,26 @@
-# TODO(#32): rewrite fib.basm example
-# - Limit amount of iterations
-# - Print the generated numbers on each iteration
-# ---
-# Some nonsense to test label resolution
-   jmp 1
-   nop
-   nop
-   nop
-# First two Fibonacci numbers
-   push 0
-   push 1
+# N-1
+# F_1+F_0
+# F_1
+main:
+   push 0                       # F_0
+   push 1                       # F_1
+   push 30                      # N - the amount of iterations
 loop:
-   dup 1   # The Loop
+   swap 2
+   dup 0
+   native 4
    dup 1
    plusi
-   jmp loop   # Repeat
+   swap 1
+   swap 2
+   push 1
+   minusi
+
+   dup 0
+   push 0
+   eq
+
+   not
+
+   jmp_if loop
+   halt
