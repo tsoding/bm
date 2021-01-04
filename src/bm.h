@@ -128,7 +128,7 @@ Inst_Addr basm_find_label_addr(const Basm *basm, String_View name);
 void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm);
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path);
 
 Word number_literal_as_word(String_View sv);
 
@@ -691,7 +691,7 @@ Word number_literal_as_word(String_View sv)
     return result;
 }
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm)
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path)
 {
     bm->program_size = 0;
     int line_number = 0;
@@ -822,8 +822,8 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                         .type = INST_PRINT_DEBUG,
                     };
                 } else {
-                    fprintf(stderr, "ERROR: unknown instruction `%.*s` on line %d\n",
-                            (int) token.count, token.data, line_number);
+                    fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
+                            input_file_path, line_number, (int) token.count, token.data);
                     exit(1);
                 }
             }
