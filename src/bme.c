@@ -40,6 +40,17 @@ static Err bm_free(Bm *bm)
     return ERR_OK;
 }
 
+static Err bm_print_f64(Bm *bm)
+{
+    if (bm->stack_size < 1) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    printf("%lf\n", bm->stack[bm->stack_size - 1].as_f64);
+    bm->stack_size -= 1;
+    return ERR_OK;
+}
+
 int main(int argc, char **argv)
 {
     const char *program = shift(&argc, &argv);
@@ -85,8 +96,10 @@ int main(int argc, char **argv)
     }
 
     bm_load_program_from_file(&bm, input_file_path);
-    bm_push_native(&bm, bm_alloc);
-    bm_push_native(&bm, bm_free);
+    // TODO: some sort of mechanism to load native functions from DLLs
+    bm_push_native(&bm, bm_alloc);     // 0
+    bm_push_native(&bm, bm_free);      // 1
+    bm_push_native(&bm, bm_print_f64); // 2
 
     if (!debug) {
         Err err = bm_execute_program(&bm, limit);
