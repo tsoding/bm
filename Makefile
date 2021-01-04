@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -std=c11
 LIBS=
 
-EXAMPLES=./examples/fib.bm ./examples/123i.bm ./examples/123f.bm ./examples/e.bm ./examples/pi.bm ./examples/lerp.bm
+EXAMPLES=$(patsubst %.basm,%.bm,$(wildcard ./examples/*.basm))
 
 .PHONY: all
 all: basm bme debasm
@@ -20,5 +20,3 @@ examples: $(EXAMPLES)
 
 %.bm: %.basm basm
 	./basm $< $@
-
-
