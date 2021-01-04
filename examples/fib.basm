@@ -1,4 +1,4 @@
-# TODO: rewrite fib.basm example
+# TODO(#32): rewrite fib.basm example
 # - Limit amount of iterations
 # - Print the generated numbers on each iteration
 # ---
