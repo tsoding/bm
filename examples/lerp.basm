@@ -23,7 +23,7 @@ lerpf:
     drop
     ret
 
-# TODO: make lerp.basm example more interesting
+# TODO(#34): make lerp.basm example more interesting
 # Sample throw the lerp with regular intervals
 main:
     push 69.0
