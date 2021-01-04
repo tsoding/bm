@@ -46,6 +46,7 @@ typedef enum {
     INST_JMP,
     INST_JMP_IF,
     INST_RET,
+    INST_CALL,
     INST_EQ,
     INST_HALT,
     INST_NOT,
@@ -159,6 +160,7 @@ int inst_has_operand(Inst_Type type)
     case INST_NOT:         return 0;
     case INST_GEF:         return 0;
     case INST_RET:         return 0;
+    case INST_CALL:        return 1;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
@@ -189,6 +191,7 @@ const char *inst_name(Inst_Type type)
     case INST_NOT:         return "not";
     case INST_GEF:         return "gef";
     case INST_RET:         return "ret";
+    case INST_CALL:        return "call";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
         exit(1);
@@ -354,6 +357,15 @@ Err bm_execute_inst(Bm *bm)
 
         bm->ip = bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 1;
+        break;
+
+    case INST_CALL:
+        if (bm->stack_size >= BM_STACK_CAPACITY) {
+            return ERR_STACK_OVERFLOW;
+        }
+
+        bm->stack[bm->stack_size++].as_u64 = bm->ip;
+        bm->ip = inst.operand.as_u64;
         break;
 
     case INST_HALT:
@@ -753,6 +765,20 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
 
                         bm->program[bm->program_size++] = (Inst) {
                             .type = INST_JMP_IF,
+                        };
+                    }
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_CALL)))) {
+                    if (operand.count > 0 && isdigit(*operand.data)) {
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_CALL,
+                            .operand = { .as_i64 = sv_to_int(operand) },
+                        };
+                    } else {
+                        basm_push_deferred_operand(
+                            basm, bm->program_size, operand);
+
+                        bm->program[bm->program_size++] = (Inst) {
+                            .type = INST_CALL,
                         };
                     }
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
