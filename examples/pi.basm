@@ -6,7 +6,7 @@
 # subsequent odd number. The more times you do this, the closer you will get to pi.
 #
 
-# TODO: extern native functions declarations for basm files
+# TODO(#33): extern native functions declarations for basm files
 # ---
 # extern alloc 0
 # extern free 1
