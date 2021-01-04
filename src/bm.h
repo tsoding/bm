@@ -53,7 +53,6 @@ typedef enum {
     INST_HALT,
     INST_NOT,
     INST_GEF,
-    INST_PRINT_DEBUG,
     NUMBER_OF_INSTS,
 } Inst_Type;
 
@@ -165,7 +164,6 @@ int inst_has_operand(Inst_Type type)
     case INST_JMP_IF:      return 1;
     case INST_EQ:          return 0;
     case INST_HALT:        return 0;
-    case INST_PRINT_DEBUG: return 0;
     case INST_SWAP:        return 1;
     case INST_NOT:         return 0;
     case INST_GEF:         return 0;
@@ -197,7 +195,6 @@ const char *inst_name(Inst_Type type)
     case INST_JMP_IF:      return "jmp_if";
     case INST_EQ:          return "eq";
     case INST_HALT:        return "halt";
-    case INST_PRINT_DEBUG: return "print_debug";
     case INST_SWAP:        return "swap";
     case INST_NOT:         return "not";
     case INST_GEF:         return "gef";
@@ -424,19 +421,6 @@ Err bm_execute_inst(Bm *bm)
         }
 
         bm->stack_size -= 1;
-        break;
-
-    case INST_PRINT_DEBUG:
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        fprintf(stdout, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
-                bm->stack[bm->stack_size - 1].as_u64,
-                bm->stack[bm->stack_size - 1].as_i64,
-                bm->stack[bm->stack_size - 1].as_f64,
-                bm->stack[bm->stack_size - 1].as_ptr);
-        bm->stack_size -= 1;
-        bm->ip += 1;
         break;
 
     case INST_DUP:
@@ -846,10 +830,6 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DROP)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_DROP,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PRINT_DEBUG,
                     };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
                     bm->program[bm->program_size++] = (Inst) {
