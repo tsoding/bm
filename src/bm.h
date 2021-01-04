@@ -269,9 +269,6 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_DROP:
-        if (bm->stack_size >= BM_STACK_CAPACITY) {
-            return ERR_STACK_OVERFLOW;
-        }
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
