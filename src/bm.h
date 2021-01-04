@@ -800,6 +800,10 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_PRINT_DEBUG,
                     };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_RET,
+                    };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
                             (int) token.count, token.data);
