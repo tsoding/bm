@@ -13,6 +13,7 @@
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
+#define BM_NATIVES_CAPACITY 1024
 #define LABEL_CAPACITY 1024
 #define DEFERRED_OPERANDS_CAPACITY 1024
 #define NUMBER_LITERAL_CAPACITY 1024
@@ -47,11 +48,11 @@ typedef enum {
     INST_JMP_IF,
     INST_RET,
     INST_CALL,
+    INST_NATIVE,
     INST_EQ,
     INST_HALT,
     INST_NOT,
     INST_GEF,
-    INST_PRINT_DEBUG,
     NUMBER_OF_INSTS,
 } Inst_Type;
 
@@ -75,7 +76,11 @@ typedef struct {
     Word operand;
 } Inst;
 
-typedef struct {
+typedef struct Bm Bm;
+
+typedef Err (*Bm_Native)(Bm*);
+
+struct Bm {
     Word stack[BM_STACK_CAPACITY];
     uint64_t stack_size;
 
@@ -83,11 +88,15 @@ typedef struct {
     uint64_t program_size;
     Inst_Addr ip;
 
+    Bm_Native natives[BM_NATIVES_CAPACITY];
+    size_t natives_size;
+
     int halt;
-} Bm;
+};
 
 Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
+void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
@@ -155,12 +164,12 @@ int inst_has_operand(Inst_Type type)
     case INST_JMP_IF:      return 1;
     case INST_EQ:          return 0;
     case INST_HALT:        return 0;
-    case INST_PRINT_DEBUG: return 0;
     case INST_SWAP:        return 1;
     case INST_NOT:         return 0;
     case INST_GEF:         return 0;
     case INST_RET:         return 0;
     case INST_CALL:        return 1;
+    case INST_NATIVE:      return 1;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
@@ -186,12 +195,12 @@ const char *inst_name(Inst_Type type)
     case INST_JMP_IF:      return "jmp_if";
     case INST_EQ:          return "eq";
     case INST_HALT:        return "halt";
-    case INST_PRINT_DEBUG: return "print_debug";
     case INST_SWAP:        return "swap";
     case INST_NOT:         return "not";
     case INST_GEF:         return "gef";
     case INST_RET:         return "ret";
     case INST_CALL:        return "call";
+    case INST_NATIVE:      return "native";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
         exit(1);
@@ -368,6 +377,14 @@ Err bm_execute_inst(Bm *bm)
         bm->ip = inst.operand.as_u64;
         break;
 
+    case INST_NATIVE:
+        if (inst.operand.as_u64 > bm->natives_size) {
+            return ERR_ILLEGAL_OPERAND;
+        }
+        bm->natives[inst.operand.as_u64](bm);
+        bm->ip += 1;
+        break;
+
     case INST_HALT:
         bm->halt = 1;
         break;
@@ -404,19 +421,6 @@ Err bm_execute_inst(Bm *bm)
         }
 
         bm->stack_size -= 1;
-        break;
-
-    case INST_PRINT_DEBUG:
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        fprintf(stdout, "  u64: %" PRIu64 ", i64: %" PRId64 ", f64: %lf, ptr: %p\n",
-                bm->stack[bm->stack_size - 1].as_u64,
-                bm->stack[bm->stack_size - 1].as_i64,
-                bm->stack[bm->stack_size - 1].as_f64,
-                bm->stack[bm->stack_size - 1].as_ptr);
-        bm->stack_size -= 1;
-        bm->ip += 1;
         break;
 
     case INST_DUP:
@@ -464,6 +468,11 @@ Err bm_execute_inst(Bm *bm)
     return ERR_OK;
 }
 
+void bm_push_native(Bm *bm, Bm_Native native)
+{
+    assert(bm->natives_size < BM_NATIVES_CAPACITY);
+    bm->natives[bm->natives_size++] = native;
+}
 
 void bm_dump_stack(FILE *stream, const Bm *bm)
 {
@@ -822,13 +831,14 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_DROP,
                     };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PRINT_DEBUG)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PRINT_DEBUG,
-                    };
                 } else if (sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
                     bm->program[bm->program_size++] = (Inst) {
                         .type = INST_RET,
+                    };
+                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_NATIVE)))) {
+                    bm->program[bm->program_size++] = (Inst) {
+                        .type = INST_NATIVE,
+                        .operand = { .as_i64 = sv_to_int(operand) },
                     };
                 } else {
                     fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
