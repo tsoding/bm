@@ -30,6 +30,8 @@ typedef enum {
 
 const char *err_as_cstr(Err err);
 
+// TODO: comparison instruction set is not complete
+// TODO: there is no operations for converting integer->float/float->interger
 typedef enum {
     INST_NOP = 0,
     INST_PUSH,
@@ -399,6 +401,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
+    // TODO: Inconsistency between gef and minus* instructions
     case INST_GEF:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
