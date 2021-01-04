@@ -383,7 +383,10 @@ Err bm_execute_inst(Bm *bm)
         if (inst.operand.as_u64 > bm->natives_size) {
             return ERR_ILLEGAL_OPERAND;
         }
-        bm->natives[inst.operand.as_u64](bm);
+        const Err err = bm->natives[inst.operand.as_u64](bm);
+        if (err != ERR_OK) {
+            return err;
+        }
         bm->ip += 1;
         break;
 
