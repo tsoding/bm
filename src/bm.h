@@ -364,7 +364,7 @@ Err bm_execute_inst(Bm *bm)
             return ERR_STACK_OVERFLOW;
         }
 
-        bm->stack[bm->stack_size++].as_u64 = bm->ip;
+        bm->stack[bm->stack_size++].as_u64 = bm->ip + 1;
         bm->ip = inst.operand.as_u64;
         break;
 
