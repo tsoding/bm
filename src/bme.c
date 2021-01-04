@@ -129,7 +129,7 @@ int main(int argc, char **argv)
     }
 
     bm_load_program_from_file(&bm, input_file_path);
-    // TODO: some sort of mechanism to load native functions from DLLs
+    // TODO(#35): some sort of mechanism to load native functions from DLLs
     bm_push_native(&bm, bm_alloc);     // 0
     bm_push_native(&bm, bm_free);      // 1
     bm_push_native(&bm, bm_print_f64); // 2
