@@ -74,7 +74,11 @@ int main(int argc, char **argv)
     } else {
         while (limit != 0 && !bm.halt) {
             bm_dump_stack(stdout, &bm);
+            printf("Instruction: %s %" PRIu64 "\n",
+                   inst_name(bm.program[bm.ip].type),
+                   bm.program[bm.ip].operand.as_u64);
             getchar();
+
             Err err = bm_execute_inst(&bm);
             if (err != ERR_OK) {
                 fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
