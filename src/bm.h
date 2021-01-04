@@ -401,7 +401,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    // TODO: Inconsistency between gef and minus* instructions operand ordering
+    // TODO(#40): Inconsistency between gef and minus* instructions operand ordering
     case INST_GEF:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
