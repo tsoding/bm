@@ -1,10 +1,19 @@
-CFLAGS=-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -std=c11
+CFLAGS=	-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -std=c11
 LIBS=
+RM?=	rm -f
 
-EXAMPLES=$(patsubst %.basm,%.bm,$(wildcard ./examples/*.basm))
+EXAMPLES!=	find examples/ -name \*.basm | sed "s/\.basm/\.bm/"
+BINARIES=	basm \
+		bme  \
+		debasm
+
+.SUFFIXES: .basm .bm
+
+.basm.bm:
+	./basm $< $@
 
 .PHONY: all
-all: basm bme debasm
+all: ${BINARIES}
 
 basm: ./src/basm.c ./src/bm.h
 	$(CC) $(CFLAGS) -o basm ./src/basm.c $(LIBS)
@@ -16,7 +25,10 @@ debasm: ./src/debasm.c ./src/bm.h
 	$(CC) $(CFLAGS) -o debasm ./src/debasm.c $(LIBS)
 
 .PHONY: examples
-examples: $(EXAMPLES)
+examples: basm ${EXAMPLES}
 
-%.bm: %.basm basm
-	./basm $< $@
+.PHONY: clean
+clean:
+	${RM} ${EXAMPLES}
+	${RM} ${BINARIES}
+
