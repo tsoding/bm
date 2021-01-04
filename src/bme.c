@@ -90,7 +90,6 @@ int main(int argc, char **argv)
 
     if (!debug) {
         Err err = bm_execute_program(&bm, limit);
-        bm_dump_stack(stdout, &bm);
 
         if (err != ERR_OK) {
             fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
