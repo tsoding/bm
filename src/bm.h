@@ -45,6 +45,7 @@ typedef enum {
     INST_DIVF,
     INST_JMP,
     INST_JMP_IF,
+    INST_RET,
     INST_EQ,
     INST_HALT,
     INST_NOT,
@@ -55,8 +56,6 @@ typedef enum {
 
 const char *inst_name(Inst_Type type);
 int inst_has_operand(Inst_Type type);
-
-const char *inst_type_as_cstr(Inst_Type type);
 
 typedef uint64_t Inst_Addr;
 
@@ -159,6 +158,7 @@ int inst_has_operand(Inst_Type type)
     case INST_SWAP:        return 1;
     case INST_NOT:         return 0;
     case INST_GEF:         return 0;
+    case INST_RET:         return 0;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
@@ -188,6 +188,7 @@ const char *inst_name(Inst_Type type)
     case INST_SWAP:        return "swap";
     case INST_NOT:         return "not";
     case INST_GEF:         return "gef";
+    case INST_RET:         return "ret";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
         exit(1);
@@ -344,6 +345,15 @@ Err bm_execute_inst(Bm *bm)
 
     case INST_JMP:
         bm->ip = inst.operand.as_u64;
+        break;
+
+    case INST_RET:
+        if (bm->stack_size < 1) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->ip = bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
         break;
 
     case INST_HALT:
