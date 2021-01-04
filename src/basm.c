@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
     String_View source = sv_slurp_file(input_file_path);
 
-    bm_translate_source(source, &bm, &basm);
+    bm_translate_source(source, &bm, &basm, input_file_path);
     bm_save_program_to_file(&bm, output_file_path);
 
     return 0;

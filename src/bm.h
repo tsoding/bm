@@ -139,7 +139,7 @@ Inst_Addr basm_find_label_addr(const Basm *basm, String_View name);
 void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm);
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path);
 
 Word number_literal_as_word(String_View sv);
 
@@ -655,6 +655,7 @@ Inst_Addr basm_find_label_addr(const Basm *basm, String_View name)
         }
     }
 
+    // TODO(#43): unknown label basm error does not print its location
     fprintf(stderr, "ERROR: label `%.*s` does not exist\n",
             (int) name.count, name.data);
     exit(1);
@@ -688,6 +689,7 @@ Word number_literal_as_word(String_View sv)
     if ((size_t) (endptr - cstr) != sv.count) {
         result.as_f64 = strtod(cstr, &endptr);
         if ((size_t) (endptr - cstr) != sv.count) {
+            // TODO(#44): invalid literal basm error does not print its location
             fprintf(stderr, "ERROR: `%s` is not a number literal\n", cstr);
             exit(1);
         }
@@ -696,14 +698,16 @@ Word number_literal_as_word(String_View sv)
     return result;
 }
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm)
+void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path)
 {
     bm->program_size = 0;
+    int line_number = 0;
 
     // First pass
     while (source.count > 0) {
         assert(bm->program_size < BM_PROGRAM_CAPACITY);
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
+        line_number += 1;
         if (line.count > 0 && *line.data != '#') {
             String_View token = sv_chop_by_delim(&line, ' ');
 
@@ -844,8 +848,8 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm)
                         .operand = { .as_i64 = sv_to_int(operand) },
                     };
                 } else {
-                    fprintf(stderr, "ERROR: unknown instruction `%.*s`\n",
-                            (int) token.count, token.data);
+                    fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
+                            input_file_path, line_number, (int) token.count, token.data);
                     exit(1);
                 }
             }
