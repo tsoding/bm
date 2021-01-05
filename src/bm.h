@@ -774,7 +774,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                         }
 
                         if (!basm_bind_label(basm, label, word)) {
-                            // TODO: label redefinition error does not tell where the first label was already defined
+                            // TODO(#51): label redefinition error does not tell where the first label was already defined
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: label `%.*s` is already defined\n",
                                     SV_FORMAT(input_file_path),
