@@ -11,13 +11,14 @@
 #include <inttypes.h>
 
 #define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
+
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
-#define LABEL_CAPACITY 1024
-#define DEFERRED_OPERANDS_CAPACITY 1024
-#define NUMBER_LITERAL_CAPACITY 1024
 
+#define BASM_LABEL_CAPACITY 1024
+#define BASM_DEFERRED_OPERANDS_CAPACITY 1024
+#define BASM_NUMBER_LITERAL_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
@@ -142,9 +143,9 @@ typedef struct {
 } Deferred_Operand;
 
 typedef struct {
-    Label labels[LABEL_CAPACITY];
+    Label labels[BASM_LABEL_CAPACITY];
     size_t labels_size;
-    Deferred_Operand deferred_operands[DEFERRED_OPERANDS_CAPACITY];
+    Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
     char memory[BASM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -773,7 +774,7 @@ int basm_resolve_label(const Basm *basm, String_View name, Word *output)
 
 int basm_bind_label(Basm *basm, String_View name, Word word)
 {
-    assert(basm->labels_size < LABEL_CAPACITY);
+    assert(basm->labels_size < BASM_LABEL_CAPACITY);
 
     Word ignore = {0};
     if (basm_resolve_label(basm, name, &ignore)) {
@@ -786,15 +787,15 @@ int basm_bind_label(Basm *basm, String_View name, Word word)
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
 {
-    assert(basm->deferred_operands_size < DEFERRED_OPERANDS_CAPACITY);
+    assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
         (Deferred_Operand) {.addr = addr, .label = label};
 }
 
 int number_literal_as_word(String_View sv, Word *output)
 {
-    assert(sv.count < NUMBER_LITERAL_CAPACITY);
-    char cstr[NUMBER_LITERAL_CAPACITY + 1];
+    assert(sv.count < BASM_NUMBER_LITERAL_CAPACITY);
+    char cstr[BASM_NUMBER_LITERAL_CAPACITY + 1];
     char *endptr = 0;
 
     memcpy(cstr, sv.data, sv.count);
