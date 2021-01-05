@@ -11,5 +11,7 @@ $CC $CFLAGS -o bme ./src/bme.c $LIBS
 $CC $CFLAGS -o debasm ./src/debasm.c $LIBS
 
 for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
-    ./basm "$example.basm" "$example.bm"
+    cpp -P "$example.basm" > "$example.basm.pp"
+    ./basm "$example.basm.pp" "$example.bm"
+    rm -r "$example.basm.pp"
 done

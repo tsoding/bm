@@ -1,3 +1,5 @@
+#include "./natives.hasm"
+
 ;
 ; π = (4/1) - (4/3) + (4/5) - (4/7) + (4/9) - (4/11) + (4/13) - (4/15) ...
 ; Take 4 and subtract 4 divided by 3. Then add 4 divided by 5.
@@ -56,6 +58,6 @@ loop:
 ; clean the stack and only have pi left
 drop
 drop
-native 2                        ; print the value
+native print_f64                        ; print the value
 
 halt
