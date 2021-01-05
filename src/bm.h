@@ -19,6 +19,7 @@
 #define NUMBER_LITERAL_CAPACITY 1024
 
 #define BASM_COMMENT_SYMBOL ';'
+#define BASM_PP_SYMBOL '%'
 
 typedef struct {
     size_t count;
@@ -679,6 +680,7 @@ Inst_Addr basm_find_label_addr(const Basm *basm, String_View name)
     exit(1);
 }
 
+// TODO: label should refer to Word instead of Inst_Addr
 void basm_push_label(Basm *basm, String_View name, Inst_Addr addr)
 {
     assert(basm->labels_size < LABEL_CAPACITY);
@@ -726,47 +728,87 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
         line_number += 1;
         if (line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
-            String_View token = sv_chop_by_delim(&line, ' ');
+            String_View token = sv_trim(sv_chop_by_delim(&line, ' '));
 
-            if (token.count > 0 && token.data[token.count - 1] == ':') {
-                String_View label = {
-                    .count = token.count - 1,
-                    .data = token.data
-                };
-
-                basm_push_label(basm, label, bm->program_size);
-
-                token = sv_trim(sv_chop_by_delim(&line, ' '));
-            }
-
-            if (token.count > 0) {
-                String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-
-                Inst_Type inst_type = INST_NOP;
-                if (inst_by_name(token, &inst_type)) {
-                    bm->program[bm->program_size].type = inst_type;
-
-                    if (inst_has_operand(inst_type)) {
-                        if (operand.count == 0) {
-                            fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
+            // Pre-processor
+            if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
+                token.count -= 1;
+                token.data  += 1;
+                if (sv_eq(token, cstr_as_sv("label"))) {
+                    line = sv_trim(line);
+                    String_View label = sv_chop_by_delim(&line, ' ');
+                    if (label.count > 0) {
+                        line = sv_trim(line);
+                        String_View value = sv_chop_by_delim(&line, ' ');
+                        Word word = {0};
+                        if (!number_literal_as_word(value, &word)) {
+                            fprintf(stderr,
+                                    "%s:%d: ERROR: `%.*s` is not a number",
                                     input_file_path, line_number,
-                                    (int) token.count, token.data);
+                                    (int) value.count, value.data);
                             exit(1);
                         }
 
-                        if (!number_literal_as_word(
-                                operand,
-                                &bm->program[bm->program_size].operand)) {
-                            basm_push_deferred_operand(
-                                basm, bm->program_size, operand);
-                        }
-                    }
+                        // TODO: basm does not fail when you redefine a label
 
-                    bm->program_size += 1;
+                        basm_push_label(basm, label, word.as_u64);
+                    } else {
+                        fprintf(stderr,
+                                "%s:%d: ERROR: label name is not provided\n",
+                                input_file_path, line_number);
+                        exit(1);
+                    }
                 } else {
-                    fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
-                            input_file_path, line_number, (int) token.count, token.data);
+                    fprintf(stderr,
+                            "%s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
+                            input_file_path, line_number,
+                            (int) token.count, token.data);
                     exit(1);
+
+                }
+            } else {
+                // Label
+                if (token.count > 0 && token.data[token.count - 1] == ':') {
+                    String_View label = {
+                        .count = token.count - 1,
+                        .data = token.data
+                    };
+
+                    basm_push_label(basm, label, bm->program_size);
+
+                    token = sv_trim(sv_chop_by_delim(&line, ' '));
+                }
+
+                // Instruction
+                if (token.count > 0) {
+                    String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
+
+                    Inst_Type inst_type = INST_NOP;
+                    if (inst_by_name(token, &inst_type)) {
+                        bm->program[bm->program_size].type = inst_type;
+
+                        if (inst_has_operand(inst_type)) {
+                            if (operand.count == 0) {
+                                fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
+                                        input_file_path, line_number,
+                                        (int) token.count, token.data);
+                                exit(1);
+                            }
+
+                            if (!number_literal_as_word(
+                                    operand,
+                                    &bm->program[bm->program_size].operand)) {
+                                basm_push_deferred_operand(
+                                    basm, bm->program_size, operand);
+                            }
+                        }
+
+                        bm->program_size += 1;
+                    } else {
+                        fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
+                                input_file_path, line_number, (int) token.count, token.data);
+                        exit(1);
+                    }
                 }
             }
         }
