@@ -1,8 +1,11 @@
+%include "./examples/natives.hasm"
+%label MEMORY_SIZE 420
+
     jmp main
 main:
-    push 420
-    native 0
+    push MEMORY_SIZE
+    native alloc
     dup 0
-    native 5
-    native 1
+    native print_ptr
+    native free
     halt
