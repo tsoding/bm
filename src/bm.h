@@ -155,7 +155,7 @@ int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
 int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
 
-void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
+void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
 
 #endif  // BM_H_
 
@@ -809,7 +809,7 @@ int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
     return 1;
 }
 
-void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
+void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
 {
     String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
@@ -875,7 +875,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 exit(1);
                             }
 
-                            bm_translate_source(bm, basm, line, level + 1);
+                            basm_translate_source(bm, basm, line, level + 1);
                         } else {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
