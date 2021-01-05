@@ -10,14 +10,12 @@
 #include <ctype.h>
 #include <inttypes.h>
 
-#define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
-#define LABEL_CAPACITY 1024
-#define DEFERRED_OPERANDS_CAPACITY 1024
-#define NUMBER_LITERAL_CAPACITY 1024
 
+#define BASM_LABEL_CAPACITY 1024
+#define BASM_DEFERRED_OPERANDS_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
@@ -30,7 +28,7 @@ typedef struct {
 
 #define SV_FORMAT(sv) (int) sv.count, sv.data
 
-String_View cstr_as_sv(const char *cstr);
+String_View sv_from_cstr(const char *cstr);
 String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
@@ -142,9 +140,9 @@ typedef struct {
 } Deferred_Operand;
 
 typedef struct {
-    Label labels[LABEL_CAPACITY];
+    Label labels[BASM_LABEL_CAPACITY];
     size_t labels_size;
-    Deferred_Operand deferred_operands[DEFERRED_OPERANDS_CAPACITY];
+    Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
     char memory[BASM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -155,10 +153,9 @@ String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_label(const Basm *basm, String_View name, Word *output);
 int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
+int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
 
-void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
-
-int number_literal_as_word(String_View sv, Word *output);
+void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
 
 #endif  // BM_H_
 
@@ -204,7 +201,7 @@ int inst_has_operand(Inst_Type type)
 int inst_by_name(String_View name, Inst_Type *output)
 {
     for (Inst_Type type = (Inst_Type) 0; type < NUMBER_OF_INSTS; type += 1) {
-        if (sv_eq(cstr_as_sv(inst_name(type)), name)) {
+        if (sv_eq(sv_from_cstr(inst_name(type)), name)) {
             *output = type;
             return 1;
         }
@@ -667,7 +664,7 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path)
     fclose(f);
 }
 
-String_View cstr_as_sv(const char *cstr)
+String_View sv_from_cstr(const char *cstr)
 {
     return (String_View) {
         .count = strlen(cstr),
@@ -773,7 +770,7 @@ int basm_resolve_label(const Basm *basm, String_View name, Word *output)
 
 int basm_bind_label(Basm *basm, String_View name, Word word)
 {
-    assert(basm->labels_size < LABEL_CAPACITY);
+    assert(basm->labels_size < BASM_LABEL_CAPACITY);
 
     Word ignore = {0};
     if (basm_resolve_label(basm, name, &ignore)) {
@@ -786,20 +783,18 @@ int basm_bind_label(Basm *basm, String_View name, Word word)
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
 {
-    assert(basm->deferred_operands_size < DEFERRED_OPERANDS_CAPACITY);
+    assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
         (Deferred_Operand) {.addr = addr, .label = label};
 }
 
-int number_literal_as_word(String_View sv, Word *output)
+int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
 {
-    assert(sv.count < NUMBER_LITERAL_CAPACITY);
-    char cstr[NUMBER_LITERAL_CAPACITY + 1];
-    char *endptr = 0;
-
+    char *cstr = basm_alloc(basm, sv.count + 1);
     memcpy(cstr, sv.data, sv.count);
     cstr[sv.count] = '\0';
 
+    char *endptr = 0;
     Word result = {0};
 
     result.as_u64 = strtoull(cstr, &endptr, 10);
@@ -814,7 +809,7 @@ int number_literal_as_word(String_View sv, Word *output)
     return 1;
 }
 
-void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
+void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
 {
     String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
@@ -834,14 +829,14 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
             if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
                 token.count -= 1;
                 token.data  += 1;
-                if (sv_eq(token, cstr_as_sv("label"))) {
+                if (sv_eq(token, sv_from_cstr("label"))) {
                     line = sv_trim(line);
                     String_View label = sv_chop_by_delim(&line, ' ');
                     if (label.count > 0) {
                         line = sv_trim(line);
                         String_View value = sv_chop_by_delim(&line, ' ');
                         Word word = {0};
-                        if (!number_literal_as_word(value, &word)) {
+                        if (!basm_number_literal_as_word(basm, value, &word)) {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: `%.*s` is not a number",
                                     SV_FORMAT(input_file_path),
@@ -865,7 +860,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 SV_FORMAT(input_file_path), line_number);
                         exit(1);
                     }
-                } else if (sv_eq(token, cstr_as_sv("include"))) {
+                } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
                     if (line.count > 0) {
@@ -880,7 +875,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 exit(1);
                             }
 
-                            bm_translate_source(bm, basm, line, level + 1);
+                            basm_translate_source(bm, basm, line, level + 1);
                         } else {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
@@ -939,7 +934,8 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 exit(1);
                             }
 
-                            if (!number_literal_as_word(
+                            if (!basm_number_literal_as_word(
+                                    basm,
                                     operand,
                                     &bm->program[bm->program_size].operand)) {
                                 basm_push_deferred_operand(
