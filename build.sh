@@ -3,7 +3,7 @@
 set -xe
 
 CC=${CC:=/usr/bin/cc}
-CFLAGS="-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -std=c11"
+CFLAGS="-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -pedantic -ggdb -std=c11"
 LIBS=
 
 $CC $CFLAGS -o basm ./src/basm.c $LIBS
