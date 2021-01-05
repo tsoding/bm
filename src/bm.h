@@ -21,6 +21,7 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
+#define BASM_MEMORY_CAPACITY (1000 * 1000 * 1000)
 
 typedef struct {
     size_t count;
@@ -36,7 +37,6 @@ String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
 int sv_eq(String_View a, String_View b);
 int sv_to_int(String_View sv);
-String_View sv_slurp_file(String_View file_path);
 
 typedef enum {
     ERR_OK = 0,
@@ -140,8 +140,12 @@ typedef struct {
     size_t labels_size;
     Deferred_Operand deferred_operands[DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+    char memory[BASM_MEMORY_CAPACITY];
+    size_t memory_size;
 } Basm;
 
+void *basm_alloc(Basm *basm, size_t size);
+String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_label(const Basm *basm, String_View name, Word *output);
 int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
@@ -669,6 +673,15 @@ int sv_to_int(String_View sv)
     return result;
 }
 
+void *basm_alloc(Basm *basm, size_t size)
+{
+    assert(basm->memory_size + size <= BASM_MEMORY_CAPACITY);
+
+    void *result = basm->memory + basm->memory_size;
+    basm->memory_size += size;
+    return result;
+}
+
 int basm_resolve_label(const Basm *basm, String_View name, Word *output)
 {
     for (size_t i = 0; i < basm->labels_size; ++i) {
@@ -726,7 +739,7 @@ int number_literal_as_word(String_View sv, Word *output)
 
 void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
 {
-    String_View original_source = sv_slurp_file(input_file_path);
+    String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
 
     bm->program_size = 0;
@@ -883,13 +896,11 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
             exit(1);
         }
     }
-
-    free((void*) original_source.data);
 }
 
-String_View sv_slurp_file(String_View file_path)
+String_View basm_slurp_file(Basm *basm, String_View file_path)
 {
-    char *file_path_cstr = malloc(file_path.count + 1);
+    char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
     if (file_path_cstr == NULL) {
         fprintf(stderr,
                 "ERROR: Could not allocate memory for the file path `%.*s`: %s\n",
@@ -920,7 +931,7 @@ String_View sv_slurp_file(String_View file_path)
         exit(1);
     }
 
-    char *buffer = malloc(m);
+    char *buffer = basm_alloc(basm, m);
     if (buffer == NULL) {
         fprintf(stderr, "ERROR: Could not allocate memory for file: %s\n",
                 strerror(errno));
@@ -941,7 +952,6 @@ String_View sv_slurp_file(String_View file_path)
     }
 
     fclose(f);
-    free(file_path_cstr);
 
     return (String_View) {
         .count = n,
