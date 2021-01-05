@@ -18,7 +18,6 @@
 
 #define BASM_LABEL_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
-#define BASM_NUMBER_LITERAL_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
@@ -156,10 +155,9 @@ String_View basm_slurp_file(Basm *basm, String_View file_path);
 int basm_resolve_label(const Basm *basm, String_View name, Word *output);
 int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
+int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
 
 void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
-
-int number_literal_as_word(String_View sv, Word *output);
 
 #endif  // BM_H_
 
@@ -792,15 +790,13 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
         (Deferred_Operand) {.addr = addr, .label = label};
 }
 
-int number_literal_as_word(String_View sv, Word *output)
+int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
 {
-    assert(sv.count < BASM_NUMBER_LITERAL_CAPACITY);
-    char cstr[BASM_NUMBER_LITERAL_CAPACITY + 1];
-    char *endptr = 0;
-
+    char *cstr = basm_alloc(basm, sv.count + 1);
     memcpy(cstr, sv.data, sv.count);
     cstr[sv.count] = '\0';
 
+    char *endptr = 0;
     Word result = {0};
 
     result.as_u64 = strtoull(cstr, &endptr, 10);
@@ -842,7 +838,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                         line = sv_trim(line);
                         String_View value = sv_chop_by_delim(&line, ' ');
                         Word word = {0};
-                        if (!number_literal_as_word(value, &word)) {
+                        if (!basm_number_literal_as_word(basm, value, &word)) {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: `%.*s` is not a number",
                                     SV_FORMAT(input_file_path),
@@ -940,7 +936,8 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 exit(1);
                             }
 
-                            if (!number_literal_as_word(
+                            if (!basm_number_literal_as_word(
+                                    basm,
                                     operand,
                                     &bm->program[bm->program_size].operand)) {
                                 basm_push_deferred_operand(
