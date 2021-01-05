@@ -1,0 +1,31 @@
+;; Generate N Gray Code numbers https://en.wikipedia.org/wiki/Gray_code
+
+%include "./examples/natives.hasm"
+
+    jmp main
+
+%label N 100
+
+; i + 1
+
+main:
+    push 0     ; i
+loop:
+    dup 0
+    dup 0
+    push 1
+    shr
+    xor
+    native print_u64
+
+    push 1
+    plusi
+
+    dup 0
+    push N
+    eq
+    not
+
+    jmp_if loop
+    
+    halt
