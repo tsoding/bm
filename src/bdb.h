@@ -29,6 +29,7 @@ bdb_status bdb_load_symtab(bdb_state *, const char *symtab);
 bdb_status bdb_step_instr(bdb_state *);
 bdb_status bdb_continue(bdb_state *);
 bdb_status bdb_find_addr_of_label(bdb_state *, const char *, Inst_Addr *);
+bdb_status bdb_parse_label_or_addr(bdb_state *, const char *, Inst_Addr *);
 bdb_status bdb_mmap_file(const char *, String_View *);
 void bdb_print_instr(FILE *, Inst *);
 void bdb_add_breakpoint(bdb_state *, Inst_Addr);

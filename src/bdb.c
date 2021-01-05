@@ -247,6 +247,23 @@ bdb_status bdb_step_instr(bdb_state *state)
     }
 }
 
+bdb_status bdb_parse_label_or_addr(bdb_state *st, const char *in, Inst_Addr *out)
+{
+    char *endptr = NULL;
+    int len = strlen(in);
+
+    *out = strtoull(in, &endptr, 10);
+    if (endptr != in + len)
+    {
+        if (bdb_find_addr_of_label(st, in, out) == BDB_FAIL)
+        {
+            return BDB_FAIL;
+        }
+    }
+
+    return BDB_OK;
+}
+
 /*
  * TODO: support for native function in the debugger
  */
@@ -276,8 +293,8 @@ int main(int argc, char **argv)
     while (1)
     {
         printf("(bdb) ");
-        char input_buf[64];
-        fgets(input_buf, 64, stdin);
+        char input_buf[32];
+        fgets(input_buf, 32, stdin);
 
         switch (*input_buf)
         {
@@ -313,26 +330,30 @@ int main(int argc, char **argv)
         case 'b':
         {
             char *addr = input_buf + 2;
-            char *endptr = NULL;
-            int len = strlen(addr);
+            Inst_Addr break_addr;
 
-            Inst_Addr break_addr = strtoull(addr, &endptr, 10);
-            if (endptr != addr + len)
+            if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
             {
-                if (bdb_find_addr_of_label(&state, addr, &break_addr) == BDB_FAIL)
-                {
-                    fprintf(stderr, "ERR : No such address or label\n");
-                    continue;
-                }
+                fprintf(stderr, "ERR : Cannot parse address or labels\n");
+                continue;
             }
+
             bdb_add_breakpoint(&state, break_addr);
             fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr);
         } break;
         case 'd':
         {
             char *addr = input_buf + 2;
-            Inst_Addr break_addr = atoi(addr);
+            Inst_Addr break_addr;
+
+            if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
+            {
+                fprintf(stderr, "ERR : Cannot parse address or labels\n");
+                continue;
+            }
+
             bdb_delete_breakpoint(&state, break_addr);
+            fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr);
         } break;
         case 'r':
         {
