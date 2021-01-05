@@ -30,7 +30,7 @@ typedef struct {
 
 #define SV_FORMAT(sv) (int) sv.count, sv.data
 
-String_View cstr_as_sv(const char *cstr);
+String_View sv_from_cstr(const char *cstr);
 String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
@@ -203,7 +203,7 @@ int inst_has_operand(Inst_Type type)
 int inst_by_name(String_View name, Inst_Type *output)
 {
     for (Inst_Type type = (Inst_Type) 0; type < NUMBER_OF_INSTS; type += 1) {
-        if (sv_eq(cstr_as_sv(inst_name(type)), name)) {
+        if (sv_eq(sv_from_cstr(inst_name(type)), name)) {
             *output = type;
             return 1;
         }
@@ -666,7 +666,7 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path)
     fclose(f);
 }
 
-String_View cstr_as_sv(const char *cstr)
+String_View sv_from_cstr(const char *cstr)
 {
     return (String_View) {
         .count = strlen(cstr),
@@ -831,7 +831,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
             if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
                 token.count -= 1;
                 token.data  += 1;
-                if (sv_eq(token, cstr_as_sv("label"))) {
+                if (sv_eq(token, sv_from_cstr("label"))) {
                     line = sv_trim(line);
                     String_View label = sv_chop_by_delim(&line, ' ');
                     if (label.count > 0) {
@@ -862,7 +862,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                                 SV_FORMAT(input_file_path), line_number);
                         exit(1);
                     }
-                } else if (sv_eq(token, cstr_as_sv("include"))) {
+                } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
                     if (line.count > 0) {
