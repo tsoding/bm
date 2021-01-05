@@ -7,8 +7,7 @@ Birtual Machine for [Ebisp](https://github.com/tsoding/ebisp)
 ## Quick Start
 
 ```console
-$ make
-$ make examples
+$ ./build.sh                  # or ./build_msvc.bat if you are on Windows
 $ ./bme -i ./examples/fib.bm
 $ ./bme -i ./examples/e.bm
 $ ./bme -i ./examples/pi.bm

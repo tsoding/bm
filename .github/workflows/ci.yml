@@ -6,41 +6,32 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
-      - name: build toolchain
+      - name: build all and examples
         run: |
-          make all
+          ./build.sh
         env:
           CC: gcc
           CXX: g++
-      - name: assemble examples
-        run: |
-          make examples
   build-linux-clang:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
-      - name: build toolchain
+      - name: build all and examples
         run: |
-          make all
+          ./build.sh
         env:
           CC: clang
           CXX: clang++
-      - name: assemble examples
-        run: |
-          make examples
   build-macos:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v1
-      - name: build toolchain
+      - name: build all and examples
         run: |
-          make all
+          ./build.sh
         env:
           CC: clang
           CXX: clang++
-      - name: assemble examples
-        run: |
-          make examples
   build-windows-msvc:
     runs-on: windows-2019
     steps:

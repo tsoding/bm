@@ -18,6 +18,26 @@
 #define DEFERRED_OPERANDS_CAPACITY 1024
 #define NUMBER_LITERAL_CAPACITY 1024
 
+#define BASM_COMMENT_SYMBOL ';'
+#define BASM_PP_SYMBOL '%'
+#define BASM_MAX_INCLUDE_LEVEL 69
+#define BASM_MEMORY_CAPACITY (1000 * 1000 * 1000)
+
+typedef struct {
+    size_t count;
+    const char *data;
+} String_View;
+
+#define SV_FORMAT(sv) (int) sv.count, sv.data
+
+String_View cstr_as_sv(const char *cstr);
+String_View sv_trim_left(String_View sv);
+String_View sv_trim_right(String_View sv);
+String_View sv_trim(String_View sv);
+String_View sv_chop_by_delim(String_View *sv, char delim);
+int sv_eq(String_View a, String_View b);
+int sv_to_int(String_View sv);
+
 typedef enum {
     ERR_OK = 0,
     ERR_STACK_OVERFLOW,
@@ -60,6 +80,7 @@ typedef enum {
 
 const char *inst_name(Inst_Type type);
 int inst_has_operand(Inst_Type type);
+int inst_by_name(String_View name, Inst_Type *output);
 
 typedef uint64_t Inst_Addr;
 
@@ -105,22 +126,8 @@ void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 typedef struct {
-    size_t count;
-    const char *data;
-} String_View;
-
-String_View cstr_as_sv(const char *cstr);
-String_View sv_trim_left(String_View sv);
-String_View sv_trim_right(String_View sv);
-String_View sv_trim(String_View sv);
-String_View sv_chop_by_delim(String_View *sv, char delim);
-int sv_eq(String_View a, String_View b);
-int sv_to_int(String_View sv);
-String_View sv_slurp_file(const char *file_path);
-
-typedef struct {
     String_View name;
-    Inst_Addr addr;
+    Word word;
 } Label;
 
 typedef struct {
@@ -133,15 +140,19 @@ typedef struct {
     size_t labels_size;
     Deferred_Operand deferred_operands[DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+    char memory[BASM_MEMORY_CAPACITY];
+    size_t memory_size;
 } Basm;
 
-Inst_Addr basm_find_label_addr(const Basm *basm, String_View name);
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
+void *basm_alloc(Basm *basm, size_t size);
+String_View basm_slurp_file(Basm *basm, String_View file_path);
+int basm_resolve_label(const Basm *basm, String_View name, Word *output);
+int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path);
+void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
 
-Word number_literal_as_word(String_View sv);
+int number_literal_as_word(String_View sv, Word *output);
 
 #endif  // BM_H_
 
@@ -176,6 +187,18 @@ int inst_has_operand(Inst_Type type)
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
     }
+}
+
+int inst_by_name(String_View name, Inst_Type *output)
+{
+    for (Inst_Type type = (Inst_Type) 0; type < NUMBER_OF_INSTS; type += 1) {
+        if (sv_eq(cstr_as_sv(inst_name(type)), name)) {
+            *output = type;
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 const char *inst_name(Inst_Type type)
@@ -650,24 +673,38 @@ int sv_to_int(String_View sv)
     return result;
 }
 
-Inst_Addr basm_find_label_addr(const Basm *basm, String_View name)
+void *basm_alloc(Basm *basm, size_t size)
+{
+    assert(basm->memory_size + size <= BASM_MEMORY_CAPACITY);
+
+    void *result = basm->memory + basm->memory_size;
+    basm->memory_size += size;
+    return result;
+}
+
+int basm_resolve_label(const Basm *basm, String_View name, Word *output)
 {
     for (size_t i = 0; i < basm->labels_size; ++i) {
         if (sv_eq(basm->labels[i].name, name)) {
-            return basm->labels[i].addr;
+            *output = basm->labels[i].word;
+            return 1;
         }
     }
 
-    // TODO(#43): unknown label basm error does not print its location
-    fprintf(stderr, "ERROR: label `%.*s` does not exist\n",
-            (int) name.count, name.data);
-    exit(1);
+    return 0;
 }
 
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr)
+int basm_bind_label(Basm *basm, String_View name, Word word)
 {
     assert(basm->labels_size < LABEL_CAPACITY);
-    basm->labels[basm->labels_size++] = (Label) {.name = name, .addr = addr};
+
+    Word ignore = {0};
+    if (basm_resolve_label(basm, name, &ignore)) {
+        return 0;
+    }
+
+    basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
+    return 1;
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
@@ -677,7 +714,7 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
         (Deferred_Operand) {.addr = addr, .label = label};
 }
 
-Word number_literal_as_word(String_View sv)
+int number_literal_as_word(String_View sv, Word *output)
 {
     assert(sv.count < NUMBER_LITERAL_CAPACITY);
     char cstr[NUMBER_LITERAL_CAPACITY + 1];
@@ -692,17 +729,19 @@ Word number_literal_as_word(String_View sv)
     if ((size_t) (endptr - cstr) != sv.count) {
         result.as_f64 = strtod(cstr, &endptr);
         if ((size_t) (endptr - cstr) != sv.count) {
-            // TODO(#44): invalid literal basm error does not print its location
-            fprintf(stderr, "ERROR: `%s` is not a number literal\n", cstr);
-            exit(1);
+            return 0;
         }
     }
 
-    return result;
+    *output = result;
+    return 1;
 }
 
-void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path)
+void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
 {
+    String_View original_source = basm_slurp_file(basm, input_file_path);
+    String_View source = original_source;
+
     bm->program_size = 0;
     int line_number = 0;
 
@@ -711,149 +750,134 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
         assert(bm->program_size < BM_PROGRAM_CAPACITY);
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
         line_number += 1;
-        if (line.count > 0 && *line.data != '#') {
-            String_View token = sv_chop_by_delim(&line, ' ');
+        if (line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
+            String_View token = sv_trim(sv_chop_by_delim(&line, ' '));
 
-            if (token.count > 0 && token.data[token.count - 1] == ':') {
-                String_View label = {
-                    .count = token.count - 1,
-                    .data = token.data
-                };
+            // Pre-processor
+            if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
+                token.count -= 1;
+                token.data  += 1;
+                if (sv_eq(token, cstr_as_sv("label"))) {
+                    line = sv_trim(line);
+                    String_View label = sv_chop_by_delim(&line, ' ');
+                    if (label.count > 0) {
+                        line = sv_trim(line);
+                        String_View value = sv_chop_by_delim(&line, ' ');
+                        Word word = {0};
+                        if (!number_literal_as_word(value, &word)) {
+                            fprintf(stderr,
+                                    "%.*s:%d: ERROR: `%.*s` is not a number",
+                                    SV_FORMAT(input_file_path),
+                                    line_number,
+                                    SV_FORMAT(value));
+                            exit(1);
+                        }
 
-                basm_push_label(basm, label, bm->program_size);
-
-                token = sv_trim(sv_chop_by_delim(&line, ' '));
-            }
-
-            if (token.count > 0) {
-                String_View operand = sv_trim(sv_chop_by_delim(&line, '#'));
-
-                if (sv_eq(token, cstr_as_sv(inst_name(INST_NOP)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_NOP,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PUSH)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PUSH,
-                        .operand = number_literal_as_word(operand),
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DUP)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_DUP,
-                        .operand = { .as_i64 = sv_to_int(operand) }
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PLUSI)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PLUSI
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MINUSI)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_MINUSI
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DIVI)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_DIVI
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MULTI)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_MULTI
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_JMP)))) {
-                    if (operand.count > 0 && isdigit(*operand.data)) {
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_JMP,
-                            .operand = { .as_i64 = sv_to_int(operand) },
-                        };
+                        if (!basm_bind_label(basm, label, word)) {
+                            // TODO(#51): label redefinition error does not tell where the first label was already defined
+                            fprintf(stderr,
+                                    "%.*s:%d: ERROR: label `%.*s` is already defined\n",
+                                    SV_FORMAT(input_file_path),
+                                    line_number,
+                                    SV_FORMAT(label));
+                            exit(1);
+                        }
                     } else {
-                        basm_push_deferred_operand(
-                            basm, bm->program_size, operand);
-
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_JMP
-                        };
+                        fprintf(stderr,
+                                "%.*s:%d: ERROR: label name is not provided\n",
+                                SV_FORMAT(input_file_path), line_number);
+                        exit(1);
                     }
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_JMP_IF)))) {
-                    if (operand.count > 0 && isdigit(*operand.data)) {
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_JMP_IF,
-                            .operand = { .as_i64 = sv_to_int(operand) },
-                        };
+                } else if (sv_eq(token, cstr_as_sv("include"))) {
+                    line = sv_trim(line);
+
+                    if (line.count > 0) {
+                        if (*line.data == '"' && line.data[line.count - 1] == '"') {
+                            line.data  += 1;
+                            line.count -= 2;
+
+                            if (level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
+                                fprintf(stderr,
+                                        "%.*s:%d: ERROR: exceeded maximum include level\n",
+                                        SV_FORMAT(input_file_path), line_number);
+                                exit(1);
+                            }
+
+                            bm_translate_source(bm, basm, line, level + 1);
+                        } else {
+                            fprintf(stderr,
+                                    "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
+                                    SV_FORMAT(input_file_path), line_number);
+                            exit(1);
+                        }
                     } else {
-                        basm_push_deferred_operand(
-                            basm, bm->program_size, operand);
-
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_JMP_IF,
-                        };
+                        fprintf(stderr,
+                                "%.*s:%d: ERROR: include file path is not provided\n",
+                                SV_FORMAT(input_file_path), line_number);
+                        exit(1);
                     }
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_CALL)))) {
-                    if (operand.count > 0 && isdigit(*operand.data)) {
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_CALL,
-                            .operand = { .as_i64 = sv_to_int(operand) },
-                        };
-                    } else {
-                        basm_push_deferred_operand(
-                            basm, bm->program_size, operand);
-
-                        bm->program[bm->program_size++] = (Inst) {
-                            .type = INST_CALL,
-                        };
-                    }
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_HALT)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_HALT
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_PLUSF)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_PLUSF
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MINUSF)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_MINUSF
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DIVF)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_DIVF
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_MULTF)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_MULTF
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_SWAP)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_SWAP,
-                        .operand = { .as_i64 = sv_to_int(operand) },
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_EQ)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_EQ,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_GEF)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_GEF,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_NOT)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_NOT,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_DROP)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_DROP,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_RET)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_RET,
-                    };
-                } else if (sv_eq(token, cstr_as_sv(inst_name(INST_NATIVE)))) {
-                    bm->program[bm->program_size++] = (Inst) {
-                        .type = INST_NATIVE,
-                        .operand = { .as_i64 = sv_to_int(operand) },
-                    };
                 } else {
-                    fprintf(stderr, "%s:%d: ERROR: unknown instruction `%.*s`\n",
-                            input_file_path, line_number, (int) token.count, token.data);
+                    fprintf(stderr,
+                            "%.*s:%d: ERROR: unknown pre-processor directive `%.*s`\n",
+                            SV_FORMAT(input_file_path),
+                            line_number,
+                            SV_FORMAT(token));
                     exit(1);
+
+                }
+            } else {
+                // Label
+                if (token.count > 0 && token.data[token.count - 1] == ':') {
+                    String_View label = {
+                        .count = token.count - 1,
+                        .data = token.data
+                    };
+
+                    if (!basm_bind_label(basm, label, (Word) {.as_u64 = bm->program_size})) {
+                        fprintf(stderr,
+                                "%.*s:%d: ERROR: label `%.*s` is already defined\n",
+                                SV_FORMAT(input_file_path),
+                                line_number,
+                                SV_FORMAT(label));
+                        exit(1);
+                    }
+
+                    token = sv_trim(sv_chop_by_delim(&line, ' '));
+                }
+
+                // Instruction
+                if (token.count > 0) {
+                    String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
+
+                    Inst_Type inst_type = INST_NOP;
+                    if (inst_by_name(token, &inst_type)) {
+                        bm->program[bm->program_size].type = inst_type;
+
+                        if (inst_has_operand(inst_type)) {
+                            if (operand.count == 0) {
+                                fprintf(stderr, "%.*s:%d: ERROR: instruction `%.*s` requires an operand\n",
+                                        SV_FORMAT(input_file_path),
+                                        line_number,
+                                        SV_FORMAT(token));
+                                exit(1);
+                            }
+
+                            if (!number_literal_as_word(
+                                    operand,
+                                    &bm->program[bm->program_size].operand)) {
+                                basm_push_deferred_operand(
+                                    basm, bm->program_size, operand);
+                            }
+                        }
+
+                        bm->program_size += 1;
+                    } else {
+                        fprintf(stderr, "%.*s:%d: ERROR: unknown instruction `%.*s`\n",
+                                SV_FORMAT(input_file_path),
+                                line_number,
+                                SV_FORMAT(token));
+                        exit(1);
+                    }
                 }
             }
         }
@@ -861,34 +885,53 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        Inst_Addr addr = basm_find_label_addr(basm, basm->deferred_operands[i].label);
-        bm->program[basm->deferred_operands[i].addr].operand.as_u64 = addr;
+        String_View label = basm->deferred_operands[i].label;
+        if (!basm_resolve_label(
+                basm,
+                label,
+                &bm->program[basm->deferred_operands[i].addr].operand)) {
+            // TODO(#52): second pass label resolution errors don't report the location in the source code
+            fprintf(stderr, "%.*s: ERROR: unknown label `%.*s`\n",
+                    SV_FORMAT(input_file_path), SV_FORMAT(label));
+            exit(1);
+        }
     }
 }
 
-String_View sv_slurp_file(const char *file_path)
+String_View basm_slurp_file(Basm *basm, String_View file_path)
 {
-    FILE *f = fopen(file_path, "r");
+    char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
+    if (file_path_cstr == NULL) {
+        fprintf(stderr,
+                "ERROR: Could not allocate memory for the file path `%.*s`: %s\n",
+                SV_FORMAT(file_path), strerror(errno));
+        exit(1);
+    }
+
+    memcpy(file_path_cstr, file_path.data, file_path.count);
+    file_path_cstr[file_path.count] = '\0';
+
+    FILE *f = fopen(file_path_cstr, "r");
     if (f == NULL) {
         fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+                file_path_cstr, strerror(errno));
         exit(1);
     }
 
     if (fseek(f, 0, SEEK_END) < 0) {
         fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+                file_path_cstr, strerror(errno));
         exit(1);
     }
 
     long m = ftell(f);
     if (m < 0) {
         fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+                file_path_cstr, strerror(errno));
         exit(1);
     }
 
-    char *buffer = malloc(m);
+    char *buffer = basm_alloc(basm, m);
     if (buffer == NULL) {
         fprintf(stderr, "ERROR: Could not allocate memory for file: %s\n",
                 strerror(errno));
@@ -897,14 +940,14 @@ String_View sv_slurp_file(const char *file_path)
 
     if (fseek(f, 0, SEEK_SET) < 0) {
         fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+                file_path_cstr, strerror(errno));
         exit(1);
     }
 
     size_t n = fread(buffer, 1, m, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path, strerror(errno));
+                file_path_cstr, strerror(errno));
         exit(1);
     }
 
