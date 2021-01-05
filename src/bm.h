@@ -890,7 +890,7 @@ void bm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t
                 basm,
                 label,
                 &bm->program[basm->deferred_operands[i].addr].operand)) {
-            // TODO: second pass label resolution errors don't report the location in the source code
+            // TODO(#52): second pass label resolution errors don't report the location in the source code
             fprintf(stderr, "%.*s: ERROR: unknown label `%.*s`\n",
                     SV_FORMAT(input_file_path), SV_FORMAT(label));
             exit(1);
