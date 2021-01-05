@@ -75,6 +75,12 @@ typedef enum {
     INST_HALT,
     INST_NOT,
     INST_GEF,
+    INST_ANDB,
+    INST_ORB,
+    INST_XOR,
+    INST_SHR,
+    INST_SHL,
+    INST_NOTB,
     NUMBER_OF_INSTS,
 } Inst_Type;
 
@@ -161,28 +167,34 @@ int number_literal_as_word(String_View sv, Word *output);
 int inst_has_operand(Inst_Type type)
 {
     switch (type) {
-    case INST_NOP:         return 0;
-    case INST_PUSH:        return 1;
-    case INST_DROP:        return 0;
-    case INST_DUP:         return 1;
-    case INST_PLUSI:       return 0;
-    case INST_MINUSI:      return 0;
-    case INST_MULTI:       return 0;
-    case INST_DIVI:        return 0;
-    case INST_PLUSF:       return 0;
-    case INST_MINUSF:      return 0;
-    case INST_MULTF:       return 0;
-    case INST_DIVF:        return 0;
-    case INST_JMP:         return 1;
-    case INST_JMP_IF:      return 1;
-    case INST_EQ:          return 0;
-    case INST_HALT:        return 0;
-    case INST_SWAP:        return 1;
-    case INST_NOT:         return 0;
-    case INST_GEF:         return 0;
-    case INST_RET:         return 0;
-    case INST_CALL:        return 1;
-    case INST_NATIVE:      return 1;
+    case INST_NOP:    return 0;
+    case INST_PUSH:   return 1;
+    case INST_DROP:   return 0;
+    case INST_DUP:    return 1;
+    case INST_PLUSI:  return 0;
+    case INST_MINUSI: return 0;
+    case INST_MULTI:  return 0;
+    case INST_DIVI:   return 0;
+    case INST_PLUSF:  return 0;
+    case INST_MINUSF: return 0;
+    case INST_MULTF:  return 0;
+    case INST_DIVF:   return 0;
+    case INST_JMP:    return 1;
+    case INST_JMP_IF: return 1;
+    case INST_EQ:     return 0;
+    case INST_HALT:   return 0;
+    case INST_SWAP:   return 1;
+    case INST_NOT:    return 0;
+    case INST_GEF:    return 0;
+    case INST_RET:    return 0;
+    case INST_CALL:   return 1;
+    case INST_NATIVE: return 1;
+    case INST_ANDB:   return 0;
+    case INST_ORB:    return 0;
+    case INST_XOR:    return 0;
+    case INST_SHR:    return 0;
+    case INST_SHL:    return 0;
+    case INST_NOTB:   return 0;
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_has_operand: unreachable");
         exit(1);
@@ -226,6 +238,12 @@ const char *inst_name(Inst_Type type)
     case INST_RET:         return "ret";
     case INST_CALL:        return "call";
     case INST_NATIVE:      return "native";
+    case INST_ANDB:        return "andb";
+    case INST_ORB:         return "orb";
+    case INST_XOR:         return "xor";
+    case INST_SHR:         return "shr";
+    case INST_SHL:         return "shl";
+    case INST_NOTB:        return "notb";
     case NUMBER_OF_INSTS:
     default: assert(0 && "inst_name: unreachable");
         exit(1);
@@ -487,6 +505,42 @@ Err bm_execute_inst(Bm *bm)
 
         bm->stack[bm->stack_size - 1].as_u64 = !bm->stack[bm->stack_size - 1].as_u64;
         bm->ip += 1;
+        break;
+
+    case INST_ANDB:
+        assert(0 && "TODO: andb instruction is not implemented");
+        break;
+
+    case INST_ORB:
+        assert(0 && "TODO: orb instruction is not implemented");
+        break;
+
+    case INST_XOR:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 ^ bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
+    case INST_SHR:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >> bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
+    case INST_SHL:
+        assert(0 && "TODO: shl instruction is not implemented");
+        break;
+
+    case INST_NOTB:
+        assert(0 && "TODO: notb instruction is not implemented");
         break;
 
     case NUMBER_OF_INSTS:
