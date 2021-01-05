@@ -518,7 +518,13 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_ORB:
-        assert(0 && "TODO: orb instruction is not implemented");
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 | bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
         break;
 
     case INST_XOR:
@@ -542,11 +548,22 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_SHL:
-        assert(0 && "TODO: shl instruction is not implemented");
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 << bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
         break;
 
     case INST_NOTB:
-        assert(0 && "TODO: notb instruction is not implemented");
+        if (bm->stack_size < 1) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 1].as_u64 = ~bm->stack[bm->stack_size - 1].as_u64;
+        bm->ip += 1;
         break;
 
     case NUMBER_OF_INSTS:
