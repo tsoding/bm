@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 
         for (size_t i = 0; i < basm.labels_size; ++i) {
             fprintf(symbol_file, "%"PRIu64"\t%.*s\n",
-                    basm.labels[i].addr,
+                    basm.labels[i].word.as_u64,
                     (int)basm.labels[i].name.count,
                     basm.labels[i].name.data);
         }

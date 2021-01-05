@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "bdb.h"
 
@@ -33,6 +36,38 @@ bdb_status bdb_state_init(bdb_state *state,
     }
 }
 
+bdb_status bdb_mmap_file(const char *path, String_View *out)
+{
+    assert(path);
+    assert(out);
+
+    int fd;
+
+    if ((fd = open(path, O_RDONLY)) < 0)
+    {
+        return BDB_FAIL;
+    }
+
+    struct stat stat_buf;
+    if (fstat(fd, &stat_buf) < 0)
+    {
+        return BDB_FAIL;
+    }
+
+    char *content = mmap(NULL, stat_buf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (content == MAP_FAILED)
+    {
+        return BDB_FAIL;
+    }
+
+    out->data = content;
+    out->count = stat_buf.st_size;
+
+    close(fd);
+
+    return BDB_OK;
+}
+
 bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
 {
     String_View _name = sv_trim_right(cstr_as_sv(name));
@@ -50,7 +85,11 @@ bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr 
 
 bdb_status bdb_load_symtab(bdb_state *state, const char *symtab_file)
 {
-    String_View symtab = sv_slurp_file(symtab_file);
+    String_View symtab;
+    if (bdb_mmap_file(symtab_file, &symtab) == BDB_FAIL)
+    {
+        return BDB_FAIL;
+    }
 
     while (symtab.count > 0)
     {
@@ -214,7 +253,12 @@ int main(int argc, char **argv)
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n");
-    bdb_state_init(&state, argv[1]);
+    if (bdb_state_init(&state, argv[1]) == BDB_FAIL)
+    {
+        fprintf(stderr,
+                "FATAL : Unable to initialize the debugger: %s\n",
+                strerror(errno));
+    }
 
     while (1)
     {
