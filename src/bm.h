@@ -10,8 +10,6 @@
 #include <ctype.h>
 #include <inttypes.h>
 
-#define ARRAY_SIZE(xs) (sizeof(xs) / sizeof((xs)[0]))
-
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
