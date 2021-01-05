@@ -1,30 +1,75 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <unistd.h>
 
 #include "bdb.h"
 
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
-void bdb_state_init(bdb_state *state,
-                    const char *executable,
-                    const char *symtab)
+bdb_status bdb_state_init(bdb_state *state,
+                          const char *executable)
 {
     assert(state);
     assert(executable);
-    assert(symtab);
 
     state->cood_file_name   = cstr_as_sv(executable);
-    state->symtab_file_name = cstr_as_sv(executable);
     bm_load_program_from_file(&state->bm, executable);
+
+    char buf[PATH_MAX];
+    memcpy(buf, executable, strlen(executable));
+    memcpy(buf + strlen(executable), ".sym", 5);
+
+    if (access(buf, R_OK) == 0)
+    {
+        fprintf(stdout, "INFO : Loading debug symbols...\n");
+        return bdb_load_symtab(state, buf);
+    }
+    else
+    {
+        return BDB_OK;
+    }
+}
+
+bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
+{
+    String_View _name = sv_trim_right(cstr_as_sv(name));
+    for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
+    {
+        if (state->labels[i].data && sv_eq(state->labels[i], _name))
+        {
+            *out = i;
+            return BDB_OK;
+        }
+    }
+
+    return BDB_FAIL;
+}
+
+bdb_status bdb_load_symtab(bdb_state *state, const char *symtab_file)
+{
+    String_View symtab = sv_slurp_file(symtab_file);
+
+    while (symtab.count > 0)
+    {
+        symtab = sv_trim_left(symtab);
+        String_View raw_addr   = sv_chop_by_delim(&symtab, '\t');
+        symtab = sv_trim_left(symtab);
+        String_View label_name = sv_chop_by_delim(&symtab, '\n');
+        Inst_Addr addr = sv_to_int(raw_addr);
+        state->labels[addr] = label_name;
+    }
+
+    return BDB_OK;
 }
 
 static
 void usage(void)
 {
     fprintf(stderr,
-            "usage: bdb <executable> <debug symbol table>\n");
+            "usage: bdb <executable>\n");
 }
 
 void bdb_print_instr(FILE *f, Inst *i)
@@ -90,13 +135,26 @@ bdb_status bdb_continue(bdb_state *state)
         return BDB_OK;
     }
 
-    while (!state->bm.halt)
+    do
     {
-        if (state->breakpoints[state->bm.ip].is_enabled)
+        bdb_breakpoint *bp = &state->breakpoints[state->bm.ip];
+        if (!bp->is_broken && bp->is_enabled)
         {
-            fprintf(stdout, "Hit breakpoint at %"PRIu64"\n", state->bm.ip);
+            fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
+            if (state->labels[state->bm.ip].data)
+            {
+                fprintf(stdout, " label '%.*s'",
+                        (int)state->labels[state->bm.ip].count,
+                        state->labels[state->bm.ip].data);
+            }
+
+            fprintf(stdout, "\n");
+            bp->is_broken = 1;
+
             return BDB_OK;
         }
+
+        bp->is_broken = 0;
 
         Err err = bm_execute_inst(&state->bm);
         if (err)
@@ -104,6 +162,9 @@ bdb_status bdb_continue(bdb_state *state)
             return bdb_fault(state, err);
         }
     }
+    while (!state->bm.halt);
+
+    printf("Program halted.\n");
 
     return BDB_OK;
 }
@@ -131,13 +192,15 @@ bdb_status bdb_step_instr(bdb_state *state)
     {
         return BDB_OK;
     }
-
-    return bdb_fault(state, err);
+    else
+    {
+        return bdb_fault(state, err);
+    }
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 3)
+    if (argc < 2)
     {
         usage();
         return EXIT_FAILURE;
@@ -151,7 +214,7 @@ int main(int argc, char **argv)
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n");
-    bdb_state_init(&state, argv[1], argv[2]);
+    bdb_state_init(&state, argv[1]);
 
     while (1)
     {
@@ -193,8 +256,20 @@ int main(int argc, char **argv)
         case 'b':
         {
             char *addr = input_buf + 2;
-            Inst_Addr break_addr = atoi(addr);
+            char *endptr = NULL;
+            int len = strlen(addr);
+
+            Inst_Addr break_addr = strtoull(addr, &endptr, 10);
+            if (endptr != addr + len)
+            {
+                if (bdb_find_addr_of_label(&state, addr, &break_addr) == BDB_FAIL)
+                {
+                    fprintf(stderr, "ERR : No such address or label\n");
+                    continue;
+                }
+            }
             bdb_add_breakpoint(&state, break_addr);
+            fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr);
         } break;
         case 'd':
         {
