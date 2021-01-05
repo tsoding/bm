@@ -124,7 +124,7 @@ void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
 typedef struct {
     String_View name;
-    Inst_Addr addr;
+    Word word;
 } Label;
 
 typedef struct {
@@ -139,8 +139,8 @@ typedef struct {
     size_t deferred_operands_size;
 } Basm;
 
-Inst_Addr basm_find_label_addr(const Basm *basm, String_View name);
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr);
+int basm_resolve_label(const Basm *basm, String_View name, Word *output);
+int basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
 
 void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *input_file_path);
@@ -666,25 +666,29 @@ int sv_to_int(String_View sv)
     return result;
 }
 
-Inst_Addr basm_find_label_addr(const Basm *basm, String_View name)
+int basm_resolve_label(const Basm *basm, String_View name, Word *output)
 {
     for (size_t i = 0; i < basm->labels_size; ++i) {
         if (sv_eq(basm->labels[i].name, name)) {
-            return basm->labels[i].addr;
+            *output = basm->labels[i].word;
+            return 1;
         }
     }
 
-    // TODO(#43): unknown label basm error does not print its location
-    fprintf(stderr, "ERROR: label `%.*s` does not exist\n",
-            (int) name.count, name.data);
-    exit(1);
+    return 0;
 }
 
-// TODO: label should refer to Word instead of Inst_Addr
-void basm_push_label(Basm *basm, String_View name, Inst_Addr addr)
+int basm_bind_label(Basm *basm, String_View name, Word word)
 {
     assert(basm->labels_size < LABEL_CAPACITY);
-    basm->labels[basm->labels_size++] = (Label) {.name = name, .addr = addr};
+
+    Word ignore = {0};
+    if (basm_resolve_label(basm, name, &ignore)) {
+        return 0;
+    }
+
+    basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
+    return 1;
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
@@ -749,9 +753,14 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
                             exit(1);
                         }
 
-                        // TODO: basm does not fail when you redefine a label
-
-                        basm_push_label(basm, label, word.as_u64);
+                        if (!basm_bind_label(basm, label, word)) {
+                            // TODO: label redefinition error does not tell where the first label was already defined
+                            fprintf(stderr,
+                                    "%s:%d: ERROR: label `%.*s` is already defined\n",
+                                    input_file_path, line_number,
+                                    (int) label.count, label.data);
+                            exit(1);
+                        }
                     } else {
                         fprintf(stderr,
                                 "%s:%d: ERROR: label name is not provided\n",
@@ -774,7 +783,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
                         .data = token.data
                     };
 
-                    basm_push_label(basm, label, bm->program_size);
+                    if (!basm_bind_label(basm, label, (Word) {.as_u64 = bm->program_size})) {
+                        fprintf(stderr,
+                                "%s:%d: ERROR: label `%.*s` is already defined\n",
+                                input_file_path, line_number,
+                                (int) label.count, label.data);
+                        exit(1);
+                    }
 
                     token = sv_trim(sv_chop_by_delim(&line, ' '));
                 }
@@ -816,8 +831,16 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
 
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        Inst_Addr addr = basm_find_label_addr(basm, basm->deferred_operands[i].label);
-        bm->program[basm->deferred_operands[i].addr].operand.as_u64 = addr;
+        String_View label = basm->deferred_operands[i].label;
+        if (!basm_resolve_label(
+                basm,
+                label,
+                &bm->program[basm->deferred_operands[i].addr].operand)) {
+            // TODO: second pass label resolution errors don't report the location in the source code
+            fprintf(stderr, "%s: ERROR: unknown label `%.*s`\n",
+                    input_file_path, (int) label.count, label.data);
+            exit(1);
+        }
     }
 }
 
