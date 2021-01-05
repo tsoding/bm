@@ -508,7 +508,13 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_ANDB:
-        assert(0 && "TODO: andb instruction is not implemented");
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 & bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
         break;
 
     case INST_ORB:
