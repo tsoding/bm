@@ -1,10 +1,10 @@
-# N-1
-# F_1+F_0
-# F_1
+; N-1
+; F_1+F_0
+; F_1
 main:
-   push 0                       # F_0
-   push 1                       # F_1
-   push 30                      # N - the amount of iterations
+   push 0                       ; F_0
+   push 1                       ; F_1
+   push 30                      ; N - the amount of iterations
 loop:
    swap 2
    dup 0
