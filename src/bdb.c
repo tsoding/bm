@@ -98,7 +98,17 @@ bdb_status bdb_load_symtab(bdb_state *state, const char *symtab_file)
         symtab = sv_trim_left(symtab);
         String_View label_name = sv_chop_by_delim(&symtab, '\n');
         Inst_Addr addr = sv_to_int(raw_addr);
-        state->labels[addr] = label_name;
+
+        /*
+         * Huh? you ask? Yes, if we have a label, whose size is bigger
+         * than the program size, which is to say, that it is a
+         * preprocessor label, then we don't wanna overrun our label
+         * storage buffer.
+         */
+        if (addr < BM_PROGRAM_CAPACITY)
+        {
+            state->labels[addr] = label_name;
+        }
     }
 
     return BDB_OK;
@@ -237,6 +247,9 @@ bdb_status bdb_step_instr(bdb_state *state)
     }
 }
 
+/*
+ * TODO: support for native function in the debugger
+ */
 int main(int argc, char **argv)
 {
     if (argc < 2)

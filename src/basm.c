@@ -60,6 +60,15 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
 
+        /*
+         * Note: This will dump out *ALL* symbols, no matter whether
+         * they are jump labels or not. However, since the
+         * preprocessor runs before the jump mark resolution, all the
+         * labels are allocated in a way that enables us to just
+         * overwrite prerocessor labels with a value equal to the
+         * address of a jump label.
+         *
+         */
         for (size_t i = 0; i < basm.labels_size; ++i) {
             fprintf(symbol_file, "%"PRIu64"\t%.*s\n",
                     basm.labels[i].word.as_u64,
