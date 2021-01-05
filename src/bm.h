@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -33,8 +34,7 @@ String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
-int sv_eq(String_View a, String_View b);
-int sv_to_int(String_View sv);
+bool sv_eq(String_View a, String_View b);
 
 typedef enum {
     ERR_OK = 0,
@@ -83,8 +83,8 @@ typedef enum {
 } Inst_Type;
 
 const char *inst_name(Inst_Type type);
-int inst_has_operand(Inst_Type type);
-int inst_by_name(String_View name, Inst_Type *output);
+bool inst_has_operand(Inst_Type type);
+bool inst_by_name(String_View name, Inst_Type *output);
 
 typedef uint64_t Inst_Addr;
 
@@ -118,7 +118,7 @@ struct Bm {
     Bm_Native natives[BM_NATIVES_CAPACITY];
     size_t natives_size;
 
-    int halt;
+    bool halt;
 };
 
 Err bm_execute_inst(Bm *bm);
@@ -150,10 +150,10 @@ typedef struct {
 
 void *basm_alloc(Basm *basm, size_t size);
 String_View basm_slurp_file(Basm *basm, String_View file_path);
-int basm_resolve_label(const Basm *basm, String_View name, Word *output);
-int basm_bind_label(Basm *basm, String_View name, Word word);
+bool basm_resolve_label(const Basm *basm, String_View name, Word *output);
+bool basm_bind_label(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
-int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
+bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
 
 void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
 
@@ -161,53 +161,53 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
 
 #ifdef BM_IMPLEMENTATION
 
-int inst_has_operand(Inst_Type type)
+bool inst_has_operand(Inst_Type type)
 {
     switch (type) {
-    case INST_NOP:    return 0;
-    case INST_PUSH:   return 1;
-    case INST_DROP:   return 0;
-    case INST_DUP:    return 1;
-    case INST_PLUSI:  return 0;
-    case INST_MINUSI: return 0;
-    case INST_MULTI:  return 0;
-    case INST_DIVI:   return 0;
-    case INST_PLUSF:  return 0;
-    case INST_MINUSF: return 0;
-    case INST_MULTF:  return 0;
-    case INST_DIVF:   return 0;
-    case INST_JMP:    return 1;
-    case INST_JMP_IF: return 1;
-    case INST_EQ:     return 0;
-    case INST_HALT:   return 0;
-    case INST_SWAP:   return 1;
-    case INST_NOT:    return 0;
-    case INST_GEF:    return 0;
-    case INST_RET:    return 0;
-    case INST_CALL:   return 1;
-    case INST_NATIVE: return 1;
-    case INST_ANDB:   return 0;
-    case INST_ORB:    return 0;
-    case INST_XOR:    return 0;
-    case INST_SHR:    return 0;
-    case INST_SHL:    return 0;
-    case INST_NOTB:   return 0;
+    case INST_NOP:    return false;
+    case INST_PUSH:   return true;
+    case INST_DROP:   return false;
+    case INST_DUP:    return true;
+    case INST_PLUSI:  return false;
+    case INST_MINUSI: return false;
+    case INST_MULTI:  return false;
+    case INST_DIVI:   return false;
+    case INST_PLUSF:  return false;
+    case INST_MINUSF: return false;
+    case INST_MULTF:  return false;
+    case INST_DIVF:   return false;
+    case INST_JMP:    return true;
+    case INST_JMP_IF: return true;
+    case INST_EQ:     return false;
+    case INST_HALT:   return false;
+    case INST_SWAP:   return true;
+    case INST_NOT:    return false;
+    case INST_GEF:    return false;
+    case INST_RET:    return false;
+    case INST_CALL:   return true;
+    case INST_NATIVE: return true;
+    case INST_ANDB:   return false;
+    case INST_ORB:    return false;
+    case INST_XOR:    return false;
+    case INST_SHR:    return false;
+    case INST_SHL:    return false;
+    case INST_NOTB:   return false;
     case NUMBER_OF_INSTS:
-    default: assert(0 && "inst_has_operand: unreachable");
+    default: assert(false && "inst_has_operand: unreachable");
         exit(1);
     }
 }
 
-int inst_by_name(String_View name, Inst_Type *output)
+bool inst_by_name(String_View name, Inst_Type *output)
 {
     for (Inst_Type type = (Inst_Type) 0; type < NUMBER_OF_INSTS; type += 1) {
         if (sv_eq(sv_from_cstr(inst_name(type)), name)) {
             *output = type;
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 const char *inst_name(Inst_Type type)
@@ -242,7 +242,7 @@ const char *inst_name(Inst_Type type)
     case INST_SHL:         return "shl";
     case INST_NOTB:        return "notb";
     case NUMBER_OF_INSTS:
-    default: assert(0 && "inst_name: unreachable");
+    default: assert(false && "inst_name: unreachable");
         exit(1);
     }
 }
@@ -265,7 +265,7 @@ const char *err_as_cstr(Err err)
     case ERR_DIV_BY_ZERO:
         return "ERR_DIV_BY_ZERO";
     default:
-        assert(0 && "err_as_cstr: Unreachable");
+        assert(false && "err_as_cstr: Unreachable");
         exit(1);
     }
 }
@@ -727,24 +727,13 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
     return result;
 }
 
-int sv_eq(String_View a, String_View b)
+bool sv_eq(String_View a, String_View b)
 {
     if (a.count != b.count) {
-        return 0;
+        return false;
     } else {
         return memcmp(a.data, b.data, a.count) == 0;
     }
-}
-
-int sv_to_int(String_View sv)
-{
-    int result = 0;
-
-    for (size_t i = 0; i < sv.count && isdigit(sv.data[i]); ++i) {
-        result = result * 10 + sv.data[i] - '0';
-    }
-
-    return result;
 }
 
 void *basm_alloc(Basm *basm, size_t size)
@@ -756,29 +745,29 @@ void *basm_alloc(Basm *basm, size_t size)
     return result;
 }
 
-int basm_resolve_label(const Basm *basm, String_View name, Word *output)
+bool basm_resolve_label(const Basm *basm, String_View name, Word *output)
 {
     for (size_t i = 0; i < basm->labels_size; ++i) {
         if (sv_eq(basm->labels[i].name, name)) {
             *output = basm->labels[i].word;
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
-int basm_bind_label(Basm *basm, String_View name, Word word)
+bool basm_bind_label(Basm *basm, String_View name, Word word)
 {
     assert(basm->labels_size < BASM_LABEL_CAPACITY);
 
     Word ignore = {0};
     if (basm_resolve_label(basm, name, &ignore)) {
-        return 0;
+        return false;
     }
 
     basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
-    return 1;
+    return true;
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
@@ -788,7 +777,7 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
         (Deferred_Operand) {.addr = addr, .label = label};
 }
 
-int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
+bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
 {
     char *cstr = basm_alloc(basm, sv.count + 1);
     memcpy(cstr, sv.data, sv.count);
@@ -801,12 +790,12 @@ int basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
     if ((size_t) (endptr - cstr) != sv.count) {
         result.as_f64 = strtod(cstr, &endptr);
         if ((size_t) (endptr - cstr) != sv.count) {
-            return 0;
+            return false;
         }
     }
 
     *output = result;
-    return 1;
+    return true;
 }
 
 void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
