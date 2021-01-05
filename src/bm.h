@@ -747,6 +747,13 @@ void bm_translate_source(String_View source, Bm *bm, Basm *basm, const char *inp
                     bm->program[bm->program_size].type = inst_type;
 
                     if (inst_has_operand(inst_type)) {
+                        if (operand.count == 0) {
+                            fprintf(stderr, "%s:%d: ERROR: instruction `%.*s` requires an operand\n",
+                                    input_file_path, line_number,
+                                    (int) token.count, token.data);
+                            exit(1);
+                        }
+
                         if (!number_literal_as_word(
                                 operand,
                                 &bm->program[bm->program_size].operand)) {
