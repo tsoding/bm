@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -33,7 +34,7 @@ String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
-int sv_eq(String_View a, String_View b);
+bool sv_eq(String_View a, String_View b);
 
 typedef enum {
     ERR_OK = 0,
@@ -726,10 +727,10 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
     return result;
 }
 
-int sv_eq(String_View a, String_View b)
+bool sv_eq(String_View a, String_View b)
 {
     if (a.count != b.count) {
-        return 0;
+        return false;
     } else {
         return memcmp(a.data, b.data, a.count) == 0;
     }
