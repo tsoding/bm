@@ -111,6 +111,30 @@ static Err bm_dump_memory(Bm *bm)
     return ERR_OK;
 }
 
+static Err bm_write(Bm *bm)
+{
+    if (bm->stack_size < 2) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
+    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
+
+    if (addr >= BM_MEMORY_CAPACITY) {
+        return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
+        return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    fwrite(&bm->memory[addr], sizeof(bm->memory[0]), count, stdout);
+
+    bm->stack_size -= 2;
+
+    return ERR_OK;
+}
+
 // TODO(#61): implement gdb-style (but better of course) debugger for bm
 // TODO(#62): rot13 example that read/writes data from/to the bm memory
 
@@ -167,6 +191,7 @@ int main(int argc, char **argv)
     bm_push_native(&bm, bm_print_u64); // 4
     bm_push_native(&bm, bm_print_ptr); // 5
     bm_push_native(&bm, bm_dump_memory); // 6
+    bm_push_native(&bm, bm_write); // 7
 
     if (!debug) {
         Err err = bm_execute_program(&bm, limit);
