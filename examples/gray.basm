@@ -4,7 +4,7 @@
 
     jmp main
 
-%label N 100
+%bind N 100
 
 ; i + 1
 
