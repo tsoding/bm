@@ -787,33 +787,76 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
-    if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: Could not set position at end of file %s: %s\n",
-            file_path, strerror(errno));
+    Bm_File_Meta meta = {0};
+
+    size_t n = fread(&meta, sizeof(meta), 1, f);
+    if (n < 1) {
+        fprintf(stderr, "ERROR: Could not read meta data from file `%s`: %s\n",
+                file_path, strerror(errno));
         exit(1);
     }
 
-    long m = ftell(f);
-    if (m < 0) {
-        fprintf(stderr, "ERROR: Could not determine length of file %s: %s\n",
-            file_path, strerror(errno));
+    if (meta.magic != BM_FILE_MAGIC) {
+        fprintf(stderr,
+                "ERROR: %s does not appear to be a valid BM file. "
+                "Unexpected magic %04X. Expected %04X.\n",
+                file_path,
+                meta.magic, BM_FILE_MAGIC);
         exit(1);
     }
 
-    assert((size_t) m % sizeof(bm->program[0]) == 0);
-    assert((size_t) m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
-
-    if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: Could not rewind file %s: %s\n",
-            file_path, strerror(errno));
+    if (meta.version != BM_FILE_VERSION) {
+        fprintf(stderr,
+                "ERROR: %s: unsupported version of BM file %d. Expected version %d.\n",
+                file_path,
+                meta.version, BM_FILE_VERSION);
         exit(1);
     }
 
-    bm->program_size = fread(bm->program, sizeof(bm->program[0]), (size_t) m / sizeof(bm->program[0]), f);
+    if (meta.program_size > BM_PROGRAM_CAPACITY) {
+        fprintf(stderr,
+                "ERROR: %s: program section is too big. The file contains %" PRIu64 " program instruction. But the capacity is %"  PRIu64 "\n",
+                file_path,
+                meta.program_size,
+                (uint64_t) BM_PROGRAM_CAPACITY);
+        exit(1);
+    }
 
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not consume file %s: %s\n",
-            file_path, strerror(errno));
+    if (meta.memory_capacity > BM_MEMORY_CAPACITY) {
+        fprintf(stderr,
+                "ERROR: %s: memory section is too big. The file wants %" PRIu64 " bytes. But the capacity is %"  PRIu64 " bytes\n",
+                file_path,
+                meta.memory_capacity,
+                (uint64_t) BM_MEMORY_CAPACITY);
+        exit(1);
+    }
+
+    if (meta.memory_size > meta.memory_capacity) {
+        fprintf(stderr,
+                "ERROR: %s: memory size %"PRIu64" is greater than declared memory capacity %"PRIu64"\n",
+                file_path,
+                meta.memory_size,
+                meta.memory_capacity);
+        exit(1);
+    }
+
+    bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
+
+    if (bm->program_size != meta.program_size) {
+        fprintf(stderr, "ERROR: %s: read %zd program instructions, but expected %"PRIu64"\n",
+                file_path,
+                bm->program_size,
+                meta.program_size);
+        exit(1);
+    }
+
+    n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
+
+    if (n != meta.memory_size) {
+        fprintf(stderr, "ERROR: %s: read %zd bytes of memory section, but expected %"PRIu64" bytes.\n",
+                file_path,
+                n,
+                meta.memory_size);
         exit(1);
     }
 
