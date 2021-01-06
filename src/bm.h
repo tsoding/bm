@@ -1074,8 +1074,9 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
     // First pass
     while (source.count > 0) {
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
+        line = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
         line_number += 1;
-        if (line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
+        if (line.count > 0) {
             String_View token = sv_trim(sv_chop_by_delim(&line, ' '));
 
             // Pre-processor
@@ -1172,8 +1173,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
 
                 // Instruction
                 if (token.count > 0) {
-                    String_View operand = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-
+                    String_View operand = line;
                     Inst_Type inst_type = INST_NOP;
                     if (inst_by_name(token, &inst_type)) {
                         assert(basm->program_size < BM_PROGRAM_CAPACITY);
