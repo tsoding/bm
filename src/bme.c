@@ -112,7 +112,7 @@ static Err bm_dump_memory(Bm *bm)
 }
 
 // TODO(#61): implement gdb-style (but better of course) debugger for bm
-// TODO: rot13 example that read/writes data from/to the bm memory
+// TODO(#62): rot13 example that read/writes data from/to the bm memory
 
 int main(int argc, char **argv)
 {
