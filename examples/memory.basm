@@ -1,5 +1,5 @@
 ;; Fill up the memory with number from 0 to N
-%include "./examples/natives.hasm"
+%include "stdlib/natives.hasm"
 
 
 %bind N 256

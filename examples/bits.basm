@@ -1,5 +1,5 @@
 ;; Print bits of number N
-%include "./examples/natives.hasm"
+%include "stdlib/natives.hasm"
 
 %bind N 69420
 

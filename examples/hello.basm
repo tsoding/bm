@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "stdlib/natives.hasm"
 %bind hello "Hello, World"
 
 push hello
