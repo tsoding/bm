@@ -71,6 +71,7 @@ typedef enum {
     INST_MINUSI,
     INST_MULTI,
     INST_DIVI,
+    INST_MODI,
     INST_PLUSF,
     INST_MINUSF,
     INST_MULTF,
@@ -83,6 +84,7 @@ typedef enum {
     INST_EQ,
     INST_HALT,
     INST_NOT,
+    INST_GEI,
     INST_GEF,
     INST_ANDB,
     INST_ORB,
@@ -244,6 +246,7 @@ bool inst_has_operand(Inst_Type type)
     case INST_MINUSI:  return false;
     case INST_MULTI:   return false;
     case INST_DIVI:    return false;
+    case INST_MODI:    return false;
     case INST_PLUSF:   return false;
     case INST_MINUSF:  return false;
     case INST_MULTF:   return false;
@@ -255,6 +258,7 @@ bool inst_has_operand(Inst_Type type)
     case INST_SWAP:    return true;
     case INST_NOT:     return false;
     case INST_GEF:     return false;
+    case INST_GEI:     return false;
     case INST_RET:     return false;
     case INST_CALL:    return true;
     case INST_NATIVE:  return true;
@@ -301,6 +305,7 @@ const char *inst_name(Inst_Type type)
     case INST_MINUSI:  return "minusi";
     case INST_MULTI:   return "multi";
     case INST_DIVI:    return "divi";
+    case INST_MODI:    return "modi";
     case INST_PLUSF:   return "plusf";
     case INST_MINUSF:  return "minusf";
     case INST_MULTF:   return "multf";
@@ -312,6 +317,7 @@ const char *inst_name(Inst_Type type)
     case INST_SWAP:    return "swap";
     case INST_NOT:     return "not";
     case INST_GEF:     return "gef";
+    case INST_GEI:     return "gei";
     case INST_RET:     return "ret";
     case INST_CALL:    return "call";
     case INST_NATIVE:  return "native";
@@ -445,6 +451,20 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
+    case INST_MODI:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
+            return ERR_DIV_BY_ZERO;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 % bm->stack[bm->stack_size - 1].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
     case INST_PLUSF:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
@@ -539,6 +559,16 @@ Err bm_execute_inst(Bm *bm)
         }
 
         bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 >= bm->stack[bm->stack_size - 2].as_f64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
+    case INST_GEI:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >= bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 1;
         bm->ip += 1;
         break;
