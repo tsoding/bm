@@ -44,6 +44,7 @@ String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
+int sv_find_last_of(String_View sv, char delim);
 bool sv_eq(String_View a, String_View b);
 
 typedef enum {
@@ -928,6 +929,15 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
     }
 
     return result;
+}
+
+int sv_find_last_of(String_View sv, char delim)
+{
+    int i = (int)sv.count - 1;
+    while (i > 0 && sv.data[i] != delim) {
+        i -= 1;
+    }
+    return i;
 }
 
 bool sv_eq(String_View a, String_View b)
