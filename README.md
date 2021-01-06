@@ -8,6 +8,7 @@ Birtual Machine for [Ebisp](https://github.com/tsoding/ebisp)
 
 ```console
 $ ./build.sh                  # or ./build_msvc.bat if you are on Windows
+$ ./bme -i ./examples/hello.bm
 $ ./bme -i ./examples/fib.bm
 $ ./bme -i ./examples/e.bm
 $ ./bme -i ./examples/pi.bm
