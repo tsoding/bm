@@ -197,7 +197,7 @@ String_View basm_slurp_file(Basm *basm, String_View file_path);
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
 bool basm_bind_value(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
-bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path,
@@ -975,7 +975,7 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name)
         (Deferred_Operand) {.addr = addr, .name = name};
 }
 
-bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
 {
     char *cstr = basm_alloc(basm, sv.count + 1);
     memcpy(cstr, sv.data, sv.count);
@@ -1062,7 +1062,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
                         line = sv_trim(line);
                         String_View value = sv_chop_by_delim(&line, ' ');
                         Word word = {0};
-                        if (!basm_number_literal_as_word(basm, value, &word)) {
+                        if (!basm_translate_literal(basm, value, &word)) {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: `%.*s` is not a number",
                                     SV_FORMAT(input_file_path),
@@ -1161,7 +1161,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
                                 exit(1);
                             }
 
-                            if (!basm_number_literal_as_word(
+                            if (!basm_translate_literal(
                                     basm,
                                     operand,
                                     &basm->program[basm->program_size].operand)) {
