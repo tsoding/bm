@@ -994,7 +994,7 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv)
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
 {
     if (sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
-        // TODO: string literals don't support escaped characters
+        // TODO(#66): string literals don't support escaped characters
         sv.data += 1;
         sv.count -= 2;
         *output = basm_push_string_to_memory(basm, sv);
