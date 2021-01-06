@@ -1138,7 +1138,23 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
                                 exit(1);
                             }
 
-                            basm_translate_source(basm, line, level + 1);
+                            int pos = sv_find_last_of(input_file_path, '/');
+                            if (pos < 0) {
+                                pos = sv_find_last_of(input_file_path, '\\');
+                            }
+                            if (pos > 0) {
+                                size_t offset = (size_t)pos + 1; // includes folder separator character
+                                size_t size = offset + line.count;
+                                char *rel_path_buf = (char *)basm_alloc(basm, size);
+
+                                memcpy(rel_path_buf, input_file_path.data, offset);
+                                memcpy(rel_path_buf + offset, line.data, line.count);
+
+                                basm_translate_source(basm, sv_from_cstr(rel_path_buf), level + 1);
+                            }
+                            else {
+                                basm_translate_source(basm, line, level + 1);
+                            }
                         } else {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
