@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%label MEMORY_SIZE 420
+%bind MEMORY_SIZE 420
 
     jmp main
 main:

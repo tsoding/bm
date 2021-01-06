@@ -16,7 +16,7 @@
 #define BM_NATIVES_CAPACITY 1024
 #define BM_MEMORY_CAPACITY (640 * 1000)
 
-#define BASM_LABEL_CAPACITY 1024
+#define BASM_BINDINGS_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
@@ -142,22 +142,19 @@ void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
-// TODO(#63): rename the notion of a "label" to "binding"
-// So it will cause the renaming of `%label` directive to `%bind`
-// which IMO makes more sense.
 typedef struct {
     String_View name;
-    Word word;
-} Label;
+    Word value;
+} Binding;
 
 typedef struct {
     Inst_Addr addr;
-    String_View label;
+    String_View name;
 } Deferred_Operand;
 
 typedef struct {
-    Label labels[BASM_LABEL_CAPACITY];
-    size_t labels_size;
+    Binding bindings[BASM_BINDINGS_CAPACITY];
+    size_t bindings_size;
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
     // NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
@@ -167,9 +164,9 @@ typedef struct {
 
 void *basm_alloc(Basm *basm, size_t size);
 String_View basm_slurp_file(Basm *basm, String_View file_path);
-bool basm_resolve_label(const Basm *basm, String_View name, Word *output);
-bool basm_bind_label(Basm *basm, String_View name, Word word);
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label);
+bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
+bool basm_bind_value(Basm *basm, String_View name, Word word);
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
 bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
 
 void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
@@ -880,11 +877,11 @@ void *basm_alloc(Basm *basm, size_t size)
     return result;
 }
 
-bool basm_resolve_label(const Basm *basm, String_View name, Word *output)
+bool basm_resolve_binding(const Basm *basm, String_View name, Word *output)
 {
-    for (size_t i = 0; i < basm->labels_size; ++i) {
-        if (sv_eq(basm->labels[i].name, name)) {
-            *output = basm->labels[i].word;
+    for (size_t i = 0; i < basm->bindings_size; ++i) {
+        if (sv_eq(basm->bindings[i].name, name)) {
+            *output = basm->bindings[i].value;
             return true;
         }
     }
@@ -892,24 +889,24 @@ bool basm_resolve_label(const Basm *basm, String_View name, Word *output)
     return false;
 }
 
-bool basm_bind_label(Basm *basm, String_View name, Word word)
+bool basm_bind_value(Basm *basm, String_View name, Word value)
 {
-    assert(basm->labels_size < BASM_LABEL_CAPACITY);
+    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
     Word ignore = {0};
-    if (basm_resolve_label(basm, name, &ignore)) {
+    if (basm_resolve_binding(basm, name, &ignore)) {
         return false;
     }
 
-    basm->labels[basm->labels_size++] = (Label) {.name = name, .word = word};
+    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value};
     return true;
 }
 
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View label)
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name)
 {
     assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
-        (Deferred_Operand) {.addr = addr, .label = label};
+        (Deferred_Operand) {.addr = addr, .name = name};
 }
 
 bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
@@ -953,10 +950,10 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
             if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
                 token.count -= 1;
                 token.data  += 1;
-                if (sv_eq(token, sv_from_cstr("label"))) {
+                if (sv_eq(token, sv_from_cstr("bind"))) {
                     line = sv_trim(line);
-                    String_View label = sv_chop_by_delim(&line, ' ');
-                    if (label.count > 0) {
+                    String_View name = sv_chop_by_delim(&line, ' ');
+                    if (name.count > 0) {
                         line = sv_trim(line);
                         String_View value = sv_chop_by_delim(&line, ' ');
                         Word word = {0};
@@ -969,18 +966,18 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
                             exit(1);
                         }
 
-                        if (!basm_bind_label(basm, label, word)) {
+                        if (!basm_bind_value(basm, name, word)) {
                             // TODO(#51): label redefinition error does not tell where the first label was already defined
                             fprintf(stderr,
-                                    "%.*s:%d: ERROR: label `%.*s` is already defined\n",
+                                    "%.*s:%d: ERROR: name `%.*s` is already bound\n",
                                     SV_FORMAT(input_file_path),
                                     line_number,
-                                    SV_FORMAT(label));
+                                    SV_FORMAT(name));
                             exit(1);
                         }
                     } else {
                         fprintf(stderr,
-                                "%.*s:%d: ERROR: label name is not provided\n",
+                                "%.*s:%d: ERROR: binding name is not provided\n",
                                 SV_FORMAT(input_file_path), line_number);
                         exit(1);
                     }
@@ -1022,16 +1019,16 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
 
                 }
             } else {
-                // Label
+                // Label binding
                 if (token.count > 0 && token.data[token.count - 1] == ':') {
                     String_View label = {
                         .count = token.count - 1,
                         .data = token.data
                     };
 
-                    if (!basm_bind_label(basm, label, (Word) {.as_u64 = bm->program_size})) {
+                    if (!basm_bind_value(basm, label, (Word) {.as_u64 = bm->program_size})) {
                         fprintf(stderr,
-                                "%.*s:%d: ERROR: label `%.*s` is already defined\n",
+                                "%.*s:%d: ERROR: name `%.*s` is already bound to something\n",
                                 SV_FORMAT(input_file_path),
                                 line_number,
                                 SV_FORMAT(label));
@@ -1082,14 +1079,14 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
 
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        String_View label = basm->deferred_operands[i].label;
-        if (!basm_resolve_label(
+        String_View name = basm->deferred_operands[i].name;
+        if (!basm_resolve_binding(
                 basm,
-                label,
+                name,
                 &bm->program[basm->deferred_operands[i].addr].operand)) {
             // TODO(#52): second pass label resolution errors don't report the location in the source code
-            fprintf(stderr, "%.*s: ERROR: unknown label `%.*s`\n",
-                    SV_FORMAT(input_file_path), SV_FORMAT(label));
+            fprintf(stderr, "%.*s: ERROR: unknown binding `%.*s`\n",
+                    SV_FORMAT(input_file_path), SV_FORMAT(name));
             exit(1);
         }
     }
