@@ -11,11 +11,13 @@
 #include <ctype.h>
 #include <inttypes.h>
 
+// NOTE: Stolen from https://stackoverflow.com/a/3312896
 #if defined(__GNUC__) || defined(__clang__)
-#  define PACKED __attribute__((packed))
+#  define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#elif defined(_MSC_VER)
+#  define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #else
-#  warning "Packed attributes for struct is not implemented for this compiler. This may result in a program working incorrectly. Feel free to fix that and submit a Pull Request to https://github.com/tsoding/bm"
-#  define PACKED
+#  error "Packed attributes for struct is not implemented for this compiler. This may result in a program working incorrectly. Feel free to fix that and submit a Pull Request to https://github.com/tsoding/bm"
 #endif
 
 #define BM_STACK_CAPACITY 1024
@@ -155,13 +157,15 @@ void bm_load_program_from_file(Bm *bm, const char *file_path);
 #define BM_FILE_MAGIC 0x4D42
 #define BM_FILE_VERSION 1
 
-typedef struct {
+PACK(struct Bm_File_Meta {
     uint16_t magic;
     uint16_t version;
     uint64_t program_size;
     uint64_t memory_size;
     uint64_t memory_capacity;
-} PACKED Bm_File_Meta;
+});
+
+typedef struct Bm_File_Meta Bm_File_Meta;
 
 typedef struct {
     String_View name;
