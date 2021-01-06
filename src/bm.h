@@ -142,7 +142,7 @@ void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_save_program_to_file(const Bm *bm, const char *file_path);
 
-// TODO: rename the notion of a "label" to "binding"
+// TODO(#63): rename the notion of a "label" to "binding"
 // So it will cause the renaming of `%label` directive to `%bind`
 // which IMO makes more sense.
 typedef struct {
