@@ -5,3 +5,4 @@
 %bind print_u64   4
 %bind print_ptr   5
 %bind dump_memory 6
+%bind write       7

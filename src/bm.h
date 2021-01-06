@@ -11,6 +11,15 @@
 #include <ctype.h>
 #include <inttypes.h>
 
+// NOTE: Stolen from https://stackoverflow.com/a/3312896
+#if defined(__GNUC__) || defined(__clang__)
+#  define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#elif defined(_MSC_VER)
+#  define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#else
+#  error "Packed attributes for struct is not implemented for this compiler. This may result in a program working incorrectly. Feel free to fix that and submit a Pull Request to https://github.com/tsoding/bm"
+#endif
+
 #define BM_STACK_CAPACITY 1024
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
@@ -106,6 +115,11 @@ typedef union {
     void *as_ptr;
 } Word;
 
+Word word_u64(uint64_t u64);
+Word word_i64(int64_t i64);
+Word word_f64(double f64);
+Word word_ptr(void *ptr);
+
 static_assert(sizeof(Word) == 8,
               "The BM's Word is expected to be 64 bits");
 
@@ -138,9 +152,20 @@ Err bm_execute_inst(Bm *bm);
 Err bm_execute_program(Bm *bm, int limit);
 void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
-void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
-void bm_save_program_to_file(const Bm *bm, const char *file_path);
+
+#define BM_FILE_MAGIC 0x4D42
+#define BM_FILE_VERSION 1
+
+PACK(struct Bm_File_Meta {
+    uint16_t magic;
+    uint16_t version;
+    uint64_t program_size;
+    uint64_t memory_size;
+    uint64_t memory_capacity;
+});
+
+typedef struct Bm_File_Meta Bm_File_Meta;
 
 typedef struct {
     String_View name;
@@ -155,8 +180,17 @@ typedef struct {
 typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
+
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+
+    Inst program[BM_PROGRAM_CAPACITY];
+    uint64_t program_size;
+
+    uint8_t memory[BM_MEMORY_CAPACITY];
+    size_t memory_size;
+    size_t memory_capacity;
+
     // NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
     char arena[BASM_ARENA_CAPACITY];
     size_t arena_size;
@@ -167,13 +201,37 @@ String_View basm_slurp_file(Basm *basm, String_View file_path);
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
 bool basm_bind_value(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
-bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output);
-
-void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level);
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
+void basm_save_to_file(Basm *basm, const char *output_file_path);
+Word basm_push_string_to_memory(Basm *basm, String_View sv);
+void basm_translate_source(Basm *basm,
+                           String_View input_file_path,
+                           size_t level);
 
 #endif  // BM_H_
 
 #ifdef BM_IMPLEMENTATION
+
+Word word_u64(uint64_t u64)
+{
+    return (Word) { .as_u64 = u64 };
+}
+
+Word word_i64(int64_t i64)
+{
+    return (Word) { .as_i64 = i64 };
+}
+
+Word word_f64(double f64)
+{
+    return (Word) { .as_f64 = f64 };
+}
+
+Word word_ptr(void *ptr)
+{
+    return (Word) { .as_ptr = ptr };
+}
+
 
 bool inst_has_operand(Inst_Type type)
 {
@@ -725,14 +783,6 @@ void bm_dump_stack(FILE *stream, const Bm *bm)
     }
 }
 
-void bm_load_program_from_memory(Bm *bm, Inst *program, size_t program_size)
-{
-    assert(program_size < BM_PROGRAM_CAPACITY);
-    memcpy(bm->program, program, sizeof(program[0]) * program_size);
-    bm->program_size = program_size;
-}
-
-
 void bm_load_program_from_file(Bm *bm, const char *file_path)
 {
     FILE *f = fopen(file_path, "rb");
@@ -742,54 +792,76 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
-    if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: Could not set position at end of file %s: %s\n",
-            file_path, strerror(errno));
-        exit(1);
-    }
+    Bm_File_Meta meta = {0};
 
-    long m = ftell(f);
-    if (m < 0) {
-        fprintf(stderr, "ERROR: Could not determine length of file %s: %s\n",
-            file_path, strerror(errno));
-        exit(1);
-    }
-
-    assert((size_t) m % sizeof(bm->program[0]) == 0);
-    assert((size_t) m <= BM_PROGRAM_CAPACITY * sizeof(bm->program[0]));
-
-    if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: Could not rewind file %s: %s\n",
-            file_path, strerror(errno));
-        exit(1);
-    }
-
-    bm->program_size = fread(bm->program, sizeof(bm->program[0]), (size_t) m / sizeof(bm->program[0]), f);
-
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not consume file %s: %s\n",
-            file_path, strerror(errno));
-        exit(1);
-    }
-
-    fclose(f);
-}
-
-
-void bm_save_program_to_file(const Bm *bm, const char *file_path)
-{
-    FILE *f = fopen(file_path, "wb");
-    if (f == NULL) {
-        fprintf(stderr, "ERROR: Could not open file `%s`: %s\n",
+    size_t n = fread(&meta, sizeof(meta), 1, f);
+    if (n < 1) {
+        fprintf(stderr, "ERROR: Could not read meta data from file `%s`: %s\n",
                 file_path, strerror(errno));
         exit(1);
     }
 
-    fwrite(bm->program, sizeof(bm->program[0]), bm->program_size, f);
+    if (meta.magic != BM_FILE_MAGIC) {
+        fprintf(stderr,
+                "ERROR: %s does not appear to be a valid BM file. "
+                "Unexpected magic %04X. Expected %04X.\n",
+                file_path,
+                meta.magic, BM_FILE_MAGIC);
+        exit(1);
+    }
 
-    if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
-                file_path, strerror(errno));
+    if (meta.version != BM_FILE_VERSION) {
+        fprintf(stderr,
+                "ERROR: %s: unsupported version of BM file %d. Expected version %d.\n",
+                file_path,
+                meta.version, BM_FILE_VERSION);
+        exit(1);
+    }
+
+    if (meta.program_size > BM_PROGRAM_CAPACITY) {
+        fprintf(stderr,
+                "ERROR: %s: program section is too big. The file contains %" PRIu64 " program instruction. But the capacity is %"  PRIu64 "\n",
+                file_path,
+                meta.program_size,
+                (uint64_t) BM_PROGRAM_CAPACITY);
+        exit(1);
+    }
+
+    if (meta.memory_capacity > BM_MEMORY_CAPACITY) {
+        fprintf(stderr,
+                "ERROR: %s: memory section is too big. The file wants %" PRIu64 " bytes. But the capacity is %"  PRIu64 " bytes\n",
+                file_path,
+                meta.memory_capacity,
+                (uint64_t) BM_MEMORY_CAPACITY);
+        exit(1);
+    }
+
+    if (meta.memory_size > meta.memory_capacity) {
+        fprintf(stderr,
+                "ERROR: %s: memory size %"PRIu64" is greater than declared memory capacity %"PRIu64"\n",
+                file_path,
+                meta.memory_size,
+                meta.memory_capacity);
+        exit(1);
+    }
+
+    bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
+
+    if (bm->program_size != meta.program_size) {
+        fprintf(stderr, "ERROR: %s: read %zd program instructions, but expected %"PRIu64"\n",
+                file_path,
+                bm->program_size,
+                meta.program_size);
+        exit(1);
+    }
+
+    n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
+
+    if (n != meta.memory_size) {
+        fprintf(stderr, "ERROR: %s: read %zd bytes of memory section, but expected %"PRIu64" bytes.\n",
+                file_path,
+                n,
+                meta.memory_size);
         exit(1);
     }
 
@@ -803,7 +875,6 @@ String_View sv_from_cstr(const char *cstr)
         .data = cstr,
     };
 }
-
 
 String_View sv_trim_left(String_View sv)
 {
@@ -909,38 +980,99 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name)
         (Deferred_Operand) {.addr = addr, .name = name};
 }
 
-bool basm_number_literal_as_word(Basm *basm, String_View sv, Word *output)
+Word basm_push_string_to_memory(Basm *basm, String_View sv)
 {
-    char *cstr = basm_alloc(basm, sv.count + 1);
-    memcpy(cstr, sv.data, sv.count);
-    cstr[sv.count] = '\0';
+    assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
 
-    char *endptr = 0;
-    Word result = {0};
+    Word result = word_u64(basm->memory_size);
+    memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
+    basm->memory_size += sv.count;
 
-    result.as_u64 = strtoull(cstr, &endptr, 10);
-    if ((size_t) (endptr - cstr) != sv.count) {
-        result.as_f64 = strtod(cstr, &endptr);
-        if ((size_t) (endptr - cstr) != sv.count) {
-            return false;
-        }
+    if (basm->memory_size > basm->memory_capacity) {
+        basm->memory_capacity = basm->memory_size;
     }
 
-    *output = result;
+    return result;
+}
+
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
+{
+    if (sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+        // TODO(#66): string literals don't support escaped characters
+        sv.data += 1;
+        sv.count -= 2;
+        *output = basm_push_string_to_memory(basm, sv);
+    } else {
+        char *cstr = basm_alloc(basm, sv.count + 1);
+        memcpy(cstr, sv.data, sv.count);
+        cstr[sv.count] = '\0';
+
+        char *endptr = 0;
+        Word result = {0};
+
+        result.as_u64 = strtoull(cstr, &endptr, 10);
+        if ((size_t) (endptr - cstr) != sv.count) {
+            result.as_f64 = strtod(cstr, &endptr);
+            if ((size_t) (endptr - cstr) != sv.count) {
+                return false;
+            }
+        }
+
+        *output = result;
+    }
     return true;
 }
 
-void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size_t level)
+void basm_save_to_file(Basm *basm, const char *file_path)
+{
+    FILE *f = fopen(file_path, "wb");
+    if (f == NULL) {
+        fprintf(stderr, "ERROR: Could not open file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    Bm_File_Meta meta = {
+        .magic = BM_FILE_MAGIC,
+        .version = BM_FILE_VERSION,
+        .program_size = basm->program_size,
+        .memory_size = basm->memory_size,
+        .memory_capacity = basm->memory_capacity,
+    };
+
+    fwrite(&meta, sizeof(meta), 1, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->program, sizeof(basm->program[0]), basm->program_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fclose(f);
+}
+
+void basm_translate_source(Basm *basm, String_View input_file_path, size_t level)
 {
     String_View original_source = basm_slurp_file(basm, input_file_path);
     String_View source = original_source;
 
-    bm->program_size = 0;
     int line_number = 0;
 
     // First pass
     while (source.count > 0) {
-        assert(bm->program_size < BM_PROGRAM_CAPACITY);
         String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
         line_number += 1;
         if (line.count > 0 && *line.data != BASM_COMMENT_SYMBOL) {
@@ -955,9 +1087,9 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
                     String_View name = sv_chop_by_delim(&line, ' ');
                     if (name.count > 0) {
                         line = sv_trim(line);
-                        String_View value = sv_chop_by_delim(&line, ' ');
+                        String_View value = line;
                         Word word = {0};
-                        if (!basm_number_literal_as_word(basm, value, &word)) {
+                        if (!basm_translate_literal(basm, value, &word)) {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: `%.*s` is not a number",
                                     SV_FORMAT(input_file_path),
@@ -996,7 +1128,7 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
                                 exit(1);
                             }
 
-                            basm_translate_source(bm, basm, line, level + 1);
+                            basm_translate_source(basm, line, level + 1);
                         } else {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
@@ -1026,7 +1158,7 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
                         .data = token.data
                     };
 
-                    if (!basm_bind_value(basm, label, (Word) {.as_u64 = bm->program_size})) {
+                    if (!basm_bind_value(basm, label, word_u64(basm->program_size))) {
                         fprintf(stderr,
                                 "%.*s:%d: ERROR: name `%.*s` is already bound to something\n",
                                 SV_FORMAT(input_file_path),
@@ -1044,7 +1176,8 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
 
                     Inst_Type inst_type = INST_NOP;
                     if (inst_by_name(token, &inst_type)) {
-                        bm->program[bm->program_size].type = inst_type;
+                        assert(basm->program_size < BM_PROGRAM_CAPACITY);
+                        basm->program[basm->program_size].type = inst_type;
 
                         if (inst_has_operand(inst_type)) {
                             if (operand.count == 0) {
@@ -1055,16 +1188,16 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
                                 exit(1);
                             }
 
-                            if (!basm_number_literal_as_word(
+                            if (!basm_translate_literal(
                                     basm,
                                     operand,
-                                    &bm->program[bm->program_size].operand)) {
+                                    &basm->program[basm->program_size].operand)) {
                                 basm_push_deferred_operand(
-                                    basm, bm->program_size, operand);
+                                    basm, basm->program_size, operand);
                             }
                         }
 
-                        bm->program_size += 1;
+                        basm->program_size += 1;
                     } else {
                         fprintf(stderr, "%.*s:%d: ERROR: unknown instruction `%.*s`\n",
                                 SV_FORMAT(input_file_path),
@@ -1083,7 +1216,7 @@ void basm_translate_source(Bm *bm, Basm *basm, String_View input_file_path, size
         if (!basm_resolve_binding(
                 basm,
                 name,
-                &bm->program[basm->deferred_operands[i].addr].operand)) {
+                &basm->program[basm->deferred_operands[i].addr].operand)) {
             // TODO(#52): second pass label resolution errors don't report the location in the source code
             fprintf(stderr, "%.*s: ERROR: unknown binding `%.*s`\n",
                     SV_FORMAT(input_file_path), SV_FORMAT(name));
