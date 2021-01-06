@@ -934,7 +934,7 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
 int sv_find_last_of(String_View sv, char delim)
 {
     int i = (int)sv.count - 1;
-    while (i > 0 && sv.data[i] != delim) {
+    while (i >= 0 && sv.data[i] != delim) {
         i -= 1;
     }
     return i;
