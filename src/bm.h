@@ -21,7 +21,7 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
-#define BASM_MEMORY_CAPACITY (1000 * 1000 * 1000)
+#define BASM_ARENA_CAPACITY (1000 * 1000 * 1000)
 
 typedef struct {
     size_t count;
@@ -160,10 +160,8 @@ typedef struct {
     size_t labels_size;
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
-    // TODO: Basm::memory is not the same thing as Bm::memory
-    // We may want to do some renaming to avoid the confusion in the future.
-    char memory[BASM_MEMORY_CAPACITY];
-    size_t memory_size;
+    char arena[BASM_ARENA_CAPACITY];
+    size_t arena_size;
 } Basm;
 
 void *basm_alloc(Basm *basm, size_t size);
@@ -874,10 +872,10 @@ bool sv_eq(String_View a, String_View b)
 
 void *basm_alloc(Basm *basm, size_t size)
 {
-    assert(basm->memory_size + size <= BASM_MEMORY_CAPACITY);
+    assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
 
-    void *result = basm->memory + basm->memory_size;
-    basm->memory_size += size;
+    void *result = basm->arena + basm->arena_size;
+    basm->arena_size += size;
     return result;
 }
 
