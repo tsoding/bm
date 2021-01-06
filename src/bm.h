@@ -160,6 +160,7 @@ typedef struct {
     size_t labels_size;
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+    // NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
     char arena[BASM_ARENA_CAPACITY];
     size_t arena_size;
 } Basm;
