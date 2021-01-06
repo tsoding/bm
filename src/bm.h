@@ -199,6 +199,7 @@ bool basm_bind_value(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
+Word basm_push_string_to_memory(Basm *basm, String_View sv);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path,
                            size_t level);
@@ -975,24 +976,46 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name)
         (Deferred_Operand) {.addr = addr, .name = name};
 }
 
-bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
+Word basm_push_string_to_memory(Basm *basm, String_View sv)
 {
-    char *cstr = basm_alloc(basm, sv.count + 1);
-    memcpy(cstr, sv.data, sv.count);
-    cstr[sv.count] = '\0';
+    assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
 
-    char *endptr = 0;
-    Word result = {0};
+    Word result = word_u64(basm->memory_size);
+    memcpy(basm->memory + basm->memory_size, sv.data, sv.count);
+    basm->memory_size += sv.count;
 
-    result.as_u64 = strtoull(cstr, &endptr, 10);
-    if ((size_t) (endptr - cstr) != sv.count) {
-        result.as_f64 = strtod(cstr, &endptr);
-        if ((size_t) (endptr - cstr) != sv.count) {
-            return false;
-        }
+    if (basm->memory_size > basm->memory_capacity) {
+        basm->memory_capacity = basm->memory_size;
     }
 
-    *output = result;
+    return result;
+}
+
+bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
+{
+    if (sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
+        // TODO: string literals don't support escaped characters
+        sv.data += 1;
+        sv.count -= 2;
+        *output = basm_push_string_to_memory(basm, sv);
+    } else {
+        char *cstr = basm_alloc(basm, sv.count + 1);
+        memcpy(cstr, sv.data, sv.count);
+        cstr[sv.count] = '\0';
+
+        char *endptr = 0;
+        Word result = {0};
+
+        result.as_u64 = strtoull(cstr, &endptr, 10);
+        if ((size_t) (endptr - cstr) != sv.count) {
+            result.as_f64 = strtod(cstr, &endptr);
+            if ((size_t) (endptr - cstr) != sv.count) {
+                return false;
+            }
+        }
+
+        *output = result;
+    }
     return true;
 }
 
@@ -1060,7 +1083,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
                     String_View name = sv_chop_by_delim(&line, ' ');
                     if (name.count > 0) {
                         line = sv_trim(line);
-                        String_View value = sv_chop_by_delim(&line, ' ');
+                        String_View value = line;
                         Word word = {0};
                         if (!basm_translate_literal(basm, value, &word)) {
                             fprintf(stderr,
