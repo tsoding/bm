@@ -994,8 +994,29 @@ void basm_save_to_file(Basm *basm, const char *file_path)
         exit(1);
     }
 
-    fwrite(basm->program, sizeof(basm->program[0]), basm->program_size, f);
+    Bm_File_Meta meta = {
+        .magic = BM_FILE_MAGIC,
+        .version = BM_FILE_VERSION,
+        .program_size = basm->program_size,
+        .memory_size = basm->memory_size,
+        .memory_capacity = basm->memory_capacity,
+    };
 
+    fwrite(&meta, sizeof(meta), 1, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->program, sizeof(basm->program[0]), basm->program_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
                 file_path, strerror(errno));
