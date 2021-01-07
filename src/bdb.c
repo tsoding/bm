@@ -1,3 +1,10 @@
+/*
+ * BDB - Debugger for the Birtual Machine
+ * Copyright 2020 by Nico Sonack
+ *
+ * Contribution to https://github.com/tsoding/bm
+ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +19,7 @@
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
-bdb_status bdb_state_init(bdb_state *state,
+Bdb_Err bdb_state_init(bdb_state *state,
                           const char *executable)
 {
     assert(state);
@@ -36,7 +43,7 @@ bdb_status bdb_state_init(bdb_state *state,
     }
 }
 
-bdb_status bdb_mmap_file(const char *path, String_View *out)
+Bdb_Err bdb_mmap_file(const char *path, String_View *out)
 {
     assert(path);
     assert(out);
@@ -69,7 +76,7 @@ bdb_status bdb_mmap_file(const char *path, String_View *out)
     return BDB_OK;
 }
 
-bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
+Bdb_Err bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
 {
     String_View _name = sv_trim_right(sv_from_cstr(name));
     for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
@@ -84,7 +91,7 @@ bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr 
     return BDB_FAIL;
 }
 
-bdb_status bdb_load_symtab(bdb_state *state, const char *symtab_file)
+Bdb_Err bdb_load_symtab(bdb_state *state, const char *symtab_file)
 {
     String_View symtab;
     if (bdb_mmap_file(symtab_file, &symtab) == BDB_FAIL)
@@ -177,7 +184,7 @@ void bdb_delete_breakpoint(bdb_state *state, Inst_Addr addr)
     state->breakpoints[addr].is_enabled = 0;
 }
 
-bdb_status bdb_continue(bdb_state *state)
+Bdb_Err bdb_continue(bdb_state *state)
 {
     if (state->bm.halt)
     {
@@ -219,7 +226,7 @@ bdb_status bdb_continue(bdb_state *state)
     return BDB_OK;
 }
 
-bdb_status bdb_fault(bdb_state *state, Err err)
+Bdb_Err bdb_fault(bdb_state *state, Err err)
 {
     fprintf(stderr, "%s at %" PRIu64 " (INSTR: ",
             err_as_cstr(err), state->bm.ip);
@@ -229,7 +236,7 @@ bdb_status bdb_fault(bdb_state *state, Err err)
     return BDB_OK;
 }
 
-bdb_status bdb_step_instr(bdb_state *state)
+Bdb_Err bdb_step_instr(bdb_state *state)
 {
     if (state->bm.halt)
     {
@@ -248,7 +255,7 @@ bdb_status bdb_step_instr(bdb_state *state)
     }
 }
 
-bdb_status bdb_parse_label_or_addr(bdb_state *st, const char *in, Inst_Addr *out)
+Bdb_Err bdb_parse_label_or_addr(bdb_state *st, const char *in, Inst_Addr *out)
 {
     char *endptr = NULL;
     size_t len = strlen(in);
@@ -304,7 +311,7 @@ int main(int argc, char **argv)
          */
         case 'n':
         {
-            bdb_status res = bdb_step_instr(&state);
+            Bdb_Err res = bdb_step_instr(&state);
             if (res == BDB_FAIL)
             {
                 return EXIT_FAILURE;
