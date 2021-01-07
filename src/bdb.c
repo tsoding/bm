@@ -311,8 +311,8 @@ int main(int argc, char **argv)
          */
         case 'n':
         {
-            Bdb_Err res = bdb_step_instr(&state);
-            if (res == BDB_FAIL)
+            Bdb_Err err = bdb_step_instr(&state);
+            if (err)
             {
                 return EXIT_FAILURE;
             }
