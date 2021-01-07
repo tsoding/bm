@@ -380,9 +380,13 @@ int main(int argc, char **argv)
         }
         case 'h':
         {
-            printf("n - next instruction\n"
+            printf("r - run program\n"
+                   "n - next instruction\n"
+                   "c - continue program execution\n"
                    "s - stack dump\n"
                    "i - instruction pointer\n"
+                   "b - set breakpoint at address or label\n"
+                   "d - destroy breakpoint at address or label\n"
                    "q - quit\n");
         } break;
         default:
