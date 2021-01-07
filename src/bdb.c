@@ -312,7 +312,8 @@ int main(int argc, char **argv)
     Bdb_State state = {0};
     state.bm.halt = 1;
 
-    printf("BDB - The birtual machine debugger.\n");
+    printf("BDB - The birtual machine debugger.\n"
+           "Type 'h' and enter for a quick help\n");
     if (bdb_state_init(&state, argv[1]) == BDB_FAIL)
     {
         fprintf(stderr,
