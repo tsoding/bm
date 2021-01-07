@@ -18,7 +18,7 @@ bdb_status bdb_state_init(bdb_state *state,
     assert(state);
     assert(executable);
 
-    state->cood_file_name   = cstr_as_sv(executable);
+    state->cood_file_name = sv_from_cstr(executable);
     bm_load_program_from_file(&state->bm, executable);
 
     char buf[PATH_MAX];
@@ -54,14 +54,15 @@ bdb_status bdb_mmap_file(const char *path, String_View *out)
         return BDB_FAIL;
     }
 
-    char *content = mmap(NULL, stat_buf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    char *content = mmap(NULL, (size_t)stat_buf.st_size,
+                         PROT_READ, MAP_PRIVATE, fd, 0);
     if (content == MAP_FAILED)
     {
         return BDB_FAIL;
     }
 
     out->data = content;
-    out->count = stat_buf.st_size;
+    out->count = (size_t)stat_buf.st_size;
 
     close(fd);
 
@@ -70,7 +71,7 @@ bdb_status bdb_mmap_file(const char *path, String_View *out)
 
 bdb_status bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
 {
-    String_View _name = sv_trim_right(cstr_as_sv(name));
+    String_View _name = sv_trim_right(sv_from_cstr(name));
     for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
     {
         if (state->labels[i].data && sv_eq(state->labels[i], _name))
@@ -97,7 +98,7 @@ bdb_status bdb_load_symtab(bdb_state *state, const char *symtab_file)
         String_View raw_addr   = sv_chop_by_delim(&symtab, '\t');
         symtab = sv_trim_left(symtab);
         String_View label_name = sv_chop_by_delim(&symtab, '\n');
-        Inst_Addr addr = sv_to_int(raw_addr);
+        Inst_Addr addr = (Inst_Addr)sv_to_int(raw_addr);
 
         /*
          * Huh? you ask? Yes, if we have a label, whose size is bigger
@@ -250,7 +251,7 @@ bdb_status bdb_step_instr(bdb_state *state)
 bdb_status bdb_parse_label_or_addr(bdb_state *st, const char *in, Inst_Addr *out)
 {
     char *endptr = NULL;
-    int len = strlen(in);
+    size_t len = strlen(in);
 
     *out = strtoull(in, &endptr, 10);
     if (endptr != in + len)

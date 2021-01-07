@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     if (have_symbol_table) {
         char sym_file_name[PATH_MAX];
 
-        int output_file_path_len = strlen(output_file_path);
+        size_t output_file_path_len = strlen(output_file_path);
 
         memcpy(sym_file_name, output_file_path, output_file_path_len);
         memcpy(sym_file_name + output_file_path_len,
@@ -69,11 +69,11 @@ int main(int argc, char **argv)
          * address of a jump label.
          *
          */
-        for (size_t i = 0; i < basm.labels_size; ++i) {
+        for (size_t i = 0; i < basm.bindings_size; ++i) {
             fprintf(symbol_file, "%"PRIu64"\t%.*s\n",
-                    basm.labels[i].word.as_u64,
-                    (int)basm.labels[i].name.count,
-                    basm.labels[i].name.data);
+                    basm.bindings[i].value.as_u64,
+                    (int)basm.bindings[i].name.count,
+                    basm.bindings[i].name.data);
         }
         fclose(symbol_file);
     }
