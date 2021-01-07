@@ -154,7 +154,7 @@ void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
-#define BM_FILE_MAGIC 0x4D42
+#define BM_FILE_MAGIC 0x6D62
 #define BM_FILE_VERSION 1
 
 PACK(struct Bm_File_Meta {
