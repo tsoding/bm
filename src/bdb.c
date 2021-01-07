@@ -194,7 +194,7 @@ Bdb_Err bdb_continue(bdb_state *state)
 
     do
     {
-        bdb_breakpoint *bp = &state->breakpoints[state->bm.ip];
+        Bdb_Breakpoint *bp = &state->breakpoints[state->bm.ip];
         if (!bp->is_broken && bp->is_enabled)
         {
             fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);

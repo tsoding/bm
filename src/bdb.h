@@ -16,18 +16,18 @@ typedef enum {
    BDB_EXIT
 } Bdb_Err;
 
-typedef struct bdb_breakpoint
+typedef struct Bdb_Breakpoint
 {
     int is_enabled;
     int id;
     int is_broken;
-} bdb_breakpoint;
+} Bdb_Breakpoint;
 
 typedef struct bdb_state
 {
     Bm bm;
     String_View cood_file_name;
-    bdb_breakpoint breakpoints[BM_PROGRAM_CAPACITY];
+    Bdb_Breakpoint breakpoints[BM_PROGRAM_CAPACITY];
     String_View labels[BM_PROGRAM_CAPACITY];
 } bdb_state;
 
