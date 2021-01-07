@@ -6,3 +6,5 @@ debasm
 *.ilk
 *.obj
 *.pdb
+/examples/*.bm.sym
+/bdb
