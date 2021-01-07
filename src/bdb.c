@@ -19,6 +19,13 @@
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
+static
+void usage(void)
+{
+    fprintf(stderr,
+            "usage: bdb <executable>\n");
+}
+
 Bdb_Err bdb_state_init(Bdb_State *state,
                           const char *executable)
 {
@@ -78,6 +85,10 @@ Bdb_Err bdb_mmap_file(const char *path, String_View *out)
 
 Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *out)
 {
+    assert(state);
+    assert(name);
+    assert(out);
+
     String_View _name = sv_trim_right(sv_from_cstr(name));
     for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
     {
@@ -93,6 +104,9 @@ Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *ou
 
 Bdb_Err bdb_load_symtab(Bdb_State *state, const char *symtab_file)
 {
+    assert(state);
+    assert(symtab_file);
+
     String_View symtab;
     if (bdb_mmap_file(symtab_file, &symtab) == BDB_FAIL)
     {
@@ -122,13 +136,6 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *symtab_file)
     return BDB_OK;
 }
 
-static
-void usage(void)
-{
-    fprintf(stderr,
-            "usage: bdb <executable>\n");
-}
-
 void bdb_print_instr(FILE *f, Inst *i)
 {
     fprintf(f, "%s ", inst_name(i->type));
@@ -140,6 +147,8 @@ void bdb_print_instr(FILE *f, Inst *i)
 
 void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
+    assert(state);
+
     if (addr > state->bm.program_size)
     {
         fprintf(stderr, "ERR : Symbol out of program\n");
@@ -163,6 +172,8 @@ void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
 
 void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
+    assert(state);
+
     if (addr > state->bm.program_size)
     {
         fprintf(stderr, "ERR : Symbol out of program\n");
@@ -186,6 +197,8 @@ void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
 
 Bdb_Err bdb_continue(Bdb_State *state)
 {
+    assert(state);
+
     if (state->bm.halt)
     {
         fprintf(stderr, "ERR : Program is not being run\n");
@@ -228,6 +241,8 @@ Bdb_Err bdb_continue(Bdb_State *state)
 
 Bdb_Err bdb_fault(Bdb_State *state, Err err)
 {
+    assert(state);
+
     fprintf(stderr, "%s at %" PRIu64 " (INSTR: ",
             err_as_cstr(err), state->bm.ip);
     bdb_print_instr(stderr, &state->bm.program[state->bm.ip]);
@@ -238,6 +253,8 @@ Bdb_Err bdb_fault(Bdb_State *state, Err err)
 
 Bdb_Err bdb_step_instr(Bdb_State *state)
 {
+    assert(state);
+
     if (state->bm.halt)
     {
         fprintf(stderr, "ERR : Program is not being run\n");
@@ -257,6 +274,10 @@ Bdb_Err bdb_step_instr(Bdb_State *state)
 
 Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
 {
+    assert(st);
+    assert(in);
+    assert(out);
+
     char *endptr = NULL;
     size_t len = strlen(in);
 
@@ -274,6 +295,7 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
 
 /*
  * TODO: support for native function in the debugger
+ * TOOD: there is no way to examine the memory in bdb
  */
 int main(int argc, char **argv)
 {
