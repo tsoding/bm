@@ -7,7 +7,18 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) \
+    || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <limits.h>
+#else
+/* TODO: find a better way to get PATH_MAX on unportable OSes
+ *   Windows? -> MAX_PATH is obsolete
+ *   Linux? -> PATH_MAX is not guaranteed to be available.
+ *             This already causes CI build failures
+ * NOTE: This issue also applies to basm.c
+ */
+#define PATH_MAX 4096
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>

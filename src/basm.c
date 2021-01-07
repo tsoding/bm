@@ -1,6 +1,12 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
+
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__)   \
+    || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <limits.h>
+#else
+#define PATH_MAX 4096
+#endif
 
 Basm basm = {0};
 
