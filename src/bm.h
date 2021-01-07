@@ -45,6 +45,7 @@ String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
 bool sv_eq(String_View a, String_View b);
+int sv_to_int(String_View sv);
 
 typedef enum {
     ERR_OK = 0,
@@ -937,6 +938,17 @@ bool sv_eq(String_View a, String_View b)
     } else {
         return memcmp(a.data, b.data, a.count) == 0;
     }
+}
+
+int sv_to_int(String_View sv)
+{
+    int result = 0;
+
+    for (size_t i = 0; i < sv.count && isdigit(sv.data[i]); ++i) {
+        result = result * 10 + sv.data[i] - '0';
+    }
+
+    return result;
 }
 
 void *basm_alloc(Basm *basm, size_t size)
