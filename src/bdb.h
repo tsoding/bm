@@ -23,24 +23,24 @@ typedef struct Bdb_Breakpoint
     int is_broken;
 } Bdb_Breakpoint;
 
-typedef struct bdb_state
+typedef struct Bdb_State
 {
     Bm bm;
     String_View cood_file_name;
     Bdb_Breakpoint breakpoints[BM_PROGRAM_CAPACITY];
     String_View labels[BM_PROGRAM_CAPACITY];
-} bdb_state;
+} Bdb_State;
 
-Bdb_Err bdb_state_init(bdb_state *, const char *executable);
-Bdb_Err bdb_load_symtab(bdb_state *, const char *symtab);
-Bdb_Err bdb_step_instr(bdb_state *);
-Bdb_Err bdb_continue(bdb_state *);
-Bdb_Err bdb_find_addr_of_label(bdb_state *, const char *, Inst_Addr *);
-Bdb_Err bdb_parse_label_or_addr(bdb_state *, const char *, Inst_Addr *);
+Bdb_Err bdb_state_init(Bdb_State *, const char *executable);
+Bdb_Err bdb_load_symtab(Bdb_State *, const char *symtab);
+Bdb_Err bdb_step_instr(Bdb_State *);
+Bdb_Err bdb_continue(Bdb_State *);
+Bdb_Err bdb_find_addr_of_label(Bdb_State *, const char *, Inst_Addr *);
+Bdb_Err bdb_parse_label_or_addr(Bdb_State *, const char *, Inst_Addr *);
 Bdb_Err bdb_mmap_file(const char *, String_View *);
 void bdb_print_instr(FILE *, Inst *);
-void bdb_add_breakpoint(bdb_state *, Inst_Addr);
-void bdb_delete_breakpoint(bdb_state *, Inst_Addr);
-Bdb_Err bdb_fault(bdb_state *, Err);
+void bdb_add_breakpoint(Bdb_State *, Inst_Addr);
+void bdb_delete_breakpoint(Bdb_State *, Inst_Addr);
+Bdb_Err bdb_fault(Bdb_State *, Err);
 
 #endif // BDB_H

@@ -19,7 +19,7 @@
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
-Bdb_Err bdb_state_init(bdb_state *state,
+Bdb_Err bdb_state_init(Bdb_State *state,
                           const char *executable)
 {
     assert(state);
@@ -76,7 +76,7 @@ Bdb_Err bdb_mmap_file(const char *path, String_View *out)
     return BDB_OK;
 }
 
-Bdb_Err bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *out)
+Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *out)
 {
     String_View _name = sv_trim_right(sv_from_cstr(name));
     for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
@@ -91,7 +91,7 @@ Bdb_Err bdb_find_addr_of_label(bdb_state *state, const char *name, Inst_Addr *ou
     return BDB_FAIL;
 }
 
-Bdb_Err bdb_load_symtab(bdb_state *state, const char *symtab_file)
+Bdb_Err bdb_load_symtab(Bdb_State *state, const char *symtab_file)
 {
     String_View symtab;
     if (bdb_mmap_file(symtab_file, &symtab) == BDB_FAIL)
@@ -138,7 +138,7 @@ void bdb_print_instr(FILE *f, Inst *i)
     }
 }
 
-void bdb_add_breakpoint(bdb_state *state, Inst_Addr addr)
+void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
     if (addr > state->bm.program_size)
     {
@@ -161,7 +161,7 @@ void bdb_add_breakpoint(bdb_state *state, Inst_Addr addr)
     state->breakpoints[addr].is_enabled = 1;
 }
 
-void bdb_delete_breakpoint(bdb_state *state, Inst_Addr addr)
+void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
     if (addr > state->bm.program_size)
     {
@@ -184,7 +184,7 @@ void bdb_delete_breakpoint(bdb_state *state, Inst_Addr addr)
     state->breakpoints[addr].is_enabled = 0;
 }
 
-Bdb_Err bdb_continue(bdb_state *state)
+Bdb_Err bdb_continue(Bdb_State *state)
 {
     if (state->bm.halt)
     {
@@ -226,7 +226,7 @@ Bdb_Err bdb_continue(bdb_state *state)
     return BDB_OK;
 }
 
-Bdb_Err bdb_fault(bdb_state *state, Err err)
+Bdb_Err bdb_fault(Bdb_State *state, Err err)
 {
     fprintf(stderr, "%s at %" PRIu64 " (INSTR: ",
             err_as_cstr(err), state->bm.ip);
@@ -236,7 +236,7 @@ Bdb_Err bdb_fault(bdb_state *state, Err err)
     return BDB_OK;
 }
 
-Bdb_Err bdb_step_instr(bdb_state *state)
+Bdb_Err bdb_step_instr(Bdb_State *state)
 {
     if (state->bm.halt)
     {
@@ -255,7 +255,7 @@ Bdb_Err bdb_step_instr(bdb_state *state)
     }
 }
 
-Bdb_Err bdb_parse_label_or_addr(bdb_state *st, const char *in, Inst_Addr *out)
+Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
 {
     char *endptr = NULL;
     size_t len = strlen(in);
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
      * Create the BDB state and initialize it with the file names
      */
 
-    bdb_state state = {0};
+    Bdb_State state = {0};
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n");
