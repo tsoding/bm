@@ -82,7 +82,7 @@ typedef enum {
     INST_RET,
     INST_CALL,
     INST_NATIVE,
-    INST_EQ,
+    INST_EQI,
     INST_HALT,
     INST_NOT,
     INST_GEI,
@@ -254,7 +254,7 @@ bool inst_has_operand(Inst_Type type)
     case INST_DIVF:    return false;
     case INST_JMP:     return true;
     case INST_JMP_IF:  return true;
-    case INST_EQ:      return false;
+    case INST_EQI:      return false;
     case INST_HALT:    return false;
     case INST_SWAP:    return true;
     case INST_NOT:     return false;
@@ -313,7 +313,7 @@ const char *inst_name(Inst_Type type)
     case INST_DIVF:    return "divf";
     case INST_JMP:     return "jmp";
     case INST_JMP_IF:  return "jmp_if";
-    case INST_EQ:      return "eq";
+    case INST_EQI:     return "eqi";
     case INST_HALT:    return "halt";
     case INST_SWAP:    return "swap";
     case INST_NOT:     return "not";
@@ -543,7 +543,7 @@ Err bm_execute_inst(Bm *bm)
         bm->halt = 1;
         break;
 
-    case INST_EQ:
+    case INST_EQI:
         if (bm->stack_size < 2) {
             return ERR_STACK_UNDERFLOW;
         }
