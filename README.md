@@ -2,7 +2,7 @@
 
 ![birch](./assets/birch-296x328.png)
 
-Birtual Machine for [Ebisp](https://github.com/tsoding/ebisp)
+Simple Virtual Machine with its own Bytecode and Assembly language.
 
 ## Quick Start
 
