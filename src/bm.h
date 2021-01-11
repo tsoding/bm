@@ -82,10 +82,11 @@ typedef enum {
     INST_RET,
     INST_CALL,
     INST_NATIVE,
-    INST_EQI,
     INST_HALT,
     INST_NOT,
+    INST_EQI,
     INST_GEI,
+    INST_EQF,
     INST_GEF,
     INST_ANDB,
     INST_ORB,
@@ -158,7 +159,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0x6D62
-#define BM_FILE_VERSION 2
+#define BM_FILE_VERSION 3
 
 PACK(struct Bm_File_Meta {
     uint16_t magic;
@@ -254,11 +255,12 @@ bool inst_has_operand(Inst_Type type)
     case INST_DIVF:    return false;
     case INST_JMP:     return true;
     case INST_JMP_IF:  return true;
-    case INST_EQI:      return false;
     case INST_HALT:    return false;
     case INST_SWAP:    return true;
     case INST_NOT:     return false;
+    case INST_EQF:     return false;
     case INST_GEF:     return false;
+    case INST_EQI:     return false;
     case INST_GEI:     return false;
     case INST_RET:     return false;
     case INST_CALL:    return true;
@@ -313,12 +315,13 @@ const char *inst_name(Inst_Type type)
     case INST_DIVF:    return "divf";
     case INST_JMP:     return "jmp";
     case INST_JMP_IF:  return "jmp_if";
-    case INST_EQI:     return "eqi";
     case INST_HALT:    return "halt";
     case INST_SWAP:    return "swap";
     case INST_NOT:     return "not";
-    case INST_GEF:     return "gef";
+    case INST_EQI:     return "eqi";
     case INST_GEI:     return "gei";
+    case INST_EQF:     return "eqf";
+    case INST_GEF:     return "gef";
     case INST_RET:     return "ret";
     case INST_CALL:    return "call";
     case INST_NATIVE:  return "native";
@@ -549,6 +552,16 @@ Err bm_execute_inst(Bm *bm)
         }
 
         bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_u64 == bm->stack[bm->stack_size - 2].as_u64;
+        bm->stack_size -= 1;
+        bm->ip += 1;
+        break;
+
+    case INST_EQF:
+        if (bm->stack_size < 2) {
+            return ERR_STACK_UNDERFLOW;
+        }
+
+        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 == bm->stack[bm->stack_size - 2].as_f64;
         bm->stack_size -= 1;
         bm->ip += 1;
         break;
