@@ -13,7 +13,6 @@ cl.exe %CFLAGS% ./src/debasm.c
 
 cl.exe %CFLAGS% ./src/bdb.c
 
-rem TODO(#82): bdb is not built on Windows
 
 if "%1" == "examples" setlocal EnableDelayedExpansion && for /F "tokens=*" %%e in ('dir /b .\examples\*.basm') do (
     set name=%%e
