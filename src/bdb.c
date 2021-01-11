@@ -11,7 +11,7 @@
     || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <limits.h>
 #else
-/* TODO: find a better way to get PATH_MAX on unportable OSes
+/* TODO(#83): find a better way to get PATH_MAX on unportable OSes
  *   Windows? -> MAX_PATH is obsolete
  *   Linux? -> PATH_MAX is not guaranteed to be available.
  *             This already causes CI build failures
