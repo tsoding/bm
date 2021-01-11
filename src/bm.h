@@ -84,10 +84,17 @@ typedef enum {
     INST_NATIVE,
     INST_HALT,
     INST_NOT,
+
     INST_EQI,
     INST_GEI,
+    INST_GTI,
+    INST_LEI,
+    INST_LTI,
+    INST_NEI,
+
     INST_EQF,
     INST_GEF,
+
     INST_ANDB,
     INST_ORB,
     INST_XOR,
@@ -262,6 +269,10 @@ bool inst_has_operand(Inst_Type type)
     case INST_GEF:     return false;
     case INST_EQI:     return false;
     case INST_GEI:     return false;
+    case INST_GTI:     return false;
+    case INST_LEI:     return false;
+    case INST_LTI:     return false;
+    case INST_NEI:     return false;
     case INST_RET:     return false;
     case INST_CALL:    return true;
     case INST_NATIVE:  return true;
@@ -320,6 +331,10 @@ const char *inst_name(Inst_Type type)
     case INST_NOT:     return "not";
     case INST_EQI:     return "eqi";
     case INST_GEI:     return "gei";
+    case INST_GTI:     return "gti";
+    case INST_LEI:     return "lei";
+    case INST_LTI:     return "lti";
+    case INST_NEI:     return "nei";
     case INST_EQF:     return "eqf";
     case INST_GEF:     return "gef";
     case INST_RET:     return "ret";
@@ -513,13 +528,28 @@ Err bm_execute_inst(Bm *bm)
         BINARY_OP(bm, f64, u64, ==);
         break;
 
-    // TODO(#40): Inconsistency between gef and minus* instructions operand ordering
     case INST_GEF:
         BINARY_OP(bm, f64, u64, >=);
         break;
 
     case INST_GEI:
         BINARY_OP(bm, u64, u64, >=);
+        break;
+
+    case INST_GTI:
+        BINARY_OP(bm, u64, u64, >);
+        break;
+
+    case INST_LEI:
+        BINARY_OP(bm, u64, u64, <=);
+        break;
+
+    case INST_LTI:
+        BINARY_OP(bm, u64, u64, <);
+        break;
+
+    case INST_NEI:
+        BINARY_OP(bm, u64, u64, !=);
         break;
 
     case INST_JMP_IF:
