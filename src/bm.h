@@ -113,6 +113,12 @@ typedef enum {
     INST_WRITE16,
     INST_WRITE32,
     INST_WRITE64,
+
+    INST_I2F,
+    INST_U2F,
+    INST_F2I,
+    INST_F2U,
+
     NUMBER_OF_INSTS,
 } Inst_Type;
 
@@ -170,7 +176,7 @@ void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0x6D62
-#define BM_FILE_VERSION 3
+#define BM_FILE_VERSION 4
 
 PACK(struct Bm_File_Meta {
     uint16_t magic;
@@ -298,6 +304,10 @@ bool inst_has_operand(Inst_Type type)
     case INST_WRITE16: return false;
     case INST_WRITE32: return false;
     case INST_WRITE64: return false;
+    case INST_I2F:     return false;
+    case INST_U2F:     return false;
+    case INST_F2I:     return false;
+    case INST_F2U:     return false;
     case NUMBER_OF_INSTS:
     default: assert(false && "inst_has_operand: unreachable");
         exit(1);
@@ -366,6 +376,10 @@ const char *inst_name(Inst_Type type)
     case INST_WRITE16: return "write16";
     case INST_WRITE32: return "write32";
     case INST_WRITE64: return "write64";
+    case INST_I2F:     return "i2f";
+    case INST_U2F:     return "u2f";
+    case INST_F2I:     return "f2i";
+    case INST_F2U:     return "f2u";
     case NUMBER_OF_INSTS:
     default: assert(false && "inst_name: unreachable");
         exit(1);
@@ -420,6 +434,17 @@ Err bm_execute_program(Bm *bm, int limit)
                                                                         \
         (bm)->stack[(bm)->stack_size - 2].as_##out = (bm)->stack[(bm)->stack_size - 2].as_##in op (bm)->stack[(bm)->stack_size - 1].as_##in; \
         (bm)->stack_size -= 1;                                          \
+        (bm)->ip += 1;                                                  \
+    } while (false)
+
+#define CAST_OP(bm, src, dst, cast)             \
+    do {                                        \
+        if ((bm)->stack_size < 1) {             \
+            return ERR_STACK_UNDERFLOW;         \
+        }                                                               \
+                                                                        \
+        (bm)->stack[(bm)->stack_size - 1].as_##dst = cast (bm)->stack[(bm)->stack_size - 1].as_##src; \
+                                                                        \
         (bm)->ip += 1;                                                  \
     } while (false)
 
@@ -759,6 +784,22 @@ Err bm_execute_inst(Bm *bm)
         bm->stack_size -= 2;
         bm->ip += 1;
     } break;
+
+    case INST_I2F:
+        CAST_OP(bm, i64, f64, (double));
+        break;
+
+    case INST_U2F:
+        CAST_OP(bm, u64, f64, (double));
+        break;
+
+    case INST_F2I:
+        CAST_OP(bm, f64, i64, (int64_t));
+        break;
+
+    case INST_F2U:
+        CAST_OP(bm, f64, u64, (uint64_t) (int64_t));
+        break;
 
     case NUMBER_OF_INSTS:
     default:
