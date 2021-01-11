@@ -6,24 +6,8 @@
  */
 
 #include <assert.h>
-#include <fcntl.h>
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__) \
-    || defined(__OpenBSD__) || defined(__DragonFly__)
-#include <limits.h>
-#else
-/* TODO(#83): find a better way to get PATH_MAX on unportable OSes
- *   Windows? -> MAX_PATH is obsolete
- *   Linux? -> PATH_MAX is not guaranteed to be available.
- *             This already causes CI build failures
- * NOTE: This issue also applies to basm.c
- */
-#define PATH_MAX 4096
-#endif
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "bdb.h"
 
@@ -38,7 +22,7 @@ void usage(void)
 }
 
 Bdb_Err bdb_state_init(Bdb_State *state,
-                          const char *executable)
+                       const char *executable)
 {
     assert(state);
     assert(executable);
@@ -47,52 +31,17 @@ Bdb_Err bdb_state_init(Bdb_State *state,
     bm_load_program_from_file(&state->bm, executable);
     bm_load_standard_natives(&state->bm);
 
-    char buf[PATH_MAX];
-    memcpy(buf, executable, strlen(executable));
-    memcpy(buf + strlen(executable), ".sym", 5);
+    const size_t executable_len = strlen(executable);
+    const char *const sym_ext = ".sym";
+    const size_t sym_ext_len = strlen(sym_ext);
 
-    if (access(buf, R_OK) == 0)
-    {
-        fprintf(stdout, "INFO : Loading debug symbols...\n");
-        return bdb_load_symtab(state, buf);
-    }
-    else
-    {
-        return BDB_OK;
-    }
-}
+    char *buf = arena_alloc(&state->arena, executable_len + sym_ext_len + 1);
+    memcpy(buf, executable, executable_len);
+    memcpy(buf + executable_len, sym_ext, sym_ext_len);
+    buf[executable_len + sym_ext_len] = '\0';
 
-Bdb_Err bdb_mmap_file(const char *path, String_View *out)
-{
-    assert(path);
-    assert(out);
-
-    int fd;
-
-    if ((fd = open(path, O_RDONLY)) < 0)
-    {
-        return BDB_FAIL;
-    }
-
-    struct stat stat_buf;
-    if (fstat(fd, &stat_buf) < 0)
-    {
-        return BDB_FAIL;
-    }
-
-    char *content = mmap(NULL, (size_t)stat_buf.st_size,
-                         PROT_READ, MAP_PRIVATE, fd, 0);
-    if (content == MAP_FAILED)
-    {
-        return BDB_FAIL;
-    }
-
-    out->data = content;
-    out->count = (size_t)stat_buf.st_size;
-
-    close(fd);
-
-    return BDB_OK;
+    fprintf(stdout, "INFO : Loading debug symbols...\n");
+    return bdb_load_symtab(state, buf);
 }
 
 Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *out)
@@ -119,11 +68,7 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *symtab_file)
     assert(state);
     assert(symtab_file);
 
-    String_View symtab;
-    if (bdb_mmap_file(symtab_file, &symtab) == BDB_FAIL)
-    {
-        return BDB_FAIL;
-    }
+    String_View symtab = arena_slurp_file(&state->arena, sv_from_cstr(symtab_file));
 
     while (symtab.count > 0)
     {
@@ -305,6 +250,8 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_State state = {0};
+
 /*
  * TODO(#84): support for native function in the debugger
  * TODO(#85): there is no way to examine the memory in bdb
@@ -322,7 +269,6 @@ int main(int argc, char **argv)
      * Create the BDB state and initialize it with the file names
      */
 
-    Bdb_State state = {0};
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n"

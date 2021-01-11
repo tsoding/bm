@@ -29,6 +29,7 @@ typedef struct Bdb_State
     String_View cood_file_name;
     Bdb_Breakpoint breakpoints[BM_PROGRAM_CAPACITY];
     String_View labels[BM_PROGRAM_CAPACITY];
+    Arena arena;
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *executable);
