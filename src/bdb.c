@@ -404,7 +404,7 @@ int main(int argc, char **argv)
             if (!state.bm.halt)
             {
                 fprintf(stderr, "ERR : Program is already running\n");
-                /* TODO: Reset bm and restart program */
+                /* TODO(#88): Reset bm and restart program */
             }
 
             state.bm.halt = 0;
