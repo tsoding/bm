@@ -30,7 +30,8 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
-#define BASM_ARENA_CAPACITY (1000 * 1000 * 1000)
+
+#define ARENA_CAPACITY (1000 * 1000 * 1000)
 
 typedef struct {
     size_t count;
@@ -186,6 +187,15 @@ PACK(struct Bm_File_Meta {
 
 typedef struct Bm_File_Meta Bm_File_Meta;
 
+// NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
+typedef struct {
+    char buffer[ARENA_CAPACITY];
+    size_t size;
+} Arena;
+
+void *arena_alloc(Arena *arena, size_t size);
+String_View arena_slurp_file(Arena *arena, String_View file_path);
+
 typedef struct {
     String_View name;
     Word value;
@@ -210,13 +220,9 @@ typedef struct {
     size_t memory_size;
     size_t memory_capacity;
 
-    // NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
-    char arena[BASM_ARENA_CAPACITY];
-    size_t arena_size;
+    Arena arena;
 } Basm;
 
-void *basm_alloc(Basm *basm, size_t size);
-String_View basm_slurp_file(Basm *basm, String_View file_path);
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
 bool basm_bind_value(Basm *basm, String_View name, Word word);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
@@ -1007,12 +1013,12 @@ int sv_to_int(String_View sv)
     return result;
 }
 
-void *basm_alloc(Basm *basm, size_t size)
+void *arena_alloc(Arena *arena, size_t size)
 {
-    assert(basm->arena_size + size <= BASM_ARENA_CAPACITY);
+    assert(arena->size + size <= ARENA_CAPACITY);
 
-    void *result = basm->arena + basm->arena_size;
-    basm->arena_size += size;
+    void *result = arena->buffer + arena->size;
+    arena->size += size;
     return result;
 }
 
@@ -1071,7 +1077,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
         sv.count -= 2;
         *output = basm_push_string_to_memory(basm, sv);
     } else {
-        char *cstr = basm_alloc(basm, sv.count + 1);
+        char *cstr = arena_alloc(&basm->arena, sv.count + 1);
         memcpy(cstr, sv.data, sv.count);
         cstr[sv.count] = '\0';
 
@@ -1134,7 +1140,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
 
 void basm_translate_source(Basm *basm, String_View input_file_path, size_t level)
 {
-    String_View original_source = basm_slurp_file(basm, input_file_path);
+    String_View original_source = arena_slurp_file(&basm->arena, input_file_path);
     String_View source = original_source;
 
     int line_number = 0;
@@ -1293,9 +1299,9 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
     }
 }
 
-String_View basm_slurp_file(Basm *basm, String_View file_path)
+String_View arena_slurp_file(Arena *arena, String_View file_path)
 {
-    char *file_path_cstr = basm_alloc(basm, file_path.count + 1);
+    char *file_path_cstr = arena_alloc(arena, file_path.count + 1);
     if (file_path_cstr == NULL) {
         fprintf(stderr,
                 "ERROR: Could not allocate memory for the file path `%.*s`: %s\n",
@@ -1326,7 +1332,7 @@ String_View basm_slurp_file(Basm *basm, String_View file_path)
         exit(1);
     }
 
-    char *buffer = basm_alloc(basm, (size_t) m);
+    char *buffer = arena_alloc(arena, (size_t) m);
     if (buffer == NULL) {
         fprintf(stderr, "ERROR: Could not allocate memory for file: %s\n",
                 strerror(errno));
