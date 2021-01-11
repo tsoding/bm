@@ -391,7 +391,7 @@ Err bm_execute_program(Bm *bm, int limit)
             return ERR_STACK_UNDERFLOW;                                 \
         }                                                               \
                                                                         \
-        (bm)->stack[(bm)->stack_size - 2].as_##out = (bm)->stack[(bm)->stack_size - 1].as_##in op (bm)->stack[(bm)->stack_size - 2].as_##in; \
+        (bm)->stack[(bm)->stack_size - 2].as_##out = (bm)->stack[(bm)->stack_size - 2].as_##in op (bm)->stack[(bm)->stack_size - 1].as_##in; \
         (bm)->stack_size -= 1;                                          \
         (bm)->ip += 1;                                                  \
     } while (false)
@@ -427,98 +427,45 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_PLUSI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        bm->stack[bm->stack_size - 2].as_u64 += bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, +);
         break;
 
     case INST_MINUSI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        bm->stack[bm->stack_size - 2].as_u64 -= bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, -);
         break;
 
     case INST_MULTI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        bm->stack[bm->stack_size - 2].as_u64 *= bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, *);
         break;
 
-    case INST_DIVI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
+    case INST_DIVI: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
+        BINARY_OP(bm, u64, u64, /);
+    } break;
 
-        bm->stack[bm->stack_size - 2].as_u64 /= bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
-        break;
-
-    case INST_MODI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
+    case INST_MODI: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 % bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
-        break;
+        BINARY_OP(bm, u64, u64, %);
+    } break;
 
     case INST_PLUSF:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_f64 += bm->stack[bm->stack_size - 1].as_f64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, f64, f64, +);
         break;
 
     case INST_MINUSF:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_f64 -= bm->stack[bm->stack_size - 1].as_f64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, f64, f64, -);
         break;
 
     case INST_MULTF:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_f64 *= bm->stack[bm->stack_size - 1].as_f64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, f64, f64, *);
         break;
 
     case INST_DIVF:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_f64 /= bm->stack[bm->stack_size - 1].as_f64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, f64, f64, /);
         break;
 
     case INST_JMP:
@@ -568,23 +515,11 @@ Err bm_execute_inst(Bm *bm)
 
     // TODO(#40): Inconsistency between gef and minus* instructions operand ordering
     case INST_GEF:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 1].as_f64 >= bm->stack[bm->stack_size - 2].as_f64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, f64, u64, >=);
         break;
 
     case INST_GEI:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >= bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, >=);
         break;
 
     case INST_JMP_IF:
@@ -639,53 +574,23 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_ANDB:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 & bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, &);
         break;
 
     case INST_ORB:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 | bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, |);
         break;
 
     case INST_XOR:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 ^ bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, ^);
         break;
 
     case INST_SHR:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 >> bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, >>);
         break;
 
     case INST_SHL:
-        if (bm->stack_size < 2) {
-            return ERR_STACK_UNDERFLOW;
-        }
-
-        bm->stack[bm->stack_size - 2].as_u64 = bm->stack[bm->stack_size - 2].as_u64 << bm->stack[bm->stack_size - 1].as_u64;
-        bm->stack_size -= 1;
-        bm->ip += 1;
+        BINARY_OP(bm, u64, u64, <<);
         break;
 
     case INST_NOTB:
