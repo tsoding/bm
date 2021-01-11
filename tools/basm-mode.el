@@ -53,3 +53,7 @@
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.basm\\'" . basm-mode))
+
+(provide 'basm-mode)
+
+;;; basm-mode.el ends here
