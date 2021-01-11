@@ -61,7 +61,6 @@ typedef enum {
 const char *err_as_cstr(Err err);
 
 // TODO(#38): comparison instruction set is not complete
-// TODO(#39): there is no operations for converting integer->float/float->interger
 typedef enum {
     INST_NOP = 0,
     INST_PUSH,
