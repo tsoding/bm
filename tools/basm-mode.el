@@ -34,7 +34,7 @@
 
 (setq basm-mode-syntax-table
       (let ((syn-table (make-syntax-table)))
-        ;; assmebly style comment: “; …”
+        ;; assembly style comment: “; …”
         (modify-syntax-entry ?\; "<" syn-table)
         (modify-syntax-entry ?\n ">" syn-table)
         syn-table))
@@ -54,12 +54,12 @@
           "lti" "nei" "eqf" "gef" "gtf" "lef" "ltf" "nef" "ret"
           "call" "native" "andb" "orb" "xor" "shr" "shl" "notb"
           "read8" "read16" "read32" "read64" "write8" "write16"
-          "write32" "write64"))
+          "write32" "write64" "i2f" "u2f" "f2i" "f2u"))
        (keywords-regexp
-        (concat "\\<"
+        (concat "\\<\\("
                 (string-join
                  (basm--interleave keywords "\\|"))
-                "\\>")))
+                "\\)\\>")))
   (setq basm-highlights
         `(("%[[:word:]_]+" . font-lock-preprocessor-face)
           ("[[:word:]_]+\\:" . font-lock-constant-face)
