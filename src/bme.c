@@ -18,7 +18,6 @@ static void usage(FILE *stream, const char *program)
 }
 
 
-// TODO(#61): implement gdb-style (but better of course) debugger for bm
 
 int main(int argc, char **argv)
 {
