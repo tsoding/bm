@@ -306,7 +306,8 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
 
 /*
  * TODO: support for native function in the debugger
- * TOOD: there is no way to examine the memory in bdb
+ * TODO: there is no way to examine the memory in bdb
+ * TODO: using String_View for parsing in bdb
  */
 int main(int argc, char **argv)
 {
@@ -371,6 +372,7 @@ int main(int argc, char **argv)
         } break;
         case 'b':
         {
+            // TODO: `b 0` in bdb results in "ERR : Cannot parse address or labels"
             char *addr = input_buf + 2;
             Inst_Addr break_addr;
 
