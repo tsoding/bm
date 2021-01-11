@@ -46,6 +46,7 @@ loop:
 
     dup 1
     push 1.0
+    swap 1
     gef
 
     jmp_if loop
