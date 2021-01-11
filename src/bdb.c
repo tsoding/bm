@@ -45,6 +45,7 @@ Bdb_Err bdb_state_init(Bdb_State *state,
 
     state->cood_file_name = sv_from_cstr(executable);
     bm_load_program_from_file(&state->bm, executable);
+    bm_load_standard_natives(&state->bm);
 
     char buf[PATH_MAX];
     memcpy(buf, executable, strlen(executable));
@@ -333,6 +334,7 @@ int main(int argc, char **argv)
                 strerror(errno));
     }
 
+    // TODO: repeat previous command in bdb
     while (1)
     {
         printf("(bdb) ");

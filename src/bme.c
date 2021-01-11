@@ -17,123 +17,6 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream, "Usage: %s -i <input.bm> [-l <limit>] [-h] [-d]\n", program);
 }
 
-static Err bm_alloc(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    bm->stack[bm->stack_size - 1].as_ptr = malloc(bm->stack[bm->stack_size - 1].as_u64);
-
-    return ERR_OK;
-}
-
-static Err bm_free(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    free(bm->stack[bm->stack_size - 1].as_ptr);
-    bm->stack_size -= 1;
-
-    return ERR_OK;
-}
-
-static Err bm_print_f64(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    printf("%lf\n", bm->stack[bm->stack_size - 1].as_f64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_i64(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    printf("%" PRId64 "\n", bm->stack[bm->stack_size - 1].as_i64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_u64(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    printf("%" PRIu64 "\n", bm->stack[bm->stack_size - 1].as_u64);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_print_ptr(Bm *bm)
-{
-    if (bm->stack_size < 1) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    printf("%p\n", bm->stack[bm->stack_size - 1].as_ptr);
-    bm->stack_size -= 1;
-    return ERR_OK;
-}
-
-static Err bm_dump_memory(Bm *bm)
-{
-    if (bm->stack_size < 2) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
-    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-
-    if (addr >= BM_MEMORY_CAPACITY) {
-        return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
-        return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    for (uint64_t i = 0; i < count; ++i) {
-        printf("%02X ", bm->memory[addr + i]);
-    }
-    printf("\n");
-
-    bm->stack_size -= 2;
-
-    return ERR_OK;
-}
-
-static Err bm_write(Bm *bm)
-{
-    if (bm->stack_size < 2) {
-        return ERR_STACK_UNDERFLOW;
-    }
-
-    Memory_Addr addr = bm->stack[bm->stack_size - 2].as_u64;
-    uint64_t count = bm->stack[bm->stack_size - 1].as_u64;
-
-    if (addr >= BM_MEMORY_CAPACITY) {
-        return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    if (addr + count < addr || addr + count >= BM_MEMORY_CAPACITY) {
-        return ERR_ILLEGAL_MEMORY_ACCESS;
-    }
-
-    fwrite(&bm->memory[addr], sizeof(bm->memory[0]), count, stdout);
-
-    bm->stack_size -= 2;
-
-    return ERR_OK;
-}
 
 // TODO(#61): implement gdb-style (but better of course) debugger for bm
 
@@ -182,15 +65,7 @@ int main(int argc, char **argv)
     }
 
     bm_load_program_from_file(&bm, input_file_path);
-    // TODO(#35): some sort of mechanism to load native functions from DLLs
-    bm_push_native(&bm, bm_alloc);     // 0
-    bm_push_native(&bm, bm_free);      // 1
-    bm_push_native(&bm, bm_print_f64); // 2
-    bm_push_native(&bm, bm_print_i64); // 3
-    bm_push_native(&bm, bm_print_u64); // 4
-    bm_push_native(&bm, bm_print_ptr); // 5
-    bm_push_native(&bm, bm_dump_memory); // 6
-    bm_push_native(&bm, bm_write); // 7
+    bm_load_standard_natives(&bm);
 
     if (!debug) {
         Err err = bm_execute_program(&bm, limit);
