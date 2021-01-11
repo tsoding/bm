@@ -51,7 +51,7 @@
   (set-syntax-table basm-mode-syntax-table))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.basm\\'" . basm-mode))
+(add-to-list 'auto-mode-alist '("\\.\\(b\\|h\\)asm\\'" . basm-mode))
 
 (provide 'basm-mode)
 
