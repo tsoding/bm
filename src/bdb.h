@@ -33,12 +33,11 @@ typedef struct Bdb_State
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *executable);
-Bdb_Err bdb_load_symtab(Bdb_State *, const char *symtab);
+Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file);
 Bdb_Err bdb_step_instr(Bdb_State *);
 Bdb_Err bdb_continue(Bdb_State *);
 Bdb_Err bdb_find_addr_of_label(Bdb_State *, const char *, Inst_Addr *);
 Bdb_Err bdb_parse_label_or_addr(Bdb_State *, const char *, Inst_Addr *);
-Bdb_Err bdb_mmap_file(const char *, String_View *);
 void bdb_print_instr(FILE *, Inst *);
 void bdb_add_breakpoint(Bdb_State *, Inst_Addr);
 void bdb_delete_breakpoint(Bdb_State *, Inst_Addr);

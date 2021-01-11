@@ -31,17 +31,8 @@ Bdb_Err bdb_state_init(Bdb_State *state,
     bm_load_program_from_file(&state->bm, executable);
     bm_load_standard_natives(&state->bm);
 
-    const size_t executable_len = strlen(executable);
-    const char *const sym_ext = ".sym";
-    const size_t sym_ext_len = strlen(sym_ext);
-
-    char *buf = arena_alloc(&state->arena, executable_len + sym_ext_len + 1);
-    memcpy(buf, executable, executable_len);
-    memcpy(buf + executable_len, sym_ext, sym_ext_len);
-    buf[executable_len + sym_ext_len] = '\0';
-
     fprintf(stdout, "INFO : Loading debug symbols...\n");
-    return bdb_load_symtab(state, buf);
+    return bdb_load_symtab(state, arena_sv_concat2(&state->arena, executable, ".sym"));
 }
 
 Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *out)
@@ -63,12 +54,11 @@ Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *ou
     return BDB_FAIL;
 }
 
-Bdb_Err bdb_load_symtab(Bdb_State *state, const char *symtab_file)
+Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
 {
     assert(state);
-    assert(symtab_file);
 
-    String_View symtab = arena_slurp_file(&state->arena, sv_from_cstr(symtab_file));
+    String_View symtab = arena_slurp_file(&state->arena, symtab_file);
 
     while (symtab.count > 0)
     {

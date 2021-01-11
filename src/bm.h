@@ -195,6 +195,7 @@ typedef struct {
 
 void *arena_alloc(Arena *arena, size_t size);
 String_View arena_slurp_file(Arena *arena, String_View file_path);
+String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 
 typedef struct {
     String_View name;
@@ -1011,6 +1012,19 @@ int sv_to_int(String_View sv)
     }
 
     return result;
+}
+
+String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
+{
+    const size_t a_len = strlen(a);
+    const size_t b_len = strlen(b);
+    char *buf = arena_alloc(arena, a_len + b_len);
+    memcpy(buf, a, a_len);
+    memcpy(buf + a_len, b, b_len);
+    return (String_View) {
+        .count = a_len + b_len,
+        .data = buf,
+    };
 }
 
 void *arena_alloc(Arena *arena, size_t size)
