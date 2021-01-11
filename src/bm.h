@@ -94,6 +94,10 @@ typedef enum {
 
     INST_EQF,
     INST_GEF,
+    INST_GTF,
+    INST_LEF,
+    INST_LTF,
+    INST_NEF,
 
     INST_ANDB,
     INST_ORB,
@@ -267,6 +271,10 @@ bool inst_has_operand(Inst_Type type)
     case INST_NOT:     return false;
     case INST_EQF:     return false;
     case INST_GEF:     return false;
+    case INST_GTF:     return false;
+    case INST_LEF:     return false;
+    case INST_LTF:     return false;
+    case INST_NEF:     return false;
     case INST_EQI:     return false;
     case INST_GEI:     return false;
     case INST_GTI:     return false;
@@ -337,6 +345,10 @@ const char *inst_name(Inst_Type type)
     case INST_NEI:     return "nei";
     case INST_EQF:     return "eqf";
     case INST_GEF:     return "gef";
+    case INST_GTF:     return "gtf";
+    case INST_LEF:     return "lef";
+    case INST_LTF:     return "ltf";
+    case INST_NEF:     return "nef";
     case INST_RET:     return "ret";
     case INST_CALL:    return "call";
     case INST_NATIVE:  return "native";
@@ -520,16 +532,32 @@ Err bm_execute_inst(Bm *bm)
         bm->halt = 1;
         break;
 
-    case INST_EQI:
-        BINARY_OP(bm, u64, u64, ==);
-        break;
-
     case INST_EQF:
         BINARY_OP(bm, f64, u64, ==);
         break;
 
     case INST_GEF:
         BINARY_OP(bm, f64, u64, >=);
+        break;
+
+    case INST_GTF:
+        BINARY_OP(bm, f64, u64, >);
+        break;
+
+    case INST_LEF:
+        BINARY_OP(bm, f64, u64, <=);
+        break;
+
+    case INST_LTF:
+        BINARY_OP(bm, f64, u64, <);
+        break;
+
+    case INST_NEF:
+        BINARY_OP(bm, f64, u64, !=);
+        break;
+
+    case INST_EQI:
+        BINARY_OP(bm, u64, u64, ==);
         break;
 
     case INST_GEI:
