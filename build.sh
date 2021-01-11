@@ -9,7 +9,8 @@ LIBS=
 $CC $CFLAGS -o basm ./src/basm.c $LIBS
 $CC $CFLAGS -o bme ./src/bme.c $LIBS
 $CC $CFLAGS -o debasm ./src/debasm.c $LIBS
+$CC $CFLAGS -o bdb ./src/bdb.c $LIBS
 
 for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
-    ./basm "$example.basm" "$example.bm"
+    ./basm -g "$example.basm" "$example.bm"
 done
