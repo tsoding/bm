@@ -40,3 +40,11 @@ Add the following lines to your `.emacs` file:
 (add-to-list 'load-path "/path/to/basm-mode/")
 (require 'basm-mode)
 ```
+
+### Vim
+
+Copy [./tools/basm.vim](./tools/basm.vim) in `.vim/syntax/basm.vim`. Add the following line to your `.vimrc` file:
+
+```vimscript
+autocmd BufRead,BufNewFile *.basm set filetype=basm
+```
