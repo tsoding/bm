@@ -307,7 +307,7 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
 /*
  * TODO(#84): support for native function in the debugger
  * TODO(#85): there is no way to examine the memory in bdb
- * TODO: using String_View for parsing in bdb
+ * TODO(#86): using String_View for parsing in bdb
  */
 int main(int argc, char **argv)
 {
