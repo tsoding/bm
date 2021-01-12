@@ -78,14 +78,14 @@ int main(int argc, char *argv[])
 
         printf("inst_%zu:\n", i);
         switch (inst.type) {
-        case INST_NOP: assert(false && "TODO: NOP is not implemented");
+        case INST_NOP: assert(false && "NOP is not implemented");
         case INST_PUSH: {
             printf("    ;; push %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
             printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
             printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
         } break;
-        case INST_DROP: assert(false && "TODO: DROP is not implemented");
+        case INST_DROP: assert(false && "DROP is not implemented");
         case INST_DUP: {
             printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
@@ -131,16 +131,16 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_MULTI: assert(false && "TODO: MULTI is not implemented");
-        case INST_DIVI: assert(false && "TODO: DIVI is not implemented");
-        case INST_MODI: assert(false && "TODO: MODI is not implemented");
-        case INST_PLUSF: assert(false && "TODO: PLUSF is not implemented");
-        case INST_MINUSF: assert(false && "TODO: MINUSF is not implemented");
-        case INST_MULTF: assert(false && "TODO: MULTF is not implemented");
-        case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
-        case INST_JMP: assert(false && "TODO: JMP is not implemented");
+        case INST_MULTI: assert(false && "MULTI is not implemented");
+        case INST_DIVI: assert(false && "DIVI is not implemented");
+        case INST_MODI: assert(false && "MODI is not implemented");
+        case INST_PLUSF: assert(false && "PLUSF is not implemented");
+        case INST_MINUSF: assert(false && "MINUSF is not implemented");
+        case INST_MULTF: assert(false && "MULTF is not implemented");
+        case INST_DIVF: assert(false && "DIVF is not implemented");
+        case INST_JMP: assert(false && "JMP is not implemented");
         case INST_JMP_IF: {
-            printf("    ;; TODO: jmp_if %"PRIu64"\n", inst.operand.as_u64);
+            printf("    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rax, [rsi]\n");
@@ -153,8 +153,8 @@ int main(int argc, char *argv[])
             printf("jmp_if_escape_%zu:\n", jmp_if_escape_count);
             jmp_if_escape_count += 1;
         } break;
-        case INST_RET: assert(false && "TODO: RET is not implemented");
-        case INST_CALL: assert(false && "TODO: CALL is not implemented");
+        case INST_RET: assert(false && "RET is not implemented");
+        case INST_CALL: assert(false && "CALL is not implemented");
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 3) {
                 printf("    ;; native print_i64\n");
@@ -193,35 +193,35 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_GEI: assert(false && "TODO: GEI is not implemented");
-        case INST_GTI: assert(false && "TODO: GTI is not implemented");
-        case INST_LEI: assert(false && "TODO: LEI is not implemented");
-        case INST_LTI: assert(false && "TODO: LTI is not implemented");
-        case INST_NEI: assert(false && "TODO: NEI is not implemented");
-        case INST_EQF: assert(false && "TODO: EQF is not implemented");
-        case INST_GEF: assert(false && "TODO: GEF is not implemented");
-        case INST_GTF: assert(false && "TODO: GTF is not implemented");
-        case INST_LEF: assert(false && "TODO: LEF is not implemented");
-        case INST_LTF: assert(false && "TODO: LTF is not implemented");
-        case INST_NEF: assert(false && "TODO: NEF is not implemented");
-        case INST_ANDB: assert(false && "TODO: ANDB is not implemented");
-        case INST_ORB: assert(false && "TODO: ORB is not implemented");
-        case INST_XOR: assert(false && "TODO: XOR is not implemented");
-        case INST_SHR: assert(false && "TODO: SHR is not implemented");
-        case INST_SHL: assert(false && "TODO: SHL is not implemented");
-        case INST_NOTB: assert(false && "TODO: NOTB is not implemented");
-        case INST_READ8: assert(false && "TODO: READ8 is not implemented");
-        case INST_READ16: assert(false && "TODO: READ16 is not implemented");
-        case INST_READ32: assert(false && "TODO: READ32 is not implemented");
-        case INST_READ64: assert(false && "TODO: READ64 is not implemented");
-        case INST_WRITE8: assert(false && "TODO: WRITE8 is not implemented");
-        case INST_WRITE16: assert(false && "TODO: WRITE16 is not implemented");
-        case INST_WRITE32: assert(false && "TODO: WRITE32 is not implemented");
-        case INST_WRITE64: assert(false && "TODO: WRITE64 is not implemented");
-        case INST_I2F: assert(false && "TODO: I2F is not implemented");
-        case INST_U2F: assert(false && "TODO: U2F is not implemented");
-        case INST_F2I: assert(false && "TODO: F2I is not implemented");
-        case INST_F2U: assert(false && "TODO: F2U is not implemented");
+        case INST_GEI: assert(false && "GEI is not implemented");
+        case INST_GTI: assert(false && "GTI is not implemented");
+        case INST_LEI: assert(false && "LEI is not implemented");
+        case INST_LTI: assert(false && "LTI is not implemented");
+        case INST_NEI: assert(false && "NEI is not implemented");
+        case INST_EQF: assert(false && "EQF is not implemented");
+        case INST_GEF: assert(false && "GEF is not implemented");
+        case INST_GTF: assert(false && "GTF is not implemented");
+        case INST_LEF: assert(false && "LEF is not implemented");
+        case INST_LTF: assert(false && "LTF is not implemented");
+        case INST_NEF: assert(false && "NEF is not implemented");
+        case INST_ANDB: assert(false && "ANDB is not implemented");
+        case INST_ORB: assert(false && "ORB is not implemented");
+        case INST_XOR: assert(false && "XOR is not implemented");
+        case INST_SHR: assert(false && "SHR is not implemented");
+        case INST_SHL: assert(false && "SHL is not implemented");
+        case INST_NOTB: assert(false && "NOTB is not implemented");
+        case INST_READ8: assert(false && "READ8 is not implemented");
+        case INST_READ16: assert(false && "READ16 is not implemented");
+        case INST_READ32: assert(false && "READ32 is not implemented");
+        case INST_READ64: assert(false && "READ64 is not implemented");
+        case INST_WRITE8: assert(false && "WRITE8 is not implemented");
+        case INST_WRITE16: assert(false && "WRITE16 is not implemented");
+        case INST_WRITE32: assert(false && "WRITE32 is not implemented");
+        case INST_WRITE64: assert(false && "WRITE64 is not implemented");
+        case INST_I2F: assert(false && "I2F is not implemented");
+        case INST_U2F: assert(false && "U2F is not implemented");
+        case INST_F2I: assert(false && "F2I is not implemented");
+        case INST_F2U: assert(false && "F2U is not implemented");
         case NUMBER_OF_INSTS:
         default: assert(false && "unknown instruction");
         }
