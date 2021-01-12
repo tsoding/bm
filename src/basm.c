@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     }
     const char *output_file_path = shift(&argc, &argv);
 
-    basm_translate_source(&basm, sv_from_cstr(input_file_path), 0);
+    basm_translate_source(&basm, sv_from_cstr(input_file_path));
     basm_save_to_file(&basm, output_file_path);
 
     if (have_symbol_table) {

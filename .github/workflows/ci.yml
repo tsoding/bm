@@ -44,3 +44,4 @@ jobs:
         run: |
           ./build_msvc.bat examples
 # TODO(#21): there is no CI build for FreeBSD
+# TODO(#103): the x86_64 examples are not build on CI
