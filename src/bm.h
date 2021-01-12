@@ -222,6 +222,8 @@ typedef struct {
     size_t memory_capacity;
 
     Arena arena;
+
+    size_t include_level;
 } Basm;
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
@@ -231,8 +233,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 void basm_translate_source(Basm *basm,
-                           String_View input_file_path,
-                           size_t level);
+                           String_View input_file_path);
 
 void bm_load_standard_natives(Bm *bm);
 
@@ -1152,7 +1153,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path, size_t level)
+void basm_translate_source(Basm *basm, String_View input_file_path)
 {
     String_View original_source = arena_slurp_file(&basm->arena, input_file_path);
     String_View source = original_source;
@@ -1210,14 +1211,16 @@ void basm_translate_source(Basm *basm, String_View input_file_path, size_t level
                             line.data  += 1;
                             line.count -= 2;
 
-                            if (level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
+                            if (basm->include_level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
                                 fprintf(stderr,
                                         "%.*s:%d: ERROR: exceeded maximum include level\n",
                                         SV_FORMAT(input_file_path), line_number);
                                 exit(1);
                             }
 
-                            basm_translate_source(basm, line, level + 1);
+                            basm->include_level += 1;
+                            basm_translate_source(basm, line);
+                            basm->include_level -= 1;
                         } else {
                             fprintf(stderr,
                                     "%.*s:%d: ERROR: include file path has to be surrounded with quotation marks\n",
