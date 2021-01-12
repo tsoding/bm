@@ -8,3 +8,4 @@ debasm
 *.pdb
 /examples/*.bm.sym
 /bdb
+basm2amd64

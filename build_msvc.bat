@@ -13,6 +13,7 @@ cl.exe %CFLAGS% ./src/debasm.c
 
 cl.exe %CFLAGS% ./src/bdb.c
 
+cl.exe %CFLAGS% ./src/basm2amd64.c
 
 if "%1" == "examples" setlocal EnableDelayedExpansion && for /F "tokens=*" %%e in ('dir /b .\examples\*.basm') do (
     set name=%%e
