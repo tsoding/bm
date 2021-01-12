@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
     gen_print_i64(stdout);
     printf("_start:\n");
 
+    size_t jmp_if_escape_count = 0;
     for (size_t i = 0; i < basm.program_size; ++i) {
         Inst inst = basm.program[i];
 
@@ -139,7 +140,18 @@ int main(int argc, char *argv[])
         case INST_DIVF: assert(false && "TODO: DIVF is not implemented");
         case INST_JMP: assert(false && "TODO: JMP is not implemented");
         case INST_JMP_IF: {
-            printf("    ;; TODO: jmp_if\n");
+            printf("    ;; TODO: jmp_if %"PRIu64"\n", inst.operand.as_u64);
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    mov [stack_top], rsi\n");
+            printf("    cmp rax, 0\n");
+            printf("    je jmp_if_escape_%zu\n", jmp_if_escape_count);
+            printf("    mov rdi, inst_map\n");
+            printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+            printf("    jmp [rdi]\n");
+            printf("jmp_if_escape_%zu:\n", jmp_if_escape_count);
+            jmp_if_escape_count += 1;
         } break;
         case INST_RET: assert(false && "TODO: RET is not implemented");
         case INST_CALL: assert(false && "TODO: CALL is not implemented");
@@ -218,6 +230,11 @@ int main(int argc, char *argv[])
     printf("    ret\n");
     printf("segment .data\n");
     printf("stack_top: dq stack\n");
+    printf("inst_map: dq");
+    for (size_t i = 0; i < basm.program_size; ++i) {
+        printf(" inst_%zu,", i);
+    }
+    printf("\n");
     printf("segment .bss\n");
     printf("stack: resq BM_STACK_CAPACITY\n");
 
