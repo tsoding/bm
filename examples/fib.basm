@@ -12,7 +12,7 @@ main:
 loop:
    swap 2
    dup 0
-   native print_u64
+   native print_i64
    dup 1
    plusi
    swap 1
