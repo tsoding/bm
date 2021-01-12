@@ -7,7 +7,7 @@
 
 static void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: ./basm2amd64 <input.basm>\n");
+    fprintf(stream, "Usage: ./basm2nasm <input.basm>\n");
 }
 
 Basm basm = {0};
