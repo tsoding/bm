@@ -222,6 +222,11 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     assert(st);
     assert(out);
 
+    if (addr.count == 0)
+    {
+        return BDB_FAIL;
+    }
+
     char *endptr = NULL;
 
     *out = strtoull(addr.data, &endptr, 10);
@@ -313,7 +318,7 @@ int main(int argc, char **argv)
 
             if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
             {
-                fprintf(stderr, "ERR : Cannot parse address or labels\n");
+                fprintf(stderr, "ERR : Cannot parse address or label\n");
                 continue;
             }
 
@@ -327,7 +332,7 @@ int main(int argc, char **argv)
 
             if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
             {
-                fprintf(stderr, "ERR : Cannot parse address or labels\n");
+                fprintf(stderr, "ERR : Cannot parse address or label\n");
                 continue;
             }
 
