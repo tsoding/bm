@@ -35,16 +35,14 @@ Bdb_Err bdb_state_init(Bdb_State *state,
     return bdb_load_symtab(state, arena_sv_concat2(&state->arena, executable, ".sym"));
 }
 
-Bdb_Err bdb_find_addr_of_label(Bdb_State *state, const char *name, Inst_Addr *out)
+Bdb_Err bdb_find_addr_of_label(Bdb_State *state, String_View name, Inst_Addr *out)
 {
     assert(state);
-    assert(name);
     assert(out);
 
-    String_View _name = sv_trim_right(sv_from_cstr(name));
     for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
     {
-        if (state->labels[i].data && sv_eq(state->labels[i], _name))
+        if (state->labels[i].data && sv_eq(state->labels[i], name))
         {
             *out = i;
             return BDB_OK;
@@ -219,19 +217,17 @@ Bdb_Err bdb_step_instr(Bdb_State *state)
     }
 }
 
-Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, const char *in, Inst_Addr *out)
+Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
 {
     assert(st);
-    assert(in);
     assert(out);
 
     char *endptr = NULL;
-    size_t len = strlen(in);
 
-    *out = strtoull(in, &endptr, 10);
-    if (endptr != in + len)
+    *out = strtoull(addr.data, &endptr, 10);
+    if (endptr != addr.data + addr.count)
     {
-        if (bdb_find_addr_of_label(st, in, out) == BDB_FAIL)
+        if (bdb_find_addr_of_label(st, addr, out) == BDB_FAIL)
         {
             return BDB_FAIL;
         }
@@ -244,7 +240,6 @@ Bdb_State state = {0};
 
 /*
  * TODO(#85): there is no way to examine the memory in bdb
- * TODO(#86): using String_View for parsing in bdb
  */
 int main(int argc, char **argv)
 {
@@ -273,10 +268,16 @@ int main(int argc, char **argv)
     while (1)
     {
         printf("(bdb) ");
-        char input_buf[32];
+        char input_buf[32] = {0};
         fgets(input_buf, 32, stdin);
 
-        switch (*input_buf)
+        String_View input_sv = (String_View) {
+            .data  = input_buf,
+            .count = strlen(input_buf)
+        },
+        control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
+
+        switch (*control_word.data)
         {
         /*
          * Next instruction
@@ -310,8 +311,8 @@ int main(int argc, char **argv)
         case 'b':
         {
             // TODO(#87): `b 0` in bdb results in "ERR : Cannot parse address or labels"
-            char *addr = input_buf + 2;
             Inst_Addr break_addr;
+            String_View addr = sv_trim(input_sv);
 
             if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
             {
@@ -324,8 +325,8 @@ int main(int argc, char **argv)
         } break;
         case 'd':
         {
-            char *addr = input_buf + 2;
             Inst_Addr break_addr;
+            String_View addr = sv_trim(input_sv);
 
             if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
             {
