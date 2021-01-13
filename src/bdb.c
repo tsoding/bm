@@ -271,11 +271,9 @@ int main(int argc, char **argv)
         char input_buf[32] = {0};
         fgets(input_buf, 32, stdin);
 
-        String_View input_sv = (String_View) {
-            .data  = input_buf,
-            .count = strlen(input_buf)
-        },
-        control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
+        String_View
+            input_sv = sv_from_cstr(input_buf),
+            control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
 
         switch (*control_word.data)
         {
