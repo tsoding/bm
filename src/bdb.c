@@ -308,7 +308,6 @@ int main(int argc, char **argv)
         } break;
         case 'b':
         {
-            // TODO(#87): `b 0` in bdb results in "ERR : Cannot parse address or labels"
             Inst_Addr break_addr;
             String_View addr = sv_trim(input_sv);
 
