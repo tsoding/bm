@@ -201,6 +201,7 @@ typedef struct {
 
 void *arena_alloc(Arena *arena, size_t size);
 String_View arena_slurp_file(Arena *arena, String_View file_path);
+const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 
 typedef struct {
@@ -1021,6 +1022,14 @@ uint64_t sv_to_u64(String_View sv)
     return result;
 }
 
+const char *arena_sv_to_cstr(Arena *arena, String_View sv)
+{
+    char *cstr = arena_alloc(arena, sv.count + 1);
+    memcpy(cstr, sv.data, sv.count);
+    cstr[sv.count] = '\0';
+    return cstr;
+}
+
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
 {
     const size_t a_len = strlen(a);
@@ -1098,10 +1107,7 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
         sv.count -= 2;
         *output = basm_push_string_to_memory(basm, sv);
     } else {
-        char *cstr = arena_alloc(&basm->arena, sv.count + 1);
-        memcpy(cstr, sv.data, sv.count);
-        cstr[sv.count] = '\0';
-
+        const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
         char *endptr = 0;
         Word result = {0};
 
@@ -1324,16 +1330,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
 String_View arena_slurp_file(Arena *arena, String_View file_path)
 {
-    char *file_path_cstr = arena_alloc(arena, file_path.count + 1);
-    if (file_path_cstr == NULL) {
-        fprintf(stderr,
-                "ERROR: Could not allocate memory for the file path `%"SV_Fmt"`: %s\n",
-                SV_Arg(file_path), strerror(errno));
-        exit(1);
-    }
-
-    memcpy(file_path_cstr, file_path.data, file_path.count);
-    file_path_cstr[file_path.count] = '\0';
+    const char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
 
     FILE *f = fopen(file_path_cstr, "r");
     if (f == NULL) {
