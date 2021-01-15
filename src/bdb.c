@@ -158,9 +158,7 @@ Bdb_Err bdb_continue(Bdb_State *state)
             fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
             if (state->labels[state->bm.ip].data)
             {
-                fprintf(stdout, " label '%.*s'",
-                        (int)state->labels[state->bm.ip].count,
-                        state->labels[state->bm.ip].data);
+                fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(state->labels[state->bm.ip]));
             }
 
             fprintf(stdout, "\n");
