@@ -1,13 +1,6 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
 
-#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__NetBSD__)   \
-    || defined(__OpenBSD__) || defined(__DragonFly__)
-#include <limits.h>
-#else
-#define PATH_MAX 4096
-#endif
-
 Basm basm = {0};
 
 static char *shift(int *argc, char ***argv)
@@ -52,16 +45,10 @@ int main(int argc, char **argv)
     basm_save_to_file(&basm, output_file_path);
 
     if (have_symbol_table) {
-        char sym_file_name[PATH_MAX];
+        const char *sym_file_name = arena_cstr_concat2(&basm.arena, output_file_path, ".sym");
 
-        size_t output_file_path_len = strlen(output_file_path);
-
-        memcpy(sym_file_name, output_file_path, output_file_path_len);
-        memcpy(sym_file_name + output_file_path_len,
-               ".sym", 5);
         FILE *symbol_file = fopen(sym_file_name, "w");
-        if (!symbol_file)
-        {
+        if (!symbol_file) {
             fprintf(stderr, "ERROR: Unable to open symbol table file\n");
             return EXIT_FAILURE;
         }
