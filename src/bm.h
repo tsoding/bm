@@ -203,6 +203,7 @@ void *arena_alloc(Arena *arena, size_t size);
 String_View arena_slurp_file(Arena *arena, String_View file_path);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
+const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
 
 typedef struct {
     String_View name;
@@ -1028,6 +1029,17 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv)
     memcpy(cstr, sv.data, sv.count);
     cstr[sv.count] = '\0';
     return cstr;
+}
+
+const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b)
+{
+    const size_t a_len = strlen(a);
+    const size_t b_len = strlen(b);
+    char *buf = arena_alloc(arena, a_len + b_len + 1);
+    memcpy(buf, a, a_len);
+    memcpy(buf + a_len, b, b_len);
+    buf[a_len + b_len] = '\0';
+    return buf;
 }
 
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
