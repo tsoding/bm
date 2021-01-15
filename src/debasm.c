@@ -2,8 +2,6 @@
 #include "./bm.h"
 #include <inttypes.h>
 
-Bm bm = {0};
-
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -14,6 +12,8 @@ int main(int argc, char *argv[])
 
     const char *input_file_path = argv[1];
 
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Bm bm = {0};
     bm_load_program_from_file(&bm, input_file_path);
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {

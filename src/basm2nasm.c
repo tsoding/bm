@@ -10,8 +10,6 @@ static void usage(FILE *stream)
     fprintf(stream, "Usage: ./basm2nasm <input.basm>\n");
 }
 
-Basm basm = {0};
-
 static void gen_print_i64(FILE *stream)
 {
     fprintf(stream, "print_i64:\n");
@@ -59,6 +57,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Basm basm = {0};
     basm_translate_source(&basm, sv_from_cstr(argv[1]));
 
     printf("BITS 64\n");

@@ -1,8 +1,6 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
 
-Basm basm = {0};
-
 static char *shift(int *argc, char ***argv)
 {
     assert(*argc > 0);
@@ -41,6 +39,8 @@ int main(int argc, char **argv)
     }
     const char *output_file_path = shift(&argc, &argv);
 
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Basm basm = {0};
     basm_translate_source(&basm, sv_from_cstr(input_file_path));
     basm_save_to_file(&basm, output_file_path);
 

@@ -239,8 +239,6 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
-Bdb_State state = {0};
-
 /*
  * TODO(#85): there is no way to examine the memory in bdb
  */
@@ -256,6 +254,8 @@ int main(int argc, char **argv)
      * Create the BDB state and initialize it with the file names
      */
 
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Bdb_State state = {0};
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n"

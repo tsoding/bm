@@ -1,9 +1,7 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
 
-Bm bm = {0};
-
-static  char *shift(int *argc, char ***argv)
+static char *shift(int *argc, char ***argv)
 {
     assert(*argc > 0);
     char *result = **argv;
@@ -19,6 +17,9 @@ static void usage(FILE *stream, const char *program)
 
 int main(int argc, char **argv)
 {
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Bm bm = {0};
+
     const char *program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     int limit = -1;
