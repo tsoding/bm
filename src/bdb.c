@@ -64,7 +64,7 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
         String_View raw_addr   = sv_chop_by_delim(&symtab, '\t');
         symtab = sv_trim_left(symtab);
         String_View label_name = sv_chop_by_delim(&symtab, '\n');
-        Inst_Addr addr = (Inst_Addr)sv_to_int(raw_addr);
+        Inst_Addr addr = sv_to_u64(raw_addr);
 
         /*
          * Huh? you ask? Yes, if we have a label, whose size is bigger

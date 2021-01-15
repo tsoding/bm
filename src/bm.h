@@ -52,7 +52,7 @@ String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
 bool sv_eq(String_View a, String_View b);
-int sv_to_int(String_View sv);
+uint64_t sv_to_u64(String_View sv);
 
 typedef enum {
     ERR_OK = 0,
@@ -1010,12 +1010,12 @@ bool sv_eq(String_View a, String_View b)
     }
 }
 
-int sv_to_int(String_View sv)
+uint64_t sv_to_u64(String_View sv)
 {
-    int result = 0;
+    uint64_t result = 0;
 
     for (size_t i = 0; i < sv.count && isdigit(sv.data[i]); ++i) {
-        result = result * 10 + sv.data[i] - '0';
+        result = result * 10 + (uint64_t) sv.data[i] - '0';
     }
 
     return result;
