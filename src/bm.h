@@ -40,11 +40,11 @@ typedef struct {
 } String_View;
 
 // printf macros for String_View
-#define SV_Fmt "%.*s"
+#define SV_Fmt ".*s"
 #define SV_Arg(sv) (int) sv.count, sv.data
 // USAGE: 
 //   String_View name = ...;
-//   printf("Name: "SV_Fmt"\n", SV_Arg(name));
+//   printf("Name: %"SV_Fmt"\n", SV_Arg(name));
 
 String_View sv_from_cstr(const char *cstr);
 String_View sv_trim_left(String_View sv);
@@ -1187,7 +1187,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         Word word = {0};
                         if (!basm_translate_literal(basm, value, &word)) {
                             fprintf(stderr,
-                                    SV_Fmt":%d: ERROR: `"SV_Fmt"` is not a number",
+                                   "%"SV_Fmt":%d: ERROR: `%"SV_Fmt"` is not a number",
                                     SV_Arg(input_file_path),
                                     line_number,
                                     SV_Arg(value));
@@ -1197,7 +1197,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         if (!basm_bind_value(basm, name, word)) {
                             // TODO(#51): label redefinition error does not tell where the first label was already defined
                             fprintf(stderr,
-                                    SV_Fmt":%d: ERROR: name `"SV_Fmt"` is already bound\n",
+                                   "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
                                     SV_Arg(input_file_path),
                                     line_number,
                                     SV_Arg(name));
@@ -1205,7 +1205,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         }
                     } else {
                         fprintf(stderr,
-                                SV_Fmt":%d: ERROR: binding name is not provided\n",
+                               "%"SV_Fmt":%d: ERROR: binding name is not provided\n",
                                 SV_Arg(input_file_path), line_number);
                         exit(1);
                     }
@@ -1219,7 +1219,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                             if (basm->include_level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
                                 fprintf(stderr,
-                                        SV_Fmt":%d: ERROR: exceeded maximum include level\n",
+                                       "%"SV_Fmt":%d: ERROR: exceeded maximum include level\n",
                                         SV_Arg(input_file_path), line_number);
                                 exit(1);
                             }
@@ -1229,19 +1229,19 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             basm->include_level -= 1;
                         } else {
                             fprintf(stderr,
-                                    SV_Fmt":%d: ERROR: include file path has to be surrounded with quotation marks\n",
+                                   "%"SV_Fmt":%d: ERROR: include file path has to be surrounded with quotation marks\n",
                                     SV_Arg(input_file_path), line_number);
                             exit(1);
                         }
                     } else {
                         fprintf(stderr,
-                                SV_Fmt":%d: ERROR: include file path is not provided\n",
+                               "%"SV_Fmt":%d: ERROR: include file path is not provided\n",
                                 SV_Arg(input_file_path), line_number);
                         exit(1);
                     }
                 } else {
                     fprintf(stderr,
-                            SV_Fmt":%d: ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
+                           "%"SV_Fmt":%d: ERROR: unknown pre-processor directive `%"SV_Fmt"`\n",
                             SV_Arg(input_file_path),
                             line_number,
                             SV_Arg(token));
@@ -1258,7 +1258,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     if (!basm_bind_value(basm, label, word_u64(basm->program_size))) {
                         fprintf(stderr,
-                                SV_Fmt":%d: ERROR: name `"SV_Fmt"` is already bound to something\n",
+                               "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound to something\n",
                                 SV_Arg(input_file_path),
                                 line_number,
                                 SV_Arg(label));
@@ -1278,7 +1278,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                         if (inst_has_operand(inst_type)) {
                             if (operand.count == 0) {
-                                fprintf(stderr, SV_Fmt":%d: ERROR: instruction `"SV_Fmt"` requires an operand\n",
+                                fprintf(stderr,"%"SV_Fmt":%d: ERROR: instruction `%"SV_Fmt"` requires an operand\n",
                                         SV_Arg(input_file_path),
                                         line_number,
                                         SV_Arg(token));
@@ -1296,7 +1296,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                         basm->program_size += 1;
                     } else {
-                        fprintf(stderr, SV_Fmt":%d: ERROR: unknown instruction `"SV_Fmt"`\n",
+                        fprintf(stderr,"%"SV_Fmt":%d: ERROR: unknown instruction `%"SV_Fmt"`\n",
                                 SV_Arg(input_file_path),
                                 line_number,
                                 SV_Arg(token));
@@ -1315,7 +1315,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 name,
                 &basm->program[basm->deferred_operands[i].addr].operand)) {
             // TODO(#52): second pass label resolution errors don't report the location in the source code
-            fprintf(stderr, SV_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+            fprintf(stderr,"%"SV_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
                     SV_Arg(input_file_path), SV_Arg(name));
             exit(1);
         }
@@ -1327,7 +1327,7 @@ String_View arena_slurp_file(Arena *arena, String_View file_path)
     char *file_path_cstr = arena_alloc(arena, file_path.count + 1);
     if (file_path_cstr == NULL) {
         fprintf(stderr,
-                "ERROR: Could not allocate memory for the file path `"SV_Fmt"`: %s\n",
+                "ERROR: Could not allocate memory for the file path `%"SV_Fmt"`: %s\n",
                 SV_Arg(file_path), strerror(errno));
         exit(1);
     }
