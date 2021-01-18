@@ -16,5 +16,5 @@ cl.exe %CFLAGS% .\src\basm2nasm.c /link /out:.\build\bin\basm2nasm.exe
 
 if "%1" == "examples" setlocal EnableDelayedExpansion && for /F "tokens=*" %%e in ('dir /b .\examples\*.basm') do (
     set name=%%e
-    ".\build\bin\basm.exe" -g .\examples\%%e .\build\examples\!name:~0,-4!bm
+    ".\build\bin\basm.ex" -g .\examples\%%e .\build\examples\!name:~0,-4!bm
 )
