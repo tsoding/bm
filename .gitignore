@@ -11,3 +11,4 @@ basm
 debasm
 bdb
 basm2nasm
+build/

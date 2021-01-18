@@ -6,12 +6,15 @@ CC=${CC:=/usr/bin/cc}
 CFLAGS="-Wall -Wextra -Wswitch-enum -Wmissing-prototypes -Wconversion -pedantic -fno-strict-aliasing -ggdb -std=c11"
 LIBS=
 
-$CC $CFLAGS -o basm ./src/basm.c $LIBS
-$CC $CFLAGS -o bme ./src/bme.c $LIBS
-$CC $CFLAGS -o debasm ./src/debasm.c $LIBS
-$CC $CFLAGS -o bdb ./src/bdb.c $LIBS
-$CC $CFLAGS -o basm2nasm ./src/basm2nasm.c $LIBS
+mkdir -p build/bin
+mkdir -p build/examples
+
+$CC $CFLAGS -o build/bin/basm ./src/basm.c $LIBS
+$CC $CFLAGS -o build/bin/bme ./src/bme.c $LIBS
+$CC $CFLAGS -o build/bin/debasm ./src/debasm.c $LIBS
+$CC $CFLAGS -o build/bin/bdb ./src/bdb.c $LIBS
+$CC $CFLAGS -o build/bin/basm2nasm ./src/basm2nasm.c $LIBS
 
 for example in `find examples/ -name \*.basm | sed "s/\.basm//"`; do
-    ./basm -g "$example.basm" "$example.bm"
+    ./build/bin/basm -g "$example.basm" "build/$example.bm"
 done

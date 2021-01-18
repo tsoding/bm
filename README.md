@@ -8,10 +8,10 @@ Simple Virtual Machine with its own Bytecode and Assembly language.
 
 ```console
 $ ./build.sh                  # or ./build_msvc.bat if you are on Windows
-$ ./bme -i ./examples/hello.bm
-$ ./bme -i ./examples/fib.bm
-$ ./bme -i ./examples/e.bm
-$ ./bme -i ./examples/pi.bm
+$ ./build/bin/bme -i ./build/examples/hello.bm
+$ ./build/bin/bme -i ./build/examples/fib.bm
+$ ./build/bin/bme -i ./build/examples/e.bm
+$ ./build/bin/bme -i ./build/examples/pi.bm
 ```
 
 ## Components
