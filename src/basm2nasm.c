@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
         } break;
         case INST_DROP: {
             printf("    ;; TODO: drop\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
         } break;
         case INST_DUP: {
             printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
@@ -194,7 +197,7 @@ int main(int argc, char *argv[])
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
-            printf("    ;; TODO; read8\n");
+            printf("    ;; TODO; write8\n");
         } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
