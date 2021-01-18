@@ -151,17 +151,17 @@ int main(int argc, char *argv[])
             jmp_if_escape_count += 1;
         } break;
         case INST_RET: {
-            printf("    ;; TODO: ret\n");
+            printf("    ;; FIXME: ret\n");
         } break;
         case INST_CALL: {
-            printf("    ;; TODO: call\n");
+            printf("    ;; FIXME: call\n");
         } break;
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 3) {
                 printf("    ;; native print_i64\n");
                 printf("    call print_i64\n");
             } else if (inst.operand.as_u64 == 7) {
-                printf("    ;; TODO: native write\n");
+                printf("    ;; FIXME: native write\n");
             } else {
                 assert(false && "unsupported native function");
             }
@@ -214,13 +214,13 @@ int main(int argc, char *argv[])
         case INST_SHL: assert(false && "SHL is not implemented");
         case INST_NOTB: assert(false && "NOTB is not implemented");
         case INST_READ8: {
-            printf("    ;; TODO; read8\n");
+            printf("    ;; FIXME; read8\n");
         } break;
         case INST_READ16: assert(false && "READ16 is not implemented");
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
-            printf("    ;; TODO; write8\n");
+            printf("    ;; FIXME; write8\n");
         } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
