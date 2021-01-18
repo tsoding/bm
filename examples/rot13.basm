@@ -42,7 +42,7 @@ rot13:
     ret
 
 main:
-    push 0
+    push secret
 
 loop:
     dup 0
@@ -101,7 +101,7 @@ print:
     push 10
     write8
 
-    push 0
+    push secret
     push 1
     push length
     plusi
