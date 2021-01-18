@@ -11,7 +11,7 @@ loop:
     dup 0
     push 1
     andb
-    native print_u64
+    call dump_u64
 
     push 1
     shr

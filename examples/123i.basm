@@ -6,7 +6,7 @@ main:
     push 3
     plusi
     plusi
-    native print_i64
+    call dump_u64
     halt
 
 %entry main
