@@ -17,8 +17,6 @@
 %bind a 97
 %bind z 122
 
-jmp main 
-
 ; high >= value >= low
 is_between:
     swap 3
@@ -110,3 +108,5 @@ print:
     native write
 
     halt
+
+%entry main

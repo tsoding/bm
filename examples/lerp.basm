@@ -1,7 +1,5 @@
 %include "./examples/natives.hasm"
 
-    jmp main
-
 ; a
 ; b
 ; t
@@ -51,3 +49,5 @@ loop:
 
     jmp_if loop
     halt
+
+%entry main

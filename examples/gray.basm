@@ -29,3 +29,5 @@ loop:
     jmp_if loop
     
     halt
+
+%entry main

@@ -6,6 +6,7 @@
 
 ; sum(1/n!)
 ; 1/1 + 1/1 + 1/(1 * 2) + 1/(1 * 2 * 3) + ...
+main:
    push 1.0       ; n
    push 1.0       ; n!
    push 1.0       ; sum
@@ -40,3 +41,5 @@ loop:
    native print_f64
    
    halt
+
+%entry main

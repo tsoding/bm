@@ -1,9 +1,12 @@
 %include "./examples/natives.hasm"
 
-push 1
-push 2
-push 3
-plusi
-plusi
-native print_i64
-halt
+main:
+    push 1
+    push 2
+    push 3
+    plusi
+    plusi
+    native print_i64
+    halt
+
+%entry main
