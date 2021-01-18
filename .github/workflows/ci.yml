@@ -6,9 +6,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
+      - name: install 3rd party build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          ./build.sh
+          ./build-x86_64.sh
         env:
           CC: gcc
           CXX: g++
@@ -16,9 +20,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
+      - name: install 3rd party build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          ./build.sh
+          ./build-x86_64.sh
         env:
           CC: clang
           CXX: clang++
@@ -44,4 +52,5 @@ jobs:
         run: |
           ./build_msvc.bat examples
 # TODO(#21): there is no CI build for FreeBSD
-# TODO(#103): the x86_64 examples are not build on CI
+# TODO(#113): the x86_64 examples do not work on Windows
+# TODO(#114): the x86_64 examples do not work on MacOS
