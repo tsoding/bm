@@ -303,6 +303,34 @@ int main(int argc, char **argv)
             printf("ip = %" PRIu64 "\n", state.bm.ip);
         } break;
         /*
+         * Inspect the memory
+         */
+        case 'x':
+        {
+            input_sv = sv_trim(input_sv);
+            String_View where_sv = sv_chop_by_delim(&input_sv, ' ');
+            String_View count_sv = input_sv;
+
+            Inst_Addr where = 0;
+            if (bdb_parse_label_or_addr(&state, where_sv, &where) == BDB_FAIL)
+            {
+                fprintf(stderr, "ERR : Cannot parse address or label `%"SV_Fmt"`\n", SV_Arg(where_sv));
+                continue;
+            }
+
+            Inst_Addr count = 0;
+            if (bdb_parse_label_or_addr(&state, count_sv, &count) == BDB_FAIL)
+            {
+                fprintf(stderr, "ERR : Cannot parse address or label `%"SV_Fmt"`\n", SV_Arg(count_sv));
+                continue;
+            }
+
+            for (Inst_Addr i = 0; i < count && where + i < BM_MEMORY_CAPACITY; ++i) {
+                printf("%02X ", state.bm.memory[where + i]);
+            }
+            printf("\n");
+        } break;
+        /*
          * Dump the stack
          */
         case 's':
@@ -366,6 +394,7 @@ int main(int argc, char **argv)
                    "c - continue program execution\n"
                    "s - stack dump\n"
                    "i - instruction pointer\n"
+                   "x - inspect the memory\n"
                    "b - set breakpoint at address or label\n"
                    "d - destroy breakpoint at address or label\n"
                    "q - quit\n");
