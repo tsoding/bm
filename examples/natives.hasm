@@ -6,10 +6,3 @@
 %bind print_ptr   5
 %bind dump_memory 6
 %bind write       7
-
-just_some_garbage:
-    push 1
-    push 2
-    plusi
-    drop
-    ret
