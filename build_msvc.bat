@@ -18,11 +18,3 @@ if "%1" == "examples" setlocal EnableDelayedExpansion && for /F "tokens=*" %%e i
     set name=%%e
     ".\build\bin\basm.exe" -g .\examples\%%e .\build\examples\!name:~0,-4!bm
 )
-
-dir
-cd build
-dir
-cd bin
-dir
-cd ..\examples
-dir
