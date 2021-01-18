@@ -42,6 +42,8 @@ print_u64_:
         not
     jmp_if print_u64_loop
 
+print_u64_after_loop:
+
     dup 0
     push 10
     write8
@@ -50,7 +52,6 @@ print_u64_:
     plusi
 
     push print_memory
-    swap 1
     minusi
 
     push print_memory
