@@ -1,8 +1,0 @@
-%include "./examples/natives.hasm"
-
-main:
-    push 1234567890
-    call print_u64_
-    halt
-
-%entry main
