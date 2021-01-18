@@ -901,6 +901,8 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
+    bm->ip = meta.entry;
+
     if (meta.memory_capacity > BM_MEMORY_CAPACITY) {
         fprintf(stderr,
                 "ERROR: %s: memory section is too big. The file wants %" PRIu64 " bytes. But the capacity is %"  PRIu64 " bytes\n",
