@@ -225,6 +225,9 @@ typedef struct {
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
+    Inst_Addr entry;
+    bool has_entry;
+    String_View deferred_entry_binding_name;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -1151,6 +1154,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     Bm_File_Meta meta = {
         .magic = BM_FILE_MAGIC,
         .version = BM_FILE_VERSION,
+        .entry = basm->entry,
         .program_size = basm->program_size,
         .memory_size = basm->memory_size,
         .memory_capacity = basm->memory_capacity,
@@ -1260,6 +1264,33 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                 SV_Arg(input_file_path), line_number);
                         exit(1);
                     }
+                } else if (sv_eq(token, sv_from_cstr("entry"))) {
+                    if (basm->has_entry) {
+                        // TODO: "entry point already set" error does not tell where exactly the entry has been already set
+                        fprintf(stderr,
+                                "%"SV_Fmt":%d: ERROR: entry point has been already set!\n",
+                                SV_Arg(input_file_path), line_number);
+                        exit(1);
+                    }
+
+                    line = sv_trim(line);
+
+                    if (line.count == 0) {
+                        fprintf(stderr,
+                                "%"SV_Fmt":%d: ERROR: literal or binding name is expected\n",
+                                SV_Arg(input_file_path), line_number);
+                        exit(1);
+                    }
+
+                    Word entry = {0};
+
+                    if (!basm_translate_literal(basm, line, &entry)) {
+                        basm->deferred_entry_binding_name = line;
+                    } else {
+                        basm->entry = entry.as_u64;
+                    }
+
+                    basm->has_entry = true;
                 } else {
                     fprintf(stderr,
                            "%"SV_Fmt":%d: ERROR: unknown pre-processor directive `%"SV_Fmt"`\n",
@@ -1340,6 +1371,21 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     SV_Arg(input_file_path), SV_Arg(name));
             exit(1);
         }
+    }
+
+    if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
+        Word output = {0};
+        if (!basm_resolve_binding(
+                basm,
+                basm->deferred_entry_binding_name,
+                &output)) {
+            fprintf(stderr,"%"SV_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
+                    SV_Arg(input_file_path),
+                    SV_Arg(basm->deferred_entry_binding_name));
+            exit(1);
+        }
+
+        basm->entry = output.as_u64;
     }
 }
 

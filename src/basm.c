@@ -42,6 +42,14 @@ int main(int argc, char **argv)
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Basm basm = {0};
     basm_translate_source(&basm, sv_from_cstr(input_file_path));
+
+    if (!basm.has_entry) {
+        fprintf(stderr, "%s: ERROR: entry point for a BM program is not provided. Use preprocessor directive %%entry to provide the entry point. Examples:\n", input_file_path);
+        fprintf(stderr, "  %%entry main\n");
+        fprintf(stderr, "  %%entry 42\n");
+        exit(1);
+    }
+
     basm_save_to_file(&basm, output_file_path);
 
     if (have_symbol_table) {

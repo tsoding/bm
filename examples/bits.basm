@@ -5,7 +5,6 @@
 
 ;; N >> 1
 
-    jmp main
 main:
     push N
 loop:
@@ -25,3 +24,5 @@ loop:
     jmp_if loop
 
     halt
+
+%entry main
