@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
             printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
         } break;
         case INST_DROP: {
-            printf("    ;; TODO: drop\n");
+            printf("    ;; drop\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
@@ -101,7 +101,17 @@ int main(int argc, char *argv[])
         } break;
         case INST_MULTI: assert(false && "MULTI is not implemented");
         case INST_DIVI: {
-            printf("    ;; TODO: divi\n");
+            printf("    ;; divi\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rbx, [rsi]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    xor rdx, rdx\n");
+            printf("    idiv rbx\n");
+            printf("    mov [rsi], rax\n");
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MODI: {
             printf("    ;; TODO: modi\n");
