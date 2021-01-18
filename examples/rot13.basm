@@ -12,11 +12,6 @@
 %bind ROT13 13
 %bind MOD   26
 
-%bind A 65
-%bind Z 90
-%bind a 97
-%bind z 122
-
 ; high >= value >= low
 is_between:
     swap 3
@@ -50,13 +45,13 @@ loop:
 
     upper_case:
         dup 0
-        push A
-        push Z
+        push 'A'
+        push 'Z'
         call is_between
         not
         jmp_if lower_case
 
-        push A      ; lower bound
+        push 'A'      ; lower bound
         call rot13
 
         dup 1
@@ -67,13 +62,13 @@ loop:
 
     lower_case:
         dup 0
-        push a
-        push z
+        push 'a'
+        push 'z'
         call is_between
         not
         jmp_if not_a_rot_char
 
-        push a      ; lower bound
+        push 'a'      ; lower bound
         call rot13
         
         dup 1
