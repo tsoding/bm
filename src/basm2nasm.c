@@ -131,7 +131,10 @@ int main(int argc, char *argv[])
         case INST_MULTF: assert(false && "MULTF is not implemented");
         case INST_DIVF: assert(false && "DIVF is not implemented");
         case INST_JMP: {
-            printf("    ;; TODO: jmp\n");
+            printf("    ;; jmp\n");
+            printf("    mov rdi, inst_map\n");
+            printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+            printf("    jmp [rdi]\n");
         } break;
         case INST_JMP_IF: {
             printf("    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
