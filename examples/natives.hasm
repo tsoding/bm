@@ -6,7 +6,7 @@
 %bind dump_memory 6
 %bind write       7
 
-;; TODO: a better way of allocating memory for standard printing functions
+;; TODO(#127): a better way of allocating memory for standard printing functions
 %bind print_memory "******************************"
 
 ;; addr_a
