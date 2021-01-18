@@ -48,3 +48,5 @@ highlight default link basmFloat Float
 highlight default link basmString String
 
 let b:current_syntax = "basm"
+
+" TODO(#122): basm.vim does not highlight character literals
