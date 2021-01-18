@@ -88,7 +88,9 @@ int main(int argc, char *argv[])
             printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
             printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
         } break;
-        case INST_DROP: assert(false && "DROP is not implemented");
+        case INST_DROP: {
+            printf("    ;; TODO: drop\n");
+        } break;
         case INST_DUP: {
             printf("    ;; dup %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
@@ -135,13 +137,19 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MULTI: assert(false && "MULTI is not implemented");
-        case INST_DIVI: assert(false && "DIVI is not implemented");
-        case INST_MODI: assert(false && "MODI is not implemented");
+        case INST_DIVI: {
+            printf("    ;; TODO: divi\n");
+        } break;
+        case INST_MODI: {
+            printf("    ;; TODO: modi\n");
+        } break;
         case INST_PLUSF: assert(false && "PLUSF is not implemented");
         case INST_MINUSF: assert(false && "MINUSF is not implemented");
         case INST_MULTF: assert(false && "MULTF is not implemented");
         case INST_DIVF: assert(false && "DIVF is not implemented");
-        case INST_JMP: assert(false && "JMP is not implemented");
+        case INST_JMP: {
+            printf("    ;; TODO: jmp\n");
+        } break;
         case INST_JMP_IF: {
             printf("    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
@@ -156,12 +164,18 @@ int main(int argc, char *argv[])
             printf("jmp_if_escape_%zu:\n", jmp_if_escape_count);
             jmp_if_escape_count += 1;
         } break;
-        case INST_RET: assert(false && "RET is not implemented");
-        case INST_CALL: assert(false && "CALL is not implemented");
+        case INST_RET: {
+            printf("    ;; TODO: ret\n");
+        } break;
+        case INST_CALL: {
+            printf("    ;; TODO: call\n");
+        } break;
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 3) {
                 printf("    ;; native print_i64\n");
                 printf("    call print_i64\n");
+            } else if (inst.operand.as_u64 == 7) {
+                printf("    ;; TODO: native write\n");
             } else {
                 assert(false && "unsupported native function");
             }
@@ -213,11 +227,15 @@ int main(int argc, char *argv[])
         case INST_SHR: assert(false && "SHR is not implemented");
         case INST_SHL: assert(false && "SHL is not implemented");
         case INST_NOTB: assert(false && "NOTB is not implemented");
-        case INST_READ8: assert(false && "READ8 is not implemented");
+        case INST_READ8: {
+            printf("    ;; TODO; read8\n");
+        } break;
         case INST_READ16: assert(false && "READ16 is not implemented");
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
-        case INST_WRITE8: assert(false && "WRITE8 is not implemented");
+        case INST_WRITE8: {
+            printf("    ;; TODO; read8\n");
+        } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
         case INST_WRITE64: assert(false && "WRITE64 is not implemented");
