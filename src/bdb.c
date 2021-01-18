@@ -268,7 +268,7 @@ int main(int argc, char **argv)
     }
 
     // TODO(#94): repeat previous command in bdb
-    while (1)
+    while (!feof(stdin))
     {
         printf("(bdb) ");
         char input_buf[32] = {0};
