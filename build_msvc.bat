@@ -1,18 +1,18 @@
 @echo off
 rem launch this from msvc-enabled console
 
-set CFLAGS=/std:c11 /O2 /FC /W4 /WX /wd4996 /nologo
+set CFLAGS=/std:c11 /O2 /FC /W4 /WX /wd4996 /nologo /Fe.\build\bin\
 set LIBS=
 
 mkdir build
 mkdir build\bin
 mkdir build\examples
 
-cl.exe %CFLAGS% .\src\basm.c /Fe.\build\bin\basm.exe
-cl.exe %CFLAGS% .\src\bme.c /Fe.\build\bin\bme.exe
-cl.exe %CFLAGS% .\src\debasm.c /Fe.\build\bin\debasm.exe
-cl.exe %CFLAGS% .\src\bdb.c /Fe.\build\bin\bdb.exe
-cl.exe %CFLAGS% .\src\basm2nasm.c /Fe.\build\bin\basm2nasm.exe
+cl.exe %CFLAGS% .\src\basm.c
+cl.exe %CFLAGS% .\src\bme.c
+cl.exe %CFLAGS% .\src\debasm.c
+cl.exe %CFLAGS% .\src\bdb.c
+cl.exe %CFLAGS% .\src\basm2nasm.c
 
 if "%1" == "examples" setlocal EnableDelayedExpansion && for /F "tokens=*" %%e in ('dir /b .\examples\*.basm') do (
     set name=%%e
