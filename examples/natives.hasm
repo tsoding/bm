@@ -2,11 +2,11 @@
 %bind free        1
 %bind print_f64   2
 %bind print_i64   3
-%bind print_u64   4
 %bind print_ptr   5
 %bind dump_memory 6
 %bind write       7
 
+;; TODO: a better way of allocating memory for standard printing functions
 %bind print_memory "******************************"
 
 ;; addr_a
@@ -76,12 +76,12 @@ reverse:
 
     ret
 
-print_u64_:
+dump_u64:
     swap 1
 
     push print_memory
 
-    print_u64_loop:
+    dump_u64_loop:
         dup 1
         push 10
         modi
@@ -104,9 +104,9 @@ print_u64_:
         push 0
         eqi
         not
-    jmp_if print_u64_loop
+    jmp_if dump_u64_loop
 
-print_u64_after_loop:
+dump_u64_after_loop:
     push print_memory
     minusi
     push print_memory
