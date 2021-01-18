@@ -1,7 +1,7 @@
 @echo off
 rem launch this from msvc-enabled console
 
-set CFLAGS=/std:c11 /O2 /FC /W4 /WX /wd4996 /nologo
+set CFLAGS=/std:c11 /O2 /FC /W4 /WX /wd4996 /nologo /Fo".\build\bin\"
 set LIBS=
 
 mkdir build
