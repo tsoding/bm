@@ -114,7 +114,17 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MODI: {
-            printf("    ;; TODO: modi\n");
+            printf("    ;; modi\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rbx, [rsi]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    xor rdx, rdx\n");
+            printf("    idiv rbx\n");
+            printf("    mov [rsi], rdx\n");
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
         } break;
         case INST_PLUSF: assert(false && "PLUSF is not implemented");
         case INST_MINUSF: assert(false && "MINUSF is not implemented");
