@@ -42,7 +42,7 @@ typedef struct {
 // printf macros for String_View
 #define SV_Fmt ".*s"
 #define SV_Arg(sv) (int) sv.count, sv.data
-// USAGE: 
+// USAGE:
 //   String_View name = ...;
 //   printf("Name: %"SV_Fmt"\n", SV_Arg(name));
 
@@ -181,12 +181,13 @@ void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0x6D62
-#define BM_FILE_VERSION 4
+#define BM_FILE_VERSION 5
 
 PACK(struct Bm_File_Meta {
     uint16_t magic;
     uint16_t version;
     uint64_t program_size;
+    uint64_t entry;
     uint64_t memory_size;
     uint64_t memory_capacity;
 });
