@@ -76,4 +76,6 @@
 
 (provide 'basm-mode)
 
+;;; TODO(#123): basm-mode does not highlight character literals
+
 ;;; basm-mode.el ends here
