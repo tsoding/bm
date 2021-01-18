@@ -1274,7 +1274,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     }
                 } else if (sv_eq(token, sv_from_cstr("entry"))) {
                     if (basm->has_entry) {
-                        // TODO: "entry point already set" error does not tell where exactly the entry has been already set
+                        // TODO(#124): "entry point already set" error does not tell where exactly the entry has been already set
                         fprintf(stderr,
                                 "%"SV_Fmt":%d: ERROR: entry point has been already set!\n",
                                 SV_Arg(input_file_path), line_number);
