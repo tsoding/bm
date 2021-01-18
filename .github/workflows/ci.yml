@@ -34,12 +34,9 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v1
-      - name: install 3rd party build tools
-        run: |
-          brew install nasm
       - name: build all and examples
         run: |
-          ./build-x86_64.sh
+          ./build.sh
         env:
           CC: clang
           CXX: clang++
@@ -55,4 +52,5 @@ jobs:
         run: |
           ./build_msvc.bat examples
 # TODO(#21): there is no CI build for FreeBSD
-# TODO: the x86_64 examples are not build on MSVC CI
+# TODO: the x86_64 examples do not work on Windows
+# TODO: the x86_64 examples do not work on MacOS
