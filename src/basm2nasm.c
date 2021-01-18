@@ -10,45 +10,6 @@ static void usage(FILE *stream)
     fprintf(stream, "Usage: ./basm2nasm <input.basm>\n");
 }
 
-static void gen_print_i64(FILE *stream)
-{
-    fprintf(stream, "print_i64:\n");
-    fprintf(stream, "    ;; extracting input from the BM's stack\n");
-    fprintf(stream, "    mov rsi, [stack_top]\n");
-    fprintf(stream, "    sub rsi, BM_WORD_SIZE\n");
-    fprintf(stream, "    mov rax, [rsi]\n");
-    fprintf(stream, "    mov [stack_top], rsi\n");
-    fprintf(stream, "    ;; rax contains the value we need to print\n");
-    fprintf(stream, "    ;; rdi is the counter of chars\n");
-    fprintf(stream, "    mov rdi, 0\n");
-    fprintf(stream, "    ;; adding the new line\n");
-    fprintf(stream, "    dec rsp\n");
-    fprintf(stream, "    inc rdi\n");
-    fprintf(stream, "    mov BYTE [rsp], 10\n");
-    fprintf(stream, ".loop:\n");
-    fprintf(stream, "    xor rdx, rdx\n");
-    fprintf(stream, "    mov rbx, 10\n");
-    fprintf(stream, "    div rbx\n");
-    fprintf(stream, "    add rdx, '0'\n");
-    fprintf(stream, "    dec rsp\n");
-    fprintf(stream, "    inc rdi\n");
-    fprintf(stream, "    mov [rsp], dl\n");
-    fprintf(stream, "    cmp rax, 0\n");
-    fprintf(stream, "    jne .loop\n");
-    fprintf(stream, "    ;; rsp - points at the beginning of the buf\n");
-    fprintf(stream, "    ;; rdi - contains the size of the buf\n");
-    fprintf(stream, "    ;; printing the buffer\n");
-    fprintf(stream, "    mov rbx, rdi\n");
-    fprintf(stream, "    ;; write(STDOUT, buf, buf_size)\n");
-    fprintf(stream, "    mov rax, SYS_WRITE\n");
-    fprintf(stream, "    mov rdi, STDOUT\n");
-    fprintf(stream, "    mov rsi, rsp\n");
-    fprintf(stream, "    mov rdx, rbx\n");
-    fprintf(stream, "    syscall\n");
-    fprintf(stream, "    add rsp, rbx\n");
-    fprintf(stream, "    ret\n");
-}
-
 int main(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -69,7 +30,6 @@ int main(int argc, char *argv[])
     printf("%%define STDOUT 1\n");
     printf("segment .text\n");
     printf("global _start\n");
-    gen_print_i64(stdout);
 
     size_t jmp_if_escape_count = 0;
     for (size_t i = 0; i < basm.program_size; ++i) {
