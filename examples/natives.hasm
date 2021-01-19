@@ -78,12 +78,12 @@ reverse:
 
     ret
 
-dump_u64:
+print_positive:
     swap 1
 
     push print_memory
 
-    dump_u64_loop:
+    print_positive_loop:
         dup 1
         push 10
         modi
@@ -106,9 +106,8 @@ dump_u64:
         push 0
         eqi
         not
-    jmp_if dump_u64_loop
+    jmp_if print_positive_loop
 
-dump_u64_after_loop:
     push print_memory
     minusi
     push print_memory
@@ -122,11 +121,17 @@ dump_u64_after_loop:
 
     drop
 
-    push 0
+    ret
+
+dump_u64:
+    swap 1
+    call print_positive
+
+    push print_memory
     push 10
     write8
 
-    push 0
+    push print_memory
     push 1
     native write
 
