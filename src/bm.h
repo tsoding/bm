@@ -100,6 +100,13 @@ typedef enum {
     INST_LTI,
     INST_NEI,
 
+    INST_EQU,
+    INST_GEU,
+    INST_GTU,
+    INST_LEU,
+    INST_LTU,
+    INST_NEU,
+
     INST_EQF,
     INST_GEF,
     INST_GTF,
@@ -316,12 +323,21 @@ bool inst_has_operand(Inst_Type type)
     case INST_LEF:     return false;
     case INST_LTF:     return false;
     case INST_NEF:     return false;
+
     case INST_EQI:     return false;
     case INST_GEI:     return false;
     case INST_GTI:     return false;
     case INST_LEI:     return false;
     case INST_LTI:     return false;
     case INST_NEI:     return false;
+
+    case INST_EQU:     return false;
+    case INST_GEU:     return false;
+    case INST_GTU:     return false;
+    case INST_LEU:     return false;
+    case INST_LTU:     return false;
+    case INST_NEU:     return false;
+
     case INST_RET:     return false;
     case INST_CALL:    return true;
     case INST_NATIVE:  return true;
@@ -385,12 +401,21 @@ const char *inst_name(Inst_Type type)
     case INST_HALT:    return "halt";
     case INST_SWAP:    return "swap";
     case INST_NOT:     return "not";
+
     case INST_EQI:     return "eqi";
     case INST_GEI:     return "gei";
     case INST_GTI:     return "gti";
     case INST_LEI:     return "lei";
     case INST_LTI:     return "lti";
     case INST_NEI:     return "nei";
+
+    case INST_EQU:     return "equ";
+    case INST_GEU:     return "geu";
+    case INST_GTU:     return "gtu";
+    case INST_LEU:     return "leu";
+    case INST_LTU:     return "ltu";
+    case INST_NEU:     return "neu";
+
     case INST_EQF:     return "eqf";
     case INST_GEF:     return "gef";
     case INST_GTF:     return "gtf";
@@ -638,26 +663,50 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_EQI:
-        BINARY_OP(bm, u64, u64, ==);
+        BINARY_OP(bm, i64, u64, ==);
         break;
 
     case INST_GEI:
-        BINARY_OP(bm, u64, u64, >=);
+        BINARY_OP(bm, i64, u64, >=);
         break;
 
     case INST_GTI:
-        BINARY_OP(bm, u64, u64, >);
+        BINARY_OP(bm, i64, u64, >);
         break;
 
     case INST_LEI:
-        BINARY_OP(bm, u64, u64, <=);
+        BINARY_OP(bm, i64, u64, <=);
         break;
 
     case INST_LTI:
-        BINARY_OP(bm, u64, u64, <);
+        BINARY_OP(bm, i64, u64, <);
         break;
 
     case INST_NEI:
+        BINARY_OP(bm, i64, u64, !=);
+        break;
+
+    case INST_EQU:
+        BINARY_OP(bm, u64, u64, ==);
+        break;
+
+    case INST_GEU:
+        BINARY_OP(bm, u64, u64, >=);
+        break;
+
+    case INST_GTU:
+        BINARY_OP(bm, u64, u64, >);
+        break;
+
+    case INST_LEU:
+        BINARY_OP(bm, u64, u64, <=);
+        break;
+
+    case INST_LTU:
+        BINARY_OP(bm, u64, u64, <);
+        break;
+
+    case INST_NEU:
         BINARY_OP(bm, u64, u64, !=);
         break;
 
