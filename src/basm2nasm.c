@@ -99,7 +99,9 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_MULTI: assert(false && "MULTI is not implemented");
+        case INST_MULTI: {
+            printf("    ;; TODO: multi\n");
+        } break;
         case INST_DIVI: {
             printf("    ;; divi\n");
             printf("    mov rsi, [stack_top]\n");
@@ -222,8 +224,12 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_GEI: assert(false && "GEI is not implemented");
-        case INST_GTI: assert(false && "GTI is not implemented");
-        case INST_LEI: assert(false && "LEI is not implemented");
+        case INST_GTI: {
+            printf("    ;; TODO: gti\n");
+        } break;
+        case INST_LEI: {
+            printf("    ;; TODO: lei\n");
+        } break;
         case INST_LTI: assert(false && "LTI is not implemented");
         case INST_NEI: assert(false && "NEI is not implemented");
         case INST_EQF: assert(false && "EQF is not implemented");
