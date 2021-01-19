@@ -257,6 +257,23 @@ int main(int argc, char *argv[])
         printf(" inst_%zu,", i);
     }
     printf("\n");
+    printf("memory:\n");
+#define ROW_SIZE 10
+#define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
+    for (size_t row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
+        printf("  db");
+        for (size_t col = 0; col < ROW_SIZE && row * ROW_SIZE + col < basm.memory_size; ++col) {
+            printf(" %u,", basm.memory[row * ROW_SIZE + col]);
+        }
+        printf("\n");
+    }
+    // TODO: warning: uninitialized space declared in non-BSS section `.data': zeroing
+    //   Is it possible to get rid of it? Not really suppress it, but just let nasm know
+    //   that I know what I'm doing.
+    printf("  resb %zu", BM_MEMORY_CAPACITY - basm.memory_size);
+#undef ROW_SIZE
+#undef ROW_COUNT
+    printf("\n");
     printf("segment .bss\n");
     printf("stack: resq BM_STACK_CAPACITY\n");
 
