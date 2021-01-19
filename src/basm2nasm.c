@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MULTI: assert(false && "MULTI is not implemented");
+        case INST_MULTU: assert(false && "MULTU is not implemented");
         case INST_DIVI: {
             printf("    ;; divi\n");
             printf("    mov rsi, [stack_top]\n");
@@ -109,6 +110,19 @@ int main(int argc, char *argv[])
             printf("    mov rax, [rsi]\n");
             printf("    xor rdx, rdx\n");
             printf("    idiv rbx\n");
+            printf("    mov [rsi], rax\n");
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
+        } break;
+        case INST_DIVU: {
+            printf("    ;; divi\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rbx, [rsi]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    xor rdx, rdx\n");
+            printf("    div rbx\n");
             printf("    mov [rsi], rax\n");
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
@@ -126,6 +140,21 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
+
+        case INST_MODU: {
+            printf("    ;; modi\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rbx, [rsi]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    xor rdx, rdx\n");
+            printf("    div rbx\n");
+            printf("    mov [rsi], rdx\n");
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
+        } break;
+
         case INST_PLUSF: assert(false && "PLUSF is not implemented");
         case INST_MINUSF: assert(false && "MINUSF is not implemented");
         case INST_MULTF: assert(false && "MULTF is not implemented");
