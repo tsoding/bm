@@ -2,8 +2,6 @@
 %bind free        1
 ;; TODO(#130): reimplement print_f64 purely in basm
 %bind print_f64   2
-;; TODO(#131): reimplement print_i64 purely in basm
-%bind print_i64   3
 %bind print_ptr   5
 %bind dump_memory 6
 %bind write       7
@@ -78,15 +76,15 @@ reverse:
 
     ret
 
-dump_u64:
+print_positive:
     swap 1
 
     push print_memory
 
-    dump_u64_loop:
+    print_positive_loop:
         dup 1
         push 10
-        modi
+        modu
         push '0'
         plusi
 
@@ -99,16 +97,15 @@ dump_u64:
 
         swap 1
         push 10
-        divi
+        divu
         swap 1
 
         dup 1
         push 0
-        eqi
+        equ
         not
-    jmp_if dump_u64_loop
+    jmp_if print_positive_loop
 
-dump_u64_after_loop:
     push print_memory
     minusi
     push print_memory
@@ -122,11 +119,47 @@ dump_u64_after_loop:
 
     drop
 
+    ret
+
+dump_i64:
+    swap 1
+    dup 0
     push 0
+    gei
+    jmp_if dump_i64_skip_negation
+       push print_memory
+       push '-'
+       write8
+
+       push print_memory
+       push 1
+       native write
+
+       push -1
+       multi
+    dump_i64_skip_negation:
+
+    call print_positive
+
+    push print_memory
     push 10
     write8
 
-    push 0
+    push print_memory
+    push 1
+    native write
+
+    ret
+
+dump_u64:
+    swap 1
+    call print_positive
+
+    push print_memory
+    push 10
+    write8
+
+    push print_memory
     push 1
     native write
 

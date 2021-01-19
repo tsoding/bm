@@ -99,7 +99,9 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_MULTI: assert(false && "MULTI is not implemented");
+        case INST_MULTI: {
+            printf("    ;; FIXME: multi\n");
+        } break;
         case INST_MULTU: assert(false && "MULTU is not implemented");
         case INST_DIVI: {
             printf("    ;; divi\n");
@@ -250,12 +252,20 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_GEI: assert(false && "GEI is not implemented");
-        case INST_GTI: assert(false && "GTI is not implemented");
-        case INST_LEI: assert(false && "LEI is not implemented");
+        case INST_GEI: {
+            printf("    ;; FIXME: gei\n");
+        } break;
+        case INST_GTI: {
+            printf("    ;; FIXME: gti\n");
+        } break;
+        case INST_LEI: {
+            printf("    ;; FIXME: lei\n");
+        } break;
         case INST_LTI: assert(false && "LTI is not implemented");
         case INST_NEI: assert(false && "NEI is not implemented");
-        case INST_EQU: assert(false && "EQU is not implemented");
+        case INST_EQU: {
+            printf("    ;; FIXME: equ\n");
+        } break;
         case INST_GEU: assert(false && "GEU is not implemented");
         case INST_GTU: assert(false && "GTU is not implemented");
         case INST_LEU: assert(false && "LEU is not implemented");
