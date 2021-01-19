@@ -216,7 +216,13 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
 
+typedef enum {
+    BINDING_CONST = 0,
+    BINDING_LABEL,
+} Binding_Kind;
+
 typedef struct {
+    Binding_Kind kind;
     String_View name;
     Word value;
 } Binding;
@@ -249,7 +255,7 @@ typedef struct {
 } Basm;
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output);
-bool basm_bind_value(Basm *basm, String_View name, Word word);
+bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
@@ -1158,7 +1164,7 @@ bool basm_resolve_binding(const Basm *basm, String_View name, Word *output)
     return false;
 }
 
-bool basm_bind_value(Basm *basm, String_View name, Word value)
+bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
@@ -1167,7 +1173,7 @@ bool basm_bind_value(Basm *basm, String_View name, Word value)
         return false;
     }
 
-    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value};
+    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value, .kind = kind};
     return true;
 }
 
@@ -1303,7 +1309,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        if (!basm_bind_value(basm, name, word)) {
+                        if (!basm_bind_value(basm, name, word, BINDING_CONST)) {
                             // TODO(#51): label redefinition error does not tell where the first label was already defined
                             fprintf(stderr,
                                    "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound\n",
@@ -1392,7 +1398,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         .data = token.data
                     };
 
-                    if (!basm_bind_value(basm, label, word_u64(basm->program_size))) {
+                    if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL)) {
                         fprintf(stderr,
                                "%"SV_Fmt":%d: ERROR: name `%"SV_Fmt"` is already bound to something\n",
                                 SV_Arg(input_file_path),
