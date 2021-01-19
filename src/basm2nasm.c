@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
             jmp_if_escape_count += 1;
         } break;
         case INST_RET: {
-            printf("    ;; FIXME: ret\n");
+            printf("    ;; ret\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rax, [rsi]\n");
@@ -162,7 +162,14 @@ int main(int argc, char *argv[])
             printf("    jmp [rax]\n");
         } break;
         case INST_CALL: {
-            printf("    ;; FIXME: call\n");
+            printf("    ;; call\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    mov QWORD [rsi], %zu\n", i + 1);
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
+            printf("    mov rdi, inst_map\n");
+            printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+            printf("    jmp [rdi]\n");
         } break;
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 3) {
