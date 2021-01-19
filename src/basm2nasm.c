@@ -152,6 +152,14 @@ int main(int argc, char *argv[])
         } break;
         case INST_RET: {
             printf("    ;; FIXME: ret\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    mov rbx, BM_WORD_SIZE\n");
+            printf("    mul rbx\n");
+            printf("    add rax, inst_map\n");
+            printf("    mov [stack_top], rsi\n");
+            printf("    jmp [rax]\n");
         } break;
         case INST_CALL: {
             printf("    ;; FIXME: call\n");
