@@ -255,6 +255,12 @@ int main(int argc, char *argv[])
         case INST_LEI: assert(false && "LEI is not implemented");
         case INST_LTI: assert(false && "LTI is not implemented");
         case INST_NEI: assert(false && "NEI is not implemented");
+        case INST_EQU: assert(false && "EQU is not implemented");
+        case INST_GEU: assert(false && "GEU is not implemented");
+        case INST_GTU: assert(false && "GTU is not implemented");
+        case INST_LEU: assert(false && "LEU is not implemented");
+        case INST_LTU: assert(false && "LTU is not implemented");
+        case INST_NEU: assert(false && "NEU is not implemented");
         case INST_EQF: assert(false && "EQF is not implemented");
         case INST_GEF: assert(false && "GEF is not implemented");
         case INST_GTF: assert(false && "GTF is not implemented");
