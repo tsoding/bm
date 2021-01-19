@@ -261,7 +261,9 @@ int main(int argc, char *argv[])
         } break;
         case INST_LTI: assert(false && "LTI is not implemented");
         case INST_NEI: assert(false && "NEI is not implemented");
-        case INST_EQU: assert(false && "EQU is not implemented");
+        case INST_EQU: {
+            printf("    ;; TODO: equ\n");
+        } break;
         case INST_GEU: assert(false && "GEU is not implemented");
         case INST_GTU: assert(false && "GTU is not implemented");
         case INST_LEU: assert(false && "LEU is not implemented");
