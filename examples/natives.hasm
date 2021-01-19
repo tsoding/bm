@@ -86,7 +86,7 @@ print_positive:
     print_positive_loop:
         dup 1
         push 10
-        modi
+        modu
         push '0'
         plusi
 
@@ -99,12 +99,12 @@ print_positive:
 
         swap 1
         push 10
-        divi
+        divu
         swap 1
 
         dup 1
         push 0
-        eqi
+        equ
         not
     jmp_if print_positive_loop
 
