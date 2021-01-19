@@ -252,7 +252,9 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-        case INST_GEI: assert(false && "GEI is not implemented");
+        case INST_GEI: {
+            printf("    ;; TODO: gei\n");
+        } break;
         case INST_GTI: {
             printf("    ;; TODO: gti\n");
         } break;
