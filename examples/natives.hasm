@@ -123,9 +123,6 @@ print_positive:
 
     ret
 
-;; TODO: dump_i64 does not work with negative values
-;; The reason is we don't have separate instructions for signed/unsigned
-;; division/multiplication
 dump_i64:
     swap 1
     dup 0
