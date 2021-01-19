@@ -123,6 +123,39 @@ print_positive:
 
     ret
 
+;; TODO: dump_i64 does not work with negative values
+;; The reason is we don't have separate instructions for signed/unsigned
+;; division/multiplication
+dump_i64:
+    swap 1
+    dup 0
+    push 0
+    gti
+    jmp_if dump_i64_skip_negation
+       push print_memory
+       push '-'
+       write8
+
+       push print_memory
+       push 1
+       call write
+
+       push -1
+       multi
+    dump_i64_skip_negation:
+
+    call print_positive
+
+    push print_memory
+    push 10
+    write8
+
+    push print_memory
+    push 1
+    native write
+
+    ret
+
 dump_u64:
     swap 1
     call print_positive
