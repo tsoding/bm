@@ -176,7 +176,17 @@ int main(int argc, char *argv[])
                 printf("    ;; native print_i64\n");
                 printf("    call print_i64\n");
             } else if (inst.operand.as_u64 == 7) {
-                printf("    ;; FIXME: native write\n");
+                printf("    ;; native write\n");
+                printf("    mov r11, [stack_top]\n");
+                printf("    sub r11, BM_WORD_SIZE\n");
+                printf("    mov rdx, [r11]\n");
+                printf("    sub r11, BM_WORD_SIZE\n");
+                printf("    mov rsi, [r11]\n");
+                printf("    add rsi, memory\n");
+                printf("    mov rdi, STDOUT\n");
+                printf("    mov rax, SYS_WRITE\n");
+                printf("    mov [stack_top], r11\n");
+                printf("    syscall\n");
             } else {
                 assert(false && "unsupported native function");
             }
