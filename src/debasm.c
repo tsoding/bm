@@ -17,9 +17,17 @@ int main(int argc, char *argv[])
     bm_load_program_from_file(&bm, input_file_path);
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
-        printf("%s", inst_name(bm.program[i].type));
+        if (i == bm.ip) {
+            printf("entry:\n");
+        }
+
+        printf("    %s", inst_name(bm.program[i].type));
         if (inst_has_operand(bm.program[i].type)) {
-            printf(" %" PRIu64, bm.program[i].operand.as_i64);
+            printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                   bm.program[i].operand.as_u64,
+                   bm.program[i].operand.as_i64,
+                   bm.program[i].operand.as_f64,
+                   bm.program[i].operand.as_ptr);
         }
         printf("\n");
     }
