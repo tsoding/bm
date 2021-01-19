@@ -239,13 +239,20 @@ int main(int argc, char *argv[])
         case INST_SHL: assert(false && "SHL is not implemented");
         case INST_NOTB: assert(false && "NOTB is not implemented");
         case INST_READ8: {
-            printf("    ;; FIXME; read8\n");
+            printf("    ;; read8\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rsi, [r11]\n");
+            printf("    add rsi, memory\n");
+            printf("    xor rax, rax\n");
+            printf("    mov al, BYTE [rsi]\n");
+            printf("    mov [r11], rax\n");
         } break;
         case INST_READ16: assert(false && "READ16 is not implemented");
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
-            printf("    ;; FIXME; write8\n");
+            printf("    ;; FIXME: write8\n");
         } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
