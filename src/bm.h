@@ -78,6 +78,9 @@ typedef enum {
     INST_MULTI,
     INST_DIVI,
     INST_MODI,
+    INST_MULTU,
+    INST_DIVU,
+    INST_MODU,
     INST_PLUSF,
     INST_MINUSF,
     INST_MULTF,
@@ -295,6 +298,9 @@ bool inst_has_operand(Inst_Type type)
     case INST_MULTI:   return false;
     case INST_DIVI:    return false;
     case INST_MODI:    return false;
+    case INST_MULTU:   return false;
+    case INST_DIVU:    return false;
+    case INST_MODU:    return false;
     case INST_PLUSF:   return false;
     case INST_MINUSF:  return false;
     case INST_MULTF:   return false;
@@ -367,6 +373,9 @@ const char *inst_name(Inst_Type type)
     case INST_MULTI:   return "multi";
     case INST_DIVI:    return "divi";
     case INST_MODI:    return "modi";
+    case INST_MULTU:   return "multu";
+    case INST_DIVU:    return "divu";
+    case INST_MODU:    return "modu";
     case INST_PLUSF:   return "plusf";
     case INST_MINUSF:  return "minusf";
     case INST_MULTF:   return "multf";
@@ -516,10 +525,21 @@ Err bm_execute_inst(Bm *bm)
         break;
 
     case INST_MULTI:
+        BINARY_OP(bm, i64, i64, *);
+        break;
+
+    case INST_MULTU:
         BINARY_OP(bm, u64, u64, *);
         break;
 
     case INST_DIVI: {
+        if (bm->stack[bm->stack_size - 1].as_i64 == 0) {
+            return ERR_DIV_BY_ZERO;
+        }
+        BINARY_OP(bm, i64, i64, /);
+    } break;
+
+    case INST_DIVU: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
@@ -527,6 +547,13 @@ Err bm_execute_inst(Bm *bm)
     } break;
 
     case INST_MODI: {
+        if (bm->stack[bm->stack_size - 1].as_i64 == 0) {
+            return ERR_DIV_BY_ZERO;
+        }
+        BINARY_OP(bm, i64, i64, %);
+    } break;
+
+    case INST_MODU: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
