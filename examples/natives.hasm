@@ -130,7 +130,7 @@ dump_i64:
     swap 1
     dup 0
     push 0
-    gti
+    gei
     jmp_if dump_i64_skip_negation
        push print_memory
        push '-'
@@ -138,7 +138,7 @@ dump_i64:
 
        push print_memory
        push 1
-       call write
+       native write
 
        push -1
        multi
