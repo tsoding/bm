@@ -252,7 +252,15 @@ int main(int argc, char *argv[])
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
-            printf("    ;; FIXME: write8\n");
+            printf("    ;; write8\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rax, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rsi, [r11]\n");
+            printf("    add rsi, memory\n");
+            printf("    mov BYTE [rsi], al\n");
+            printf("    mov [stack_top], r11\n");
         } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
