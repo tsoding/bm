@@ -151,17 +151,42 @@ int main(int argc, char *argv[])
             jmp_if_escape_count += 1;
         } break;
         case INST_RET: {
-            printf("    ;; FIXME: ret\n");
+            printf("    ;; ret\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    mov rbx, BM_WORD_SIZE\n");
+            printf("    mul rbx\n");
+            printf("    add rax, inst_map\n");
+            printf("    mov [stack_top], rsi\n");
+            printf("    jmp [rax]\n");
         } break;
         case INST_CALL: {
-            printf("    ;; FIXME: call\n");
+            printf("    ;; call\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    mov QWORD [rsi], %zu\n", i + 1);
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
+            printf("    mov rdi, inst_map\n");
+            printf("    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
+            printf("    jmp [rdi]\n");
         } break;
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 3) {
                 printf("    ;; native print_i64\n");
                 printf("    call print_i64\n");
             } else if (inst.operand.as_u64 == 7) {
-                printf("    ;; FIXME: native write\n");
+                printf("    ;; native write\n");
+                printf("    mov r11, [stack_top]\n");
+                printf("    sub r11, BM_WORD_SIZE\n");
+                printf("    mov rdx, [r11]\n");
+                printf("    sub r11, BM_WORD_SIZE\n");
+                printf("    mov rsi, [r11]\n");
+                printf("    add rsi, memory\n");
+                printf("    mov rdi, STDOUT\n");
+                printf("    mov rax, SYS_WRITE\n");
+                printf("    mov [stack_top], r11\n");
+                printf("    syscall\n");
             } else {
                 assert(false && "unsupported native function");
             }
@@ -214,13 +239,28 @@ int main(int argc, char *argv[])
         case INST_SHL: assert(false && "SHL is not implemented");
         case INST_NOTB: assert(false && "NOTB is not implemented");
         case INST_READ8: {
-            printf("    ;; FIXME; read8\n");
+            printf("    ;; read8\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rsi, [r11]\n");
+            printf("    add rsi, memory\n");
+            printf("    xor rax, rax\n");
+            printf("    mov al, BYTE [rsi]\n");
+            printf("    mov [r11], rax\n");
         } break;
         case INST_READ16: assert(false && "READ16 is not implemented");
         case INST_READ32: assert(false && "READ32 is not implemented");
         case INST_READ64: assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
-            printf("    ;; FIXME; write8\n");
+            printf("    ;; write8\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rax, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rsi, [r11]\n");
+            printf("    add rsi, memory\n");
+            printf("    mov BYTE [rsi], al\n");
+            printf("    mov [stack_top], r11\n");
         } break;
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
@@ -241,6 +281,20 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < basm.program_size; ++i) {
         printf(" inst_%zu,", i);
     }
+    printf("\n");
+    printf("memory:\n");
+#define ROW_SIZE 10
+#define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
+    for (size_t row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
+        printf("  db");
+        for (size_t col = 0; col < ROW_SIZE && row * ROW_SIZE + col < basm.memory_size; ++col) {
+            printf(" %u,", basm.memory[row * ROW_SIZE + col]);
+        }
+        printf("\n");
+    }
+    printf("  times %zu db 0", BM_MEMORY_CAPACITY - basm.memory_size);
+#undef ROW_SIZE
+#undef ROW_COUNT
     printf("\n");
     printf("segment .bss\n");
     printf("stack: resq BM_STACK_CAPACITY\n");
