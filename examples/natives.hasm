@@ -1,6 +1,8 @@
 %bind alloc       0
 %bind free        1
+;; TODO(#130): reimplement print_f64 purely in basm
 %bind print_f64   2
+;; TODO: reimplement print_i64 purely in basm
 %bind print_i64   3
 %bind print_ptr   5
 %bind dump_memory 6
