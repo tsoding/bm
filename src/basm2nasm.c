@@ -267,10 +267,7 @@ int main(int argc, char *argv[])
         }
         printf("\n");
     }
-    // TODO: warning: uninitialized space declared in non-BSS section `.data': zeroing
-    //   Is it possible to get rid of it? Not really suppress it, but just let nasm know
-    //   that I know what I'm doing.
-    printf("  resb %zu", BM_MEMORY_CAPACITY - basm.memory_size);
+    printf("  times %zu db 0", BM_MEMORY_CAPACITY - basm.memory_size);
 #undef ROW_SIZE
 #undef ROW_COUNT
     printf("\n");
