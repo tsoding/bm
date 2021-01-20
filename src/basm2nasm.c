@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
         } break;
         case INST_ORB: assert(false && "ORB is not implemented");
         case INST_XOR: {
-            printf("    ;; TODO: xor\n");
+            printf("    ;; FIXME: xor\n");
         } break;
         case INST_SHR: assert(false && "SHR is not implemented");
         case INST_SHL: assert(false && "SHL is not implemented");
