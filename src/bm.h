@@ -1208,7 +1208,9 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
         case BINDING_CONST: return "const";
         case BINDING_LABEL: return "label";
         case BINDING_NATIVE: return "native";
-        default: assert(false && "binding_kind_as_cstr: unreachable");
+        default: 
+            assert(false && "binding_kind_as_cstr: unreachable");
+            exit(0);
     }
 }
 
