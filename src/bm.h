@@ -255,8 +255,8 @@ typedef struct {
     uint64_t program_size;
     Inst_Addr entry;
     bool has_entry;
+    File_Location entry_location;
     String_View deferred_entry_binding_name;
-    File_Location deferred_entry_location;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -1218,7 +1218,7 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
         case BINDING_CONST: return "const";
         case BINDING_LABEL: return "label";
         case BINDING_NATIVE: return "native";
-        default: 
+        default:
             assert(false && "binding_kind_as_cstr: unreachable");
             exit(0);
     }
@@ -1413,6 +1413,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         fprintf(stderr,
                                 FL_Fmt": ERROR: entry point has been already set!\n",
                                 FL_Arg(location));
+                        fprintf(stderr, FL_Fmt": NOTE: the first entry point\n", FL_Arg(basm->entry_location));
                         exit(1);
                     }
 
@@ -1429,12 +1430,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     if (!basm_translate_literal(basm, line, &entry)) {
                         basm->deferred_entry_binding_name = line;
-                        basm->deferred_entry_location = location;
                     } else {
                         basm->entry = entry.as_u64;
                     }
 
                     basm->has_entry = true;
+                    basm->entry_location = location;
                 } else {
                     fprintf(stderr,
                             FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
@@ -1533,13 +1534,13 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 &output,
                 &kind)) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->deferred_entry_location),
+                    FL_Arg(basm->entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
         }
 
         if (kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->deferred_entry_location), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(kind));
             exit(1);
         }
 
