@@ -257,7 +257,6 @@ typedef struct {
     bool has_entry;
     File_Location entry_location;
     String_View deferred_entry_binding_name;
-    File_Location deferred_entry_location;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -1431,7 +1430,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     if (!basm_translate_literal(basm, line, &entry)) {
                         basm->deferred_entry_binding_name = line;
-                        basm->deferred_entry_location = location;
                     } else {
                         basm->entry = entry.as_u64;
                     }
@@ -1536,13 +1534,13 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 &output,
                 &kind)) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->deferred_entry_location),
+                    FL_Arg(basm->entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
         }
 
         if (kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->deferred_entry_location), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(kind));
             exit(1);
         }
 
