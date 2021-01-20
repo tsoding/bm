@@ -240,7 +240,6 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
 }
 
 /*
- * TODO(#85): there is no way to examine the memory in bdb
  */
 int main(int argc, char **argv)
 {
