@@ -49,8 +49,8 @@
 
 (let* ((keywords
         '("nop" "push" "drop" "dup" "plusi" "minusi" "multi"
-          "divi" "modi" "plusf" "minusf" "multf" "divf" "jmp"
-          "jmp_if" "halt" "swap" "not" "eqi" "gei" "gti" "lei"
+          "divi" "modi" "plusf" "minusf" "multf" "divf" "jmp_if"
+          "jmp" "halt" "swap" "not" "eqi" "gei" "gti" "lei"
           "lti" "nei" "eqf" "gef" "gtf" "lef" "ltf" "nef" "ret"
           "call" "native" "andb" "orb" "xor" "shr" "shl" "notb"
           "read8" "read16" "read32" "read64" "write8" "write16"
