@@ -1,7 +1,5 @@
 %native alloc       0
 %native free        1
-;; TODO(#130): reimplement print_f64 purely in basm
-%native print_f64   2
 %native print_ptr   5
 %native dump_memory 6
 %native write       7

@@ -38,7 +38,7 @@ loop:
    swap 1
    drop
 
-   native print_f64
+   call dump_f64
    
    halt
 

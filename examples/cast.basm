@@ -19,15 +19,15 @@ main:
   
   push 69
   i2f
-  native print_f64
+  call dump_f64
   
   push -420
   i2f
-  native print_f64
+  call dump_f64
   
   push 69
   u2f
-  native print_f64
+  call dump_f64
   
   halt
 
