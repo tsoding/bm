@@ -6,6 +6,6 @@ main:
    push 3.0
    plusf
    plusf
-   native print_f64
+   call dump_f64
    halt
 %entry main

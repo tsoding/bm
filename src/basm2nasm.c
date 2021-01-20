@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
         case INST_PUSH: {
             printf("    ;; push %"PRIu64"\n", inst.operand.as_u64);
             printf("    mov rsi, [stack_top]\n");
-            printf("    mov QWORD [rsi], %"PRIu64"\n", inst.operand.as_u64);
+            printf("    mov rax, 0x%"PRIX64"\n", inst.operand.as_u64);
+            printf("    mov QWORD [rsi], rax\n");
             printf("    add QWORD [stack_top], BM_WORD_SIZE\n");
         } break;
         case INST_DROP: {
@@ -156,11 +157,18 @@ int main(int argc, char *argv[])
             printf("    add rsi, BM_WORD_SIZE\n");
             printf("    mov [stack_top], rsi\n");
         } break;
-
-        case INST_PLUSF: assert(false && "PLUSF is not implemented");
-        case INST_MINUSF: assert(false && "MINUSF is not implemented");
-        case INST_MULTF: assert(false && "MULTF is not implemented");
-        case INST_DIVF: assert(false && "DIVF is not implemented");
+        case INST_PLUSF: {
+            printf("    ;; FIXME: plusf\n");
+        } break;
+        case INST_MINUSF: {
+            printf("    ;; FIXME: minusf\n");
+        } break;
+        case INST_MULTF: {
+            printf("    ;; FIXME: multf\n");
+        } break;
+        case INST_DIVF: {
+            printf("    ;; FIXME: divf\n");
+        } break;
         case INST_JMP: {
             printf("    ;; jmp\n");
             printf("    mov rdi, inst_map\n");
@@ -272,14 +280,26 @@ int main(int argc, char *argv[])
         case INST_LTU: assert(false && "LTU is not implemented");
         case INST_NEU: assert(false && "NEU is not implemented");
         case INST_EQF: assert(false && "EQF is not implemented");
-        case INST_GEF: assert(false && "GEF is not implemented");
-        case INST_GTF: assert(false && "GTF is not implemented");
-        case INST_LEF: assert(false && "LEF is not implemented");
-        case INST_LTF: assert(false && "LTF is not implemented");
+        case INST_GEF: {
+            printf("    ;; FIXME: gef\n");
+        } break;
+        case INST_GTF: {
+            printf("    ;; FIXME: gtf\n");
+        } break;
+        case INST_LEF: {
+            printf("    ;; FIXME: lef\n");
+        } break;
+        case INST_LTF: {
+            printf("    ;; FIXME: ltf\n");
+        } break;
         case INST_NEF: assert(false && "NEF is not implemented");
-        case INST_ANDB: assert(false && "ANDB is not implemented");
+        case INST_ANDB: {
+            printf("    ;; FIXME: andb\n");
+        } break;
         case INST_ORB: assert(false && "ORB is not implemented");
-        case INST_XOR: assert(false && "XOR is not implemented");
+        case INST_XOR: {
+            printf("    ;; FIXME: xor\n");
+        } break;
         case INST_SHR: assert(false && "SHR is not implemented");
         case INST_SHL: assert(false && "SHL is not implemented");
         case INST_NOTB: assert(false && "NOTB is not implemented");
@@ -310,9 +330,13 @@ int main(int argc, char *argv[])
         case INST_WRITE16: assert(false && "WRITE16 is not implemented");
         case INST_WRITE32: assert(false && "WRITE32 is not implemented");
         case INST_WRITE64: assert(false && "WRITE64 is not implemented");
-        case INST_I2F: assert(false && "I2F is not implemented");
+        case INST_I2F: {
+            printf("    ;; FIXME: i2f\n");
+        } break;
         case INST_U2F: assert(false && "U2F is not implemented");
-        case INST_F2I: assert(false && "F2I is not implemented");
+        case INST_F2I: {
+            printf("    ;; FIXME: f2i\n");
+        } break;
         case INST_F2U: assert(false && "F2U is not implemented");
         case NUMBER_OF_INSTS:
         default: assert(false && "unknown instruction");
