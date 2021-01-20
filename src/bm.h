@@ -1538,11 +1538,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding.kind));
             exit(1);
         }
+
+        basm->program[addr].operand = binding.value;
     }
 
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
-        Word output = {0};
         Binding binding = {0};
         if (!basm_resolve_binding(
                 basm,
@@ -1559,7 +1560,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             exit(1);
         }
 
-        basm->entry = output.as_u64;
+        basm->entry = binding.value.as_u64;
     }
 }
 
