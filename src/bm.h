@@ -216,6 +216,14 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
 
+typedef struct {
+    String_View file_path;
+    int line_number;
+} File_Location;
+
+#define FL_Fmt SV_Fmt":%d"
+#define FL_Arg(location) SV_Arg(location.file_path), location.line_number
+
 typedef enum {
     BINDING_CONST = 0,
     BINDING_LABEL,
@@ -228,15 +236,8 @@ typedef struct {
     Binding_Kind kind;
     String_View name;
     Word value;
+    File_Location location;
 } Binding;
-
-typedef struct {
-    String_View file_path;
-    int line_number;
-} File_Location;
-
-#define FL_Fmt SV_Fmt":%d"
-#define FL_Arg(location) SV_Arg(location.file_path), location.line_number
 
 typedef struct {
     Inst_Addr addr;
@@ -267,8 +268,8 @@ typedef struct {
     size_t include_level;
 } Basm;
 
-bool basm_resolve_binding(const Basm *basm, String_View name, Word *output, Binding_Kind *kind);
-bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind);
+bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
+bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location, Binding *existing_binding);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
@@ -1165,12 +1166,11 @@ void *arena_alloc(Arena *arena, size_t size)
     return result;
 }
 
-bool basm_resolve_binding(const Basm *basm, String_View name, Word *output, Binding_Kind *kind)
+bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding)
 {
     for (size_t i = 0; i < basm->bindings_size; ++i) {
         if (sv_eq(basm->bindings[i].name, name)) {
-            if (output) *output = basm->bindings[i].value;
-            if (kind) *kind = basm->bindings[i].kind;
+            if (binding) *binding = basm->bindings[i];
             return true;
         }
     }
@@ -1178,15 +1178,20 @@ bool basm_resolve_binding(const Basm *basm, String_View name, Word *output, Bind
     return false;
 }
 
-bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind)
+bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location, Binding *existing_binding)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    if (basm_resolve_binding(basm, name, NULL, NULL)) {
+    if (basm_resolve_binding(basm, name, existing_binding)) {
         return false;
     }
 
-    basm->bindings[basm->bindings_size++] = (Binding) {.name = name, .value = value, .kind = kind};
+    basm->bindings[basm->bindings_size++] = (Binding) {
+        .name = name,
+        .value = value,
+        .kind = kind,
+        .location = location,
+    };
     return true;
 }
 
@@ -1335,12 +1340,15 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        if (!basm_bind_value(basm, name, word, BINDING_CONST)) {
-                            // TODO(#51): label redefinition error does not tell where the first label was already defined
+                        Binding existing = {0};
+                        if (!basm_bind_value(basm, name, word, BINDING_CONST, location, &existing)) {
                             fprintf(stderr,
                                     FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                                     FL_Arg(location),
                                     SV_Arg(name));
+                            fprintf(stderr,
+                                    FL_Fmt": NOTE: first binding is located here\n",
+                                    FL_Arg(existing.location));
                             exit(1);
                         }
                     } else {
@@ -1364,11 +1372,15 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        if (!basm_bind_value(basm, name, word, BINDING_NATIVE)) {
+                        Binding existing = {0};
+                        if (!basm_bind_value(basm, name, word, BINDING_NATIVE, location, &existing)) {
                             fprintf(stderr,
                                     FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                                     FL_Arg(location),
                                     SV_Arg(name));
+                            fprintf(stderr,
+                                    FL_Fmt": NOTE: first binding is located here\n",
+                                    FL_Arg(existing.location));
                             exit(1);
                         }
                     } else {
@@ -1453,11 +1465,15 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         .data = token.data
                     };
 
-                    if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL)) {
+                    Binding existing = {0};
+                    if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location, &existing)) {
                         fprintf(stderr,
-                                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound to something\n",
+                                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                                 FL_Arg(location),
                                 SV_Arg(label));
+                        fprintf(stderr,
+                                FL_Fmt": NOTE: first binding is located here\n",
+                                FL_Arg(existing.location));
                         exit(1);
                     }
 
@@ -1504,23 +1520,22 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         String_View name = basm->deferred_operands[i].name;
         Inst_Addr addr = basm->deferred_operands[i].addr;
-        Binding_Kind kind;
+        Binding binding = {0};
         if (!basm_resolve_binding(
                 basm,
                 name,
-                &basm->program[addr].operand,
-                &kind)) {
+                &binding)) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name));
             exit(1);
         }
 
-        if (basm->program[addr].type == INST_CALL && kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(kind));
+        if (basm->program[addr].type == INST_CALL && binding.kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding.kind));
             exit(1);
         }
 
-        if (basm->program[addr].type == INST_NATIVE && kind != BINDING_NATIVE) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(kind));
+        if (basm->program[addr].type == INST_NATIVE && binding.kind != BINDING_NATIVE) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding.kind));
             exit(1);
         }
     }
@@ -1528,20 +1543,19 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
         Word output = {0};
-        Binding_Kind kind;
+        Binding binding = {0};
         if (!basm_resolve_binding(
                 basm,
                 basm->deferred_entry_binding_name,
-                &output,
-                &kind)) {
+                &binding)) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
                     FL_Arg(basm->entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
         }
 
-        if (kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(kind));
+        if (binding.kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding.kind));
             exit(1);
         }
 
