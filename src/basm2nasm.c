@@ -101,7 +101,15 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MULTI: {
-            printf("    ;; FIXME: multi\n");
+            printf("    ;; multi\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    mov rax, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rbx, [r11]\n");
+            printf("    imul rax, rbx\n");
+            printf("    mov [r11], rax\n");
         } break;
         case INST_MULTU: assert(false && "MULTU is not implemented");
         case INST_DIVI: {
