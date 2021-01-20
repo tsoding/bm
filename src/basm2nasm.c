@@ -346,18 +346,23 @@ int main(int argc, char *argv[])
     printf("    ret\n");
     printf("segment .data\n");
     printf("stack_top: dq stack\n");
-    printf("inst_map: dq");
-    for (size_t i = 0; i < basm.program_size; ++i) {
-        printf(" inst_%zu,", i);
+    printf("inst_map:\n");
+#define ROW_SIZE 5
+#define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
+#define INDEX(row, col) ((row) * ROW_SIZE + (col))
+    for (size_t row = 0; row < ROW_COUNT(basm.program_size); ++row) {
+        printf("  dq");
+        for (size_t col = 0; col < ROW_SIZE && INDEX(row, col) < basm.program_size; ++col) {
+            printf(" inst_%zu,", INDEX(row, col));
+        }
+        printf("\n");
     }
     printf("\n");
     printf("memory:\n");
-#define ROW_SIZE 10
-#define ROW_COUNT(size) ((size + ROW_SIZE - 1) / ROW_SIZE)
     for (size_t row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
         printf("  db");
-        for (size_t col = 0; col < ROW_SIZE && row * ROW_SIZE + col < basm.memory_size; ++col) {
-            printf(" %u,", basm.memory[row * ROW_SIZE + col]);
+        for (size_t col = 0; col < ROW_SIZE && INDEX(row, col) < basm.memory_size; ++col) {
+            printf(" %u,", basm.memory[INDEX(row, col)]);
         }
         printf("\n");
     }
