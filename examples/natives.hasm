@@ -217,7 +217,6 @@ print_frac:
 
     drop
     drop
-    debug:
     ret
 
 print_positive:
@@ -262,6 +261,52 @@ print_positive:
     native write
 
     drop
+
+    ret
+
+;; TODO: dump_f64 does not support NaN and Inf
+dump_f64:
+    swap 1
+
+    dup 0
+    push -0.0
+    andb
+    not
+    jmp_if dump_f64_skip_negative
+        push -0.0
+        xor
+
+        push print_memory
+        push '-'
+        write8
+        
+        push print_memory
+        push 1
+        native write
+    dump_f64_skip_negative:
+
+    dup 0
+    f2i
+    call print_positive
+
+    push print_memory
+    push '.'
+    write8
+
+    push print_memory
+    push 1
+    native write
+
+    call frac
+    call print_frac
+
+    push print_memory
+    push 10
+    write8
+
+    push print_memory
+    push 1
+    native write
 
     ret
 
