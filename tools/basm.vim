@@ -15,9 +15,11 @@ syntax keyword basmTodos TODO XXX FIXME NOTE
 " Language keywords
 syntax keyword basmKeywords nop push drop dup
 syntax keyword basmKeywords plusi minusi multi divi modi
+syntax keyword basmKeywords multu divu modu
 syntax keyword basmKeywords plusf minusf multf divf
 syntax keyword basmKeywords jmp jmp_if halt swap not
 syntax keyword basmKeywords eqi gei gti lei lti nei
+syntax keyword basmKeywords equ geu gtu leu ltu neu
 syntax keyword basmKeywords eqf gef gtf lef ltf nef
 syntax keyword basmKeywords ret call native
 syntax keyword basmKeywords andb orb xor shr shl notb
@@ -27,7 +29,7 @@ syntax keyword basmKeywords i2f u2f f2i f2u
 
 " Comments
 syntax region basmCommentLine start=";" end="$"   contains=basmTodos
-syntax region basmInclude start="%include" end=" "
+syntax region basmDirective start="%" end=" "
 
 " Numbers
 syntax match basmDecInt display "\<[0-9][0-9_]*"
@@ -36,17 +38,16 @@ syntax match basmFloat  display "\<[0-9][0-9_]*\%(\.[0-9][0-9_]*\)"
 
 " Strings
 syntax region basmString start=/\v"/ skip=/\v\\./ end=/\v"/
+syntax region basmString start=/\v'/ skip=/\v\\./ end=/\v'/
 
 " Set highlights
 highlight default link basmTodos Todo
 highlight default link basmKeywords Keyword
 highlight default link basmCommentLine Comment
-highlight default link basmInclude PreProc
+highlight default link basmDirective PreProc
 highlight default link basmDecInt Number
 highlight default link basmHexInt Number
 highlight default link basmFloat Float
 highlight default link basmString String
 
 let b:current_syntax = "basm"
-
-" TODO(#122): basm.vim does not highlight character literals
