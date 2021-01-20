@@ -173,11 +173,19 @@ int main(int argc, char *argv[])
             printf("    movsd xmm0, [r11]\n");
             printf("    sub r11, BM_WORD_SIZE\n");
             printf("    movsd xmm1, [r11]\n");
-            printf("    addsd xmm0, xmm1\n");
-            printf("    movsd [r11], xmm0\n");
+            printf("    addsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_MINUSF: {
-            printf("    ;; FIXME: minusf\n");
+            printf("    ;; minusf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    subsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_MULTF: {
             printf("    ;; FIXME: multf\n");
