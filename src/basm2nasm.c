@@ -293,7 +293,9 @@ int main(int argc, char *argv[])
             printf("    ;; FIXME: ltf\n");
         } break;
         case INST_NEF: assert(false && "NEF is not implemented");
-        case INST_ANDB: assert(false && "ANDB is not implemented");
+        case INST_ANDB: {
+            printf("    ;; FIXME: andb\n");
+        } break;
         case INST_ORB: assert(false && "ORB is not implemented");
         case INST_XOR: {
             printf("    ;; TODO: xor\n");
