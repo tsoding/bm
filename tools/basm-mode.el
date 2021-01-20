@@ -56,10 +56,10 @@
           "read8" "read16" "read32" "read64" "write8" "write16"
           "write32" "write64" "i2f" "u2f" "f2i" "f2u"))
        (keywords-regexp
-        (concat "\\<\\("
+        (concat "\\_<\\("
                 (string-join
                  (basm--interleave keywords "\\|"))
-                "\\)\\>")))
+                "\\)\\_>")))
   (setq basm-highlights
         `(("%[[:word:]_]+" . font-lock-preprocessor-face)
           ("[[:word:]_]+\\:" . font-lock-constant-face)
