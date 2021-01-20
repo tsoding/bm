@@ -255,6 +255,7 @@ typedef struct {
     uint64_t program_size;
     Inst_Addr entry;
     bool has_entry;
+    File_Location entry_location;
     String_View deferred_entry_binding_name;
     File_Location deferred_entry_location;
 
@@ -1218,7 +1219,7 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
         case BINDING_CONST: return "const";
         case BINDING_LABEL: return "label";
         case BINDING_NATIVE: return "native";
-        default: 
+        default:
             assert(false && "binding_kind_as_cstr: unreachable");
             exit(0);
     }
@@ -1413,6 +1414,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         fprintf(stderr,
                                 FL_Fmt": ERROR: entry point has been already set!\n",
                                 FL_Arg(location));
+                        fprintf(stderr, FL_Fmt": NOTE: the first entry point\n", FL_Arg(basm->entry_location));
                         exit(1);
                     }
 
@@ -1435,6 +1437,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     }
 
                     basm->has_entry = true;
+                    basm->entry_location = location;
                 } else {
                     fprintf(stderr,
                             FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
