@@ -30,40 +30,35 @@
 ;; Major Mode for editing BASM Assembly Code. The language for a
 ;; simple Virtual Machine.
 
-(defvar basm-mode-syntax-table nil "Syntax table for `basm-mode'.")
+(defconst basm-mode-syntax-table
+  (with-syntax-table (copy-syntax-table)
+    (modify-syntax-entry ?\; "<")
+    (modify-syntax-entry ?\n ">")
+    (modify-syntax-entry ?\" "\"")
+    (modify-syntax-entry ?\' "\"")
+    (syntax-table))
+  "Syntax table for `basm-mode'.")
 
-(setq basm-mode-syntax-table
-      (let ((syn-table (make-syntax-table)))
-        ;; assembly style comment: “; …”
-        (modify-syntax-entry ?\; "<" syn-table)
-        (modify-syntax-entry ?\n ">" syn-table)
-        syn-table))
+(eval-and-compile
+  (defconst basm-instructions
+    '("nop" "push" "drop" "dup"
+      "plusi" "minusi" "multi" "divi" "modi"
+      "multu" "divu" "modu"
+      "plusf" "minusf" "multf" "divf"
+      "jmp" "jmp_if" "halt" "swap" "not"
+      "eqi" "gei" "gti" "lei" "lti" "nei"
+      "equ" "geu" "gtu" "leu" "ltu" "neu"
+      "eqf" "gef" "gtf" "lef" "ltf" "nef"
+      "ret" "call" "native"
+      "andb" "orb" "xor" "shr" "shl" "notb"
+      "read8" "read16" "read32" "read64"
+      "write8" "write16" "write32" "write64"
+      "i2f" "u2f" "f2i" "f2u")))
 
-(defun basm--interleave (xs y)
-  (let ((result nil))
-    (reverse
-     (cdr
-      (dolist (x xs result)
-        (push x result)
-        (push y result))))))
-
-(let* ((keywords
-        '("nop" "push" "drop" "dup" "plusi" "minusi" "multi"
-          "divi" "modi" "plusf" "minusf" "multf" "divf" "jmp_if"
-          "jmp" "halt" "swap" "not" "eqi" "gei" "gti" "lei"
-          "lti" "nei" "eqf" "gef" "gtf" "lef" "ltf" "nef" "ret"
-          "call" "native" "andb" "orb" "xor" "shr" "shl" "notb"
-          "read8" "read16" "read32" "read64" "write8" "write16"
-          "write32" "write64" "i2f" "u2f" "f2i" "f2u"))
-       (keywords-regexp
-        (concat "\\_<\\("
-                (string-join
-                 (basm--interleave keywords "\\|"))
-                "\\)\\_>")))
-  (setq basm-highlights
-        `(("%[[:word:]_]+" . font-lock-preprocessor-face)
-          ("[[:word:]_]+\\:" . font-lock-constant-face)
-          (,keywords-regexp . font-lock-keyword-face))))
+(defconst basm-highlights
+  `(("%[[:word:]_]+" . font-lock-preprocessor-face)
+    ("[[:word:]_]+\\:" . font-lock-constant-face)
+    (,(regexp-opt basm-instructions 'symbols) . font-lock-keyword-face)))
 
 ;;;###autoload
 (define-derived-mode basm-mode fundamental-mode "basm"
@@ -75,7 +70,5 @@
 (add-to-list 'auto-mode-alist '("\\.\\(b\\|h\\)asm\\'" . basm-mode))
 
 (provide 'basm-mode)
-
-;;; TODO(#123): basm-mode does not highlight character literals
 
 ;;; basm-mode.el ends here
