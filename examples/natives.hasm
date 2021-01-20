@@ -262,7 +262,7 @@ print_positive:
 
     ret
 
-;; TODO: dump_f64 does not support NaN and Inf
+;; TODO(#142): dump_f64 does not support NaN and Inf
 dump_f64:
     swap 1
 
