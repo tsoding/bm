@@ -166,7 +166,15 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_PLUSF: {
-            printf("    ;; FIXME: plusf\n");
+            printf("    ;; plusf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    addsd xmm0, xmm1\n");
+            printf("    movsd [r11], xmm0\n");
         } break;
         case INST_MINUSF: {
             printf("    ;; FIXME: minusf\n");
