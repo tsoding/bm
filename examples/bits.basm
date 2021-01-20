@@ -1,7 +1,7 @@
 ;; Print bits of number N
 %include "./examples/natives.hasm"
 
-%bind N 69420
+%const N 69420
 
 ;; N >> 1
 
