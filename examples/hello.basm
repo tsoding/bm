@@ -1,5 +1,5 @@
 %include "./examples/natives.hasm"
-%bind hello "Hello, World" ; message
+%const hello "Hello, World" ; message
 
 main:
     push hello

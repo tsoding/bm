@@ -1,13 +1,13 @@
-%bind alloc       0
-%bind free        1
+%native alloc       0
+%native free        1
 ;; TODO(#130): reimplement print_f64 purely in basm
-%bind print_f64   2
-%bind print_ptr   5
-%bind dump_memory 6
-%bind write       7
+%native print_f64   2
+%native print_ptr   5
+%native dump_memory 6
+%native write       7
 
 ;; TODO(#127): a better way of allocating memory for standard printing functions
-%bind print_memory "******************************"
+%const print_memory "******************************"
 
 ;; addr_a
 ;; addr_b
