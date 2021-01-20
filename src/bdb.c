@@ -158,7 +158,7 @@ Bdb_Err bdb_continue(Bdb_State *state)
             fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
             if (state->labels[state->bm.ip].data)
             {
-                fprintf(stdout, " label '%"SV_Fmt"'", SV_Arg(state->labels[state->bm.ip]));
+                fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(state->labels[state->bm.ip]));
             }
 
             fprintf(stdout, "\n");
@@ -314,14 +314,14 @@ int main(int argc, char **argv)
             Inst_Addr where = 0;
             if (bdb_parse_label_or_addr(&state, where_sv, &where) == BDB_FAIL)
             {
-                fprintf(stderr, "ERR : Cannot parse address or label `%"SV_Fmt"`\n", SV_Arg(where_sv));
+                fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(where_sv));
                 continue;
             }
 
             Inst_Addr count = 0;
             if (bdb_parse_label_or_addr(&state, count_sv, &count) == BDB_FAIL)
             {
-                fprintf(stderr, "ERR : Cannot parse address or label `%"SV_Fmt"`\n", SV_Arg(count_sv));
+                fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(count_sv));
                 continue;
             }
 
