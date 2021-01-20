@@ -1380,7 +1380,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
-                    // TODO: %include directive does not report location if the file does not exist
+                    // TODO(#143): %include directive does not report location if the file does not exist
 
                     if (line.count > 0) {
                         if (*line.data == '"' && line.data[line.count - 1] == '"') {
