@@ -40,11 +40,11 @@ typedef struct {
 } String_View;
 
 // printf macros for String_View
-#define SV_Fmt ".*s"
+#define SV_Fmt "%.*s"
 #define SV_Arg(sv) (int) sv.count, sv.data
 // USAGE:
 //   String_View name = ...;
-//   printf("Name: %"SV_Fmt"\n", SV_Arg(name));
+//   printf("Name: "SV_Fmt"\n", SV_Arg(name));
 
 String_View sv_from_cstr(const char *cstr);
 String_View sv_trim_left(String_View sv);
@@ -235,7 +235,7 @@ typedef struct {
     int line_number;
 } File_Location;
 
-#define FL_Fmt "%"SV_Fmt":%d"
+#define FL_Fmt SV_Fmt":%d"
 #define FL_Arg(location) SV_Arg(location.file_path), location.line_number
 
 typedef struct {
@@ -1331,14 +1331,14 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         String_View value = line;
                         Word word = {0};
                         if (!basm_translate_literal(basm, value, &word)) {
-                            fprintf(stderr, FL_Fmt": ERROR: `%"SV_Fmt"` is not a number", FL_Arg(location), SV_Arg(value));
+                            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number", FL_Arg(location), SV_Arg(value));
                             exit(1);
                         }
 
                         if (!basm_bind_value(basm, name, word, BINDING_CONST)) {
                             // TODO(#51): label redefinition error does not tell where the first label was already defined
                             fprintf(stderr,
-                                    FL_Fmt": ERROR: name `%"SV_Fmt"` is already bound\n",
+                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                                     FL_Arg(location),
                                     SV_Arg(name));
                             exit(1);
@@ -1358,7 +1358,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         Word word = {0};
                         if (!basm_translate_literal(basm, value, &word)) {
                             fprintf(stderr,
-                                    FL_Fmt": ERROR: `%"SV_Fmt"` is not a number",
+                                    FL_Fmt": ERROR: `"SV_Fmt"` is not a number",
                                     FL_Arg(location),
                                     SV_Arg(value));
                             exit(1);
@@ -1366,7 +1366,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                         if (!basm_bind_value(basm, name, word, BINDING_NATIVE)) {
                             fprintf(stderr,
-                                    FL_Fmt": ERROR: name `%"SV_Fmt"` is already bound\n",
+                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                                     FL_Arg(location),
                                     SV_Arg(name));
                             exit(1);
@@ -1437,7 +1437,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     basm->has_entry = true;
                 } else {
                     fprintf(stderr,
-                            FL_Fmt": ERROR: unknown pre-processor directive `%"SV_Fmt"`\n",
+                            FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
                             FL_Arg(location),
                             SV_Arg(token));
                     exit(1);
@@ -1453,7 +1453,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL)) {
                         fprintf(stderr,
-                                FL_Fmt": ERROR: name `%"SV_Fmt"` is already bound to something\n",
+                                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound to something\n",
                                 FL_Arg(location),
                                 SV_Arg(label));
                         exit(1);
@@ -1472,7 +1472,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                         if (inst_has_operand(inst_type)) {
                             if (operand.count == 0) {
-                                fprintf(stderr, FL_Fmt": ERROR: instruction `%"SV_Fmt"` requires an operand\n",
+                                fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` requires an operand\n",
                                         FL_Arg(location),
                                         SV_Arg(token));
                                 exit(1);
@@ -1488,7 +1488,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                         basm->program_size += 1;
                     } else {
-                        fprintf(stderr, FL_Fmt": ERROR: unknown instruction `%"SV_Fmt"`\n",
+                        fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
                                 FL_Arg(location),
                                 SV_Arg(token));
                         exit(1);
@@ -1508,12 +1508,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 name,
                 &basm->program[addr].operand,
                 &kind)) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name));
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name));
             exit(1);
         }
 
         if (basm->program[addr].type == INST_CALL && kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `%"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(kind));
             exit(1);
         }
 
@@ -1532,7 +1532,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 basm->deferred_entry_binding_name,
                 &output,
                 &kind)) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
                     FL_Arg(basm->deferred_entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
