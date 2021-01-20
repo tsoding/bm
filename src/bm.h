@@ -256,6 +256,7 @@ typedef struct {
     Inst_Addr entry;
     bool has_entry;
     String_View deferred_entry_binding_name;
+    File_Location deferred_entry_location;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -268,7 +269,7 @@ typedef struct {
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Word *output, Binding_Kind *kind);
 bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind);
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name);
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location);
 bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
@@ -1189,11 +1190,11 @@ bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
     return true;
 }
 
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name)
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location)
 {
     assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
-        (Deferred_Operand) {.addr = addr, .name = name};
+        (Deferred_Operand) {.addr = addr, .name = name, .location = location};
 }
 
 Word basm_push_string_to_memory(Basm *basm, String_View sv)
@@ -1428,6 +1429,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     if (!basm_translate_literal(basm, line, &entry)) {
                         basm->deferred_entry_binding_name = line;
+                        basm->deferred_entry_location = location;
                     } else {
                         basm->entry = entry.as_u64;
                     }
@@ -1480,8 +1482,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                     basm,
                                     operand,
                                     &basm->program[basm->program_size].operand)) {
-                                basm_push_deferred_operand(
-                                    basm, basm->program_size, operand);
+                                basm_push_deferred_operand(basm, basm->program_size, operand, location);
                             }
                         }
 
@@ -1507,24 +1508,22 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 name,
                 &basm->program[addr].operand,
                 &kind)) {
-            // TODO(#52): second pass label resolution errors don't report the location in the source code
-            fprintf(stderr,"%"SV_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
-                    SV_Arg(input_file_path), SV_Arg(name));
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name));
             exit(1);
         }
 
         if (basm->program[addr].type == INST_CALL && kind != BINDING_LABEL) {
-            fprintf(stderr, "%"SV_Fmt": ERROR: trying to call not a label. `%"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", SV_Arg(input_file_path), SV_Arg(name), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `%"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(kind));
             exit(1);
         }
 
         if (basm->program[addr].type == INST_NATIVE && kind != BINDING_NATIVE) {
-            fprintf(stderr, "%"SV_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", SV_Arg(input_file_path), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(kind));
             exit(1);
         }
     }
 
-    // Resolving entry point
+    // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
         Word output = {0};
         Binding_Kind kind;
@@ -1533,14 +1532,14 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 basm->deferred_entry_binding_name,
                 &output,
                 &kind)) {
-            fprintf(stderr, "%"SV_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
-                    SV_Arg(input_file_path),
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `%"SV_Fmt"`\n",
+                    FL_Arg(basm->deferred_entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
         }
 
         if (kind != BINDING_LABEL) {
-            fprintf(stderr, "%"SV_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", SV_Arg(input_file_path), binding_kind_as_cstr(kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->deferred_entry_location), binding_kind_as_cstr(kind));
             exit(1);
         }
 
