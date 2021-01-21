@@ -101,7 +101,15 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_MULTI: {
-            printf("    ;; FIXME: multi\n");
+            printf("    ;; multi\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    mov rax, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov rbx, [r11]\n");
+            printf("    imul rax, rbx\n");
+            printf("    mov [r11], rax\n");
         } break;
         case INST_MULTU: assert(false && "MULTU is not implemented");
         case INST_DIVI: {
@@ -158,16 +166,48 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_PLUSF: {
-            printf("    ;; FIXME: plusf\n");
+            printf("    ;; plusf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    addsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_MINUSF: {
-            printf("    ;; FIXME: minusf\n");
+            printf("    ;; minusf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    subsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_MULTF: {
-            printf("    ;; FIXME: multf\n");
+            printf("    ;; multf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    mulsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_DIVF: {
-            printf("    ;; FIXME: divf\n");
+            printf("    ;; divf\n");
+            printf("    mov r11, [stack_top]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], r11\n");
+            printf("    movsd xmm0, [r11]\n");
+            printf("    sub r11, BM_WORD_SIZE\n");
+            printf("    movsd xmm1, [r11]\n");
+            printf("    divsd xmm1, xmm0\n");
+            printf("    movsd [r11], xmm1\n");
         } break;
         case INST_JMP: {
             printf("    ;; jmp\n");
