@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_DIVU: {
-            printf("    ;; divi\n");
+            printf("    ;; divu\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rbx, [rsi]\n");
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
         } break;
 
         case INST_MODU: {
-            printf("    ;; modi\n");
+            printf("    ;; modu\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rbx, [rsi]\n");
