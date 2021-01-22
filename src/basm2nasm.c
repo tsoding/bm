@@ -39,6 +39,13 @@ int main(int argc, char *argv[])
             printf("_start:\n");
         }
 
+        for (size_t j = 0; j < basm.deferred_operands_size; ++j) {
+            if(basm.deferred_operands[j].addr == i) {
+                printf("\n;; "SV_Fmt":\n", SV_Arg(basm.deferred_operands[j].name));
+                break;
+            }
+        }
+
         printf("inst_%zu:\n", i);
         switch (inst.type) {
         case INST_NOP: assert(false && "NOP is not implemented");
