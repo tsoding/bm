@@ -245,9 +245,9 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
 {
     switch (*command_word.data)
     {
-        /*
-         * Next instruction
-         */
+    /*
+     * Next instruction
+     */
     case 'n':
     {
         Bdb_Err err = bdb_step_instr(state);
@@ -370,8 +370,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     return BDB_OK;
 }
 
-/*
- */
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -379,10 +377,6 @@ int main(int argc, char **argv)
         usage();
         return EXIT_FAILURE;
     }
-
-    /*
-     * Create the BDB state and initialize it with the file names
-     */
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Bdb_State state = {0};
@@ -398,11 +392,11 @@ int main(int argc, char **argv)
     }
 
     /*
-     * This is a temporary buffer to store the previous command. In
-     * the future, this may be removed, if we decide to do proper
-     * command parsing and have a dedicated place to store the command
-     * history. For now we will just store the last one and repeat
-     * that if the user just hits enter.
+     * NOTE: This is a temporary buffer to store the previous
+     * command. In the future, this may be removed, if we decide to do
+     * proper command parsing and have a dedicated place to store the
+     * command history. For now we will just store the last one and
+     * repeat that if the user just hits enter.
      */
     char previous_command[INPUT_CAPACITY] = {0};
 
