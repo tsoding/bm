@@ -4,6 +4,6 @@ main:
     push '0'
     push '1'
     push '2'
-    ret
+    halt
 
 %entry main
