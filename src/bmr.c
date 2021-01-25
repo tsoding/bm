@@ -88,6 +88,31 @@ static void usage(FILE *stream)
     fprintf(stream, "Usage: ./bmr -p <program.bm> [-ao <actual-output.txt>] [-eo <expected-output.txt>]\n");
 }
 
+static void compare_outputs(String_View expected, String_View actual)
+{
+    for (size_t line_number = 0; expected.count > 0 && actual.count > 0; ++line_number) {
+        String_View expected_line = sv_chop_by_delim(&expected, '\n');
+        String_View actual_line = sv_chop_by_delim(&actual, '\n');
+
+        if (!sv_eq(expected_line, actual_line)) {
+            fprintf(stderr, "ERROR: Expected output differs from the actual one.\n");
+            fprintf(stderr, "    Expected line %zu: `"SV_Fmt"`\n",
+                    line_number, SV_Arg(expected_line));
+            fprintf(stderr, "    Actual   line %zu: `"SV_Fmt"`\n",
+                    line_number, SV_Arg(actual_line));
+            exit(1);
+        }
+    }
+
+    if (expected.count > 0) {
+        panic("Expected output is bigger");
+    }
+
+    if (actual.count > 0) {
+        panic("Actual output is bigger");
+    }
+}
+
 int main(int argc, char *argv[])
 {
     shift(&argc, &argv);        // skip the program name
@@ -155,12 +180,8 @@ int main(int argc, char *argv[])
         String_View expected_output = arena_slurp_file(&expected_arena, sv_from_cstr(expected_output_file_path));
         String_View actual_output = sv_from_arena(&actual_arena);
 
-        if (!sv_eq(actual_output, expected_output)) {
-            // TODO: bmr does not print a diff between expected and actual outputs
-            panic("expected output is not equal to the actual output");
-        } else {
-            printf("Expected output\n");
-        }
+        compare_outputs(expected_output, actual_output);
+        printf("Expected output\n");
     }
 
     return 0;
