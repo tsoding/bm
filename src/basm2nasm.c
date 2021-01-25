@@ -12,7 +12,10 @@ typedef enum {
 
 static void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: ./basm2nasm <input.basm>\n");
+    fprintf(stream, "Usage: ./basm2nasm <format> <input.basm>\n");
+    fprintf(stream, "    Select output file format:\n");
+    fprintf(stream, "        -felf64    ELF64 (x86-64) (Linux, most Unix variants)\n");
+    fprintf(stream, "        -fwin64    Microsoft extended COFF for Win64 (x86-64)\n");
 }
 
 int main(int argc, char *argv[])

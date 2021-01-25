@@ -53,7 +53,11 @@ Same as [build.sh](#build.sh) but for MSVC compiler on Windows. Has to be run fr
 
 ### build-x86_64.sh
 
-Runs [build.sh](#build.sh) and builds some of the [examples](./examples/) with an experimental [basm2nasm](#basm2nasm) translator. Puts the results to the `./build/examples` folder.
+Runs [build.sh](#build.sh) and builds some of the [examples](./examples/) with an experimental [basm2nasm](#basm2nasm) translator. Puts the results to the `./build/examples/unix` folder.
+
+### build_msvc-x86_64.bat
+
+Runs [build_msvc.bat](#build_msvc.bat) and builds some of the [examples](./examples/) with an experimental [basm2nasm](#basm2nasm) translator. Puts the results to the `./build/examples/win` folder.
 
 ### record-tests.sh
 
