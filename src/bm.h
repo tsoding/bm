@@ -1627,7 +1627,7 @@ String_View arena_slurp_file(Arena *arena, String_View file_path)
 void bm_load_standard_natives(Bm *bm)
 {
     // TODO(#35): some sort of mechanism to load native functions from DLLs
-    // TODO: remove dead natives from the list of standard natives
+    // TODO(#152): remove dead natives from the list of standard natives
     // - Dead natives are the ones within the range 0-6
     // - Also change the number of `write` native to 0
     bm_push_native(bm, native_alloc);     // 0
