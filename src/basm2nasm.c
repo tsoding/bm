@@ -5,6 +5,11 @@
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
+typedef enum {
+    ELF64 = 0,
+    WIN64,
+} Output_Format;
+
 static void usage(FILE *stream)
 {
     fprintf(stream, "Usage: ./basm2nasm <input.basm>\n");
@@ -12,22 +17,44 @@ static void usage(FILE *stream)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
+    if (argc < 3) {
         usage(stderr);
-        fprintf(stderr, "ERROR: no input provided.\n");
+        if (argc < 2) {
+            fprintf(stderr, "ERROR: no input provided.\n");
+        } else {
+            fprintf(stderr, "ERROR: invalid input.\n");
+        }
+        exit(1);
+    }
+
+    const char *flag = argv[1];
+    Output_Format output_format = {0};
+    if (strcmp(flag, "-felf64") == 0) {
+        output_format = ELF64;
+    } else if(strcmp(flag, "-fwin64") == 0) {
+        output_format = WIN64;
+    } else {
+        usage(stderr);
+        fprintf(stderr, "ERROR: unknown format flag.\n");
         exit(1);
     }
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Basm basm = {0};
-    basm_translate_source(&basm, sv_from_cstr(argv[1]));
+    basm_translate_source(&basm, sv_from_cstr(argv[2]));
 
     printf("BITS 64\n");
     printf("%%define BM_STACK_CAPACITY %d\n", BM_STACK_CAPACITY);
     printf("%%define BM_WORD_SIZE %d\n", BM_WORD_SIZE);
-    printf("%%define SYS_EXIT 60\n");
-    printf("%%define SYS_WRITE 1\n");
-    printf("%%define STDOUT 1\n");
+    if (output_format == ELF64) {
+        printf("%%define SYS_EXIT 60\n");
+        printf("%%define SYS_WRITE 1\n");
+        printf("%%define STDOUT 1\n");
+    } else if (output_format == WIN64) {
+        printf("extern GetStdHandle\n");
+        printf("extern WriteFile\n");
+        printf("extern ExitProcess\n");
+    }
     printf("segment .text\n");
     printf("global _start\n");
 
@@ -265,25 +292,49 @@ int main(int argc, char *argv[])
                 printf("    call print_i64\n");
             } else if (inst.operand.as_u64 == 7) {
                 printf("    ;; native write\n");
-                printf("    mov r11, [stack_top]\n");
-                printf("    sub r11, BM_WORD_SIZE\n");
-                printf("    mov rdx, [r11]\n");
-                printf("    sub r11, BM_WORD_SIZE\n");
-                printf("    mov rsi, [r11]\n");
-                printf("    add rsi, memory\n");
-                printf("    mov rdi, STDOUT\n");
-                printf("    mov rax, SYS_WRITE\n");
-                printf("    mov [stack_top], r11\n");
-                printf("    syscall\n");
+                if (output_format == ELF64) {
+                    printf("    mov r11, [stack_top]\n");
+                    printf("    sub r11, BM_WORD_SIZE\n");
+                    printf("    mov rdx, [r11]\n");
+                    printf("    sub r11, BM_WORD_SIZE\n");
+                    printf("    mov rsi, [r11]\n");
+                    printf("    add rsi, memory\n");
+                    printf("    mov rdi, STDOUT\n");
+                    printf("    mov rax, SYS_WRITE\n");
+                    printf("    mov [stack_top], r11\n");
+                    printf("    syscall\n");
+                } else if (output_format == WIN64) {
+                    printf("    sub rsp, 40\n");
+                    printf("    mov ecx, STD_OUTPUT_HANDLE\n");
+                    printf("    call GetStdHandle\n");
+                    printf("    mov DWORD [stdout_handler], eax\n");
+                    printf("    xor r9, r9\n");
+                    printf("    mov r11, [stack_top]\n");
+                    printf("    sub r11, BM_WORD_SIZE\n");
+                    printf("    mov r8, [r11]\n");
+                    printf("    sub r11, BM_WORD_SIZE\n");
+                    printf("    mov rdx, [r11]\n");
+                    printf("    add rdx, memory\n");
+                    printf("    xor ecx, ecx\n");
+                    printf("    mov ecx, dword [stdout_handler]\n");
+                    printf("    mov [stack_top], r11\n");
+                    printf("    call WriteFile\n");
+                    printf("    add rsp, 40\n");
+                }
             } else {
                 assert(false && "unsupported native function");
             }
         } break;
         case INST_HALT: {
             printf("    ;; halt\n");
-            printf("    mov rax, SYS_EXIT\n");
-            printf("    mov rdi, 0\n");
-            printf("    syscall\n");
+            if (output_format == ELF64) {
+                printf("    mov rax, SYS_EXIT\n");
+                printf("    mov rdi, 0\n");
+                printf("    syscall\n");
+            } else if (output_format == WIN64) {
+                printf("    push dword 0\n");
+                printf("    call ExitProcess\n");
+            }
         } break;
         case INST_NOT: {
             printf("    ;; not\n");
@@ -407,6 +458,9 @@ int main(int argc, char *argv[])
         printf("\n");
     }
     printf("\n");
+    if (output_format == WIN64) {
+        printf("stdout_handler: dd 0\n");
+    }
     printf("memory:\n");
     for (size_t row = 0; row < ROW_COUNT(basm.memory_size); ++row) {
         printf("  db");
@@ -420,6 +474,9 @@ int main(int argc, char *argv[])
 #undef ROW_COUNT
     printf("\n");
     printf("segment .bss\n");
+    if (output_format == WIN64) {
+        printf("STD_OUTPUT_HANDLE equ -11\n");
+    }
     printf("stack: resq BM_STACK_CAPACITY\n");
 
     return 0;
