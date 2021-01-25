@@ -372,7 +372,18 @@ int main(int argc, char *argv[])
         case INST_LTI: assert(false && "LTI is not implemented");
         case INST_NEI: assert(false && "NEI is not implemented");
         case INST_EQU: {
-            printf("    ;; FIXME: equ\n");
+            printf("    ;; equ\n");
+            printf("    mov rsi, [stack_top]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rbx, [rsi]\n");
+            printf("    sub rsi, BM_WORD_SIZE\n");
+            printf("    mov rax, [rsi]\n");
+            printf("    cmp rax, rbx\n");
+            printf("    mov rax, 0\n");
+            printf("    setz al\n");
+            printf("    mov [rsi], rax\n");
+            printf("    add rsi, BM_WORD_SIZE\n");
+            printf("    mov [stack_top], rsi\n");
         } break;
         case INST_GEU: assert(false && "GEU is not implemented");
         case INST_GTU: assert(false && "GTU is not implemented");
