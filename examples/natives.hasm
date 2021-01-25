@@ -1,7 +1,3 @@
-%native alloc       0
-%native free        1
-%native print_ptr   5
-%native dump_memory 6
 %native write       7
 
 ;; TODO(#127): a better way of allocating memory for standard printing functions
