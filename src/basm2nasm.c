@@ -39,6 +39,15 @@ int main(int argc, char *argv[])
             printf("_start:\n");
         }
 
+        for (size_t j = 0; j < BASM_BINDINGS_CAPACITY; ++j) {
+            if (basm.bindings[j].kind != BINDING_LABEL) continue;
+
+            if (basm.bindings[j].value.as_u64 == i) {
+                printf("\n;; "SV_Fmt":\n", SV_Arg(basm.bindings[j].name));
+                break;
+            }
+        }
+
         printf("inst_%zu:\n", i);
         switch (inst.type) {
         case INST_NOP: assert(false && "NOP is not implemented");
@@ -126,7 +135,7 @@ int main(int argc, char *argv[])
             printf("    mov [stack_top], rsi\n");
         } break;
         case INST_DIVU: {
-            printf("    ;; divi\n");
+            printf("    ;; divu\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rbx, [rsi]\n");
@@ -153,7 +162,7 @@ int main(int argc, char *argv[])
         } break;
 
         case INST_MODU: {
-            printf("    ;; modi\n");
+            printf("    ;; modu\n");
             printf("    mov rsi, [stack_top]\n");
             printf("    sub rsi, BM_WORD_SIZE\n");
             printf("    mov rbx, [rsi]\n");
