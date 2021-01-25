@@ -1,5 +1,7 @@
 %include "./examples/natives.hasm"
 
+;; TODO(#147): Semicolon in the end of lerp.bm example output
+
 ; a
 ; b
 ; t

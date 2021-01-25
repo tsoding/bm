@@ -10,6 +10,7 @@ mkdir build\examples
 
 cl.exe %CFLAGS% .\src\basm.c
 cl.exe %CFLAGS% .\src\bme.c
+cl.exe %CFLAGS% .\src\bmr.c
 cl.exe %CFLAGS% .\src\debasm.c
 cl.exe %CFLAGS% .\src\bdb.c
 cl.exe %CFLAGS% .\src\basm2nasm.c

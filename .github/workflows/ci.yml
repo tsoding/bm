@@ -13,6 +13,7 @@ jobs:
       - name: build all and examples
         run: |
           ./build-x86_64.sh
+          ./run-tests.sh
         env:
           CC: gcc
           CXX: g++
@@ -27,6 +28,7 @@ jobs:
       - name: build all and examples
         run: |
           ./build-x86_64.sh
+          ./run-tests.sh
         env:
           CC: clang
           CXX: clang++
@@ -37,6 +39,7 @@ jobs:
       - name: build all and examples
         run: |
           ./build.sh
+          ./run-tests.sh
         env:
           CC: clang
           CXX: clang++
