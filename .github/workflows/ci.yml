@@ -47,13 +47,17 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v1
+      - name: install 3rd party build tools
+        run: |
+          curl -fsSL -o nasm-2.15.05-win64.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+          tar --extract --file=nasm-2.15.05-win64.zip --strip=1 nasm-2.15.05/nasm.exe
         # this runs vcvarsall for us, so we get the MSVC toolchain in PATH.
       - uses: seanmiddleditch/gha-setup-vsdevenv@master
       - name: build all and examples
         shell: cmd
         # this replaces default PowerShell, which can't fail the build
         run: |
-          ./build_msvc.bat
+          ./build_msvc-x86_64.bat
 # TODO(#21): there is no CI build for FreeBSD
 # TODO(#113): the x86_64 examples do not work on Windows
 # TODO(#114): the x86_64 examples do not work on MacOS
