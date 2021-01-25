@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
         output_format = WIN64;
     } else {
         usage(stderr);
-        fprintf(stderr, "ERROR: unknown format flag.\n");
+        fprintf(stderr, "ERROR: unknown format flag `%s`.\n", flag);
         exit(1);
     }
 
