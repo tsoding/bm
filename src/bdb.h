@@ -38,6 +38,7 @@ Bdb_Err bdb_step_instr(Bdb_State *);
 Bdb_Err bdb_continue(Bdb_State *);
 Bdb_Err bdb_find_addr_of_label(Bdb_State *, String_View, Inst_Addr *);
 Bdb_Err bdb_parse_label_or_addr(Bdb_State *, String_View, Inst_Addr *);
+Bdb_Err bdb_run_command(Bdb_State *, String_View command_word, String_View arguments);
 void bdb_print_instr(FILE *, Inst *);
 void bdb_add_breakpoint(Bdb_State *, Inst_Addr);
 void bdb_delete_breakpoint(Bdb_State *, Inst_Addr);

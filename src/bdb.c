@@ -14,6 +14,8 @@
 #define BM_IMPLEMENTATION
 #include "bm.h"
 
+#define INPUT_CAPACITY 32
+
 static
 void usage(void)
 {
@@ -239,6 +241,135 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
+{
+    switch (*command_word.data)
+    {
+        /*
+         * Next instruction
+         */
+    case 'n':
+    {
+        Bdb_Err err = bdb_step_instr(state);
+        if (err)
+        {
+            return err;
+        }
+
+        printf("-> ");
+        bdb_print_instr(stdout, &state->bm.program[state->bm.ip]);
+        printf("\n");
+    } break;
+    /*
+     * Print the IP
+     */
+    case 'i':
+    {
+        printf("ip = %" PRIu64 "\n", state->bm.ip);
+    } break;
+    /*
+     * Inspect the memory
+     */
+    case 'x':
+    {
+        arguments = sv_trim(arguments);
+        String_View where_sv = sv_chop_by_delim(&arguments, ' ');
+        String_View count_sv = arguments;
+
+        Inst_Addr where = 0;
+        if (bdb_parse_label_or_addr(state, where_sv, &where) == BDB_FAIL)
+        {
+            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(where_sv));
+            return BDB_FAIL;
+        }
+
+        Inst_Addr count = 0;
+        if (bdb_parse_label_or_addr(state, count_sv, &count) == BDB_FAIL)
+        {
+            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(count_sv));
+            return BDB_FAIL;
+        }
+
+        for (Inst_Addr i = 0; i < count && where + i < BM_MEMORY_CAPACITY; ++i) {
+            printf("%02X ", state->bm.memory[where + i]);
+        }
+        printf("\n");
+    } break;
+    /*
+     * Dump the stack
+     */
+    case 's':
+    {
+        bm_dump_stack(stdout, &state->bm);
+    } break;
+    case 'b':
+    {
+        Inst_Addr break_addr;
+        String_View addr = sv_trim(arguments);
+
+        if (bdb_parse_label_or_addr(state, addr, &break_addr) == BDB_FAIL)
+        {
+            fprintf(stderr, "ERR : Cannot parse address or label\n");
+            return BDB_FAIL;
+        }
+
+        bdb_add_breakpoint(state, break_addr);
+        fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr);
+    } break;
+    case 'd':
+    {
+        Inst_Addr break_addr;
+        String_View addr = sv_trim(arguments);
+
+        if (bdb_parse_label_or_addr(state, addr, &break_addr) == BDB_FAIL)
+        {
+            fprintf(stderr, "ERR : Cannot parse address or label\n");
+            return BDB_FAIL;
+        }
+
+        bdb_delete_breakpoint(state, break_addr);
+        fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr);
+    } break;
+    case 'r':
+    {
+        if (!state->bm.halt)
+        {
+            fprintf(stderr, "ERR : Program is already running\n");
+            /* TODO(#88): Reset bm and restart program */
+        }
+
+        state->bm.halt = 0;
+    } /* fall through */
+    case 'c':
+    {
+        return bdb_continue(state);
+    }
+    case EOF:
+    case 'q':
+    {
+        return BDB_EXIT;
+    }
+    case 'h':
+    {
+        printf("r - run program\n"
+               "n - next instruction\n"
+               "c - continue program execution\n"
+               "s - stack dump\n"
+               "i - instruction pointer\n"
+               "x - inspect the memory\n"
+               "b - set breakpoint at address or label\n"
+               "d - destroy breakpoint at address or label\n"
+               "q - quit\n");
+    } break;
+    default:
+    {
+        fprintf(stderr, "?\n");
+    } break;
+    }
+
+    return BDB_OK;
+}
+
 /*
  */
 int main(int argc, char **argv)
@@ -266,142 +397,54 @@ int main(int argc, char **argv)
                 strerror(errno));
     }
 
-    // TODO(#94): repeat previous command in bdb
+    /*
+     * This is a temporary buffer to store the previous command. In
+     * the future, this may be removed, if we decide to do proper
+     * command parsing and have a dedicated place to store the command
+     * history. For now we will just store the last one and repeat
+     * that if the user just hits enter.
+     */
+    char previous_command[INPUT_CAPACITY] = {0};
+
     while (!feof(stdin))
     {
         printf("(bdb) ");
-        char input_buf[32] = {0};
-        fgets(input_buf, 32, stdin);
+        char input_buf[INPUT_CAPACITY] = {0};
+        fgets(input_buf, INPUT_CAPACITY, stdin);
 
         String_View
             input_sv = sv_from_cstr(input_buf),
             control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
 
-        switch (*control_word.data)
-        {
         /*
-         * Next instruction
+         * Check if we need to repeat the previous command
          */
-        case 'n':
+        if (control_word.count == 0)
         {
-            Bdb_Err err = bdb_step_instr(&state);
-            if (err)
+            if (*previous_command == '\0')
             {
-                return EXIT_FAILURE;
-            }
-
-            printf("-> ");
-            bdb_print_instr(stdout, &state.bm.program[state.bm.ip]);
-            printf("\n");
-        } break;
-        /*
-         * Print the IP
-         */
-        case 'i':
-        {
-            printf("ip = %" PRIu64 "\n", state.bm.ip);
-        } break;
-        /*
-         * Inspect the memory
-         */
-        case 'x':
-        {
-            input_sv = sv_trim(input_sv);
-            String_View where_sv = sv_chop_by_delim(&input_sv, ' ');
-            String_View count_sv = input_sv;
-
-            Inst_Addr where = 0;
-            if (bdb_parse_label_or_addr(&state, where_sv, &where) == BDB_FAIL)
-            {
-                fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(where_sv));
+                fprintf(stderr, "ERR : No previous command\n");
                 continue;
             }
 
-            Inst_Addr count = 0;
-            if (bdb_parse_label_or_addr(&state, count_sv, &count) == BDB_FAIL)
-            {
-                fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(count_sv));
-                continue;
-            }
-
-            for (Inst_Addr i = 0; i < count && where + i < BM_MEMORY_CAPACITY; ++i) {
-                printf("%02X ", state.bm.memory[where + i]);
-            }
-            printf("\n");
-        } break;
-        /*
-         * Dump the stack
-         */
-        case 's':
-        {
-            bm_dump_stack(stdout, &state.bm);
-        } break;
-        case 'b':
-        {
-            Inst_Addr break_addr;
-            String_View addr = sv_trim(input_sv);
-
-            if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
-            {
-                fprintf(stderr, "ERR : Cannot parse address or label\n");
-                continue;
-            }
-
-            bdb_add_breakpoint(&state, break_addr);
-            fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr);
-        } break;
-        case 'd':
-        {
-            Inst_Addr break_addr;
-            String_View addr = sv_trim(input_sv);
-
-            if (bdb_parse_label_or_addr(&state, addr, &break_addr) == BDB_FAIL)
-            {
-                fprintf(stderr, "ERR : Cannot parse address or label\n");
-                continue;
-            }
-
-            bdb_delete_breakpoint(&state, break_addr);
-            fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr);
-        } break;
-        case 'r':
-        {
-            if (!state.bm.halt)
-            {
-                fprintf(stderr, "ERR : Program is already running\n");
-                /* TODO(#88): Reset bm and restart program */
-            }
-
-            state.bm.halt = 0;
-        } /* fall through */
-        case 'c':
-        {
-            if (bdb_continue(&state))
-            {
-                return EXIT_FAILURE;
-            }
-        } break;
-        case EOF:
-        case 'q':
-        {
-            return EXIT_SUCCESS;
+            input_sv = sv_from_cstr(previous_command);
+            control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
         }
-        case 'h':
+
+        Bdb_Err err = bdb_run_command(&state, control_word, input_sv);
+
+        if ( (err == BDB_OK)
+             && (*input_buf != '\n') )
         {
-            printf("r - run program\n"
-                   "n - next instruction\n"
-                   "c - continue program execution\n"
-                   "s - stack dump\n"
-                   "i - instruction pointer\n"
-                   "x - inspect the memory\n"
-                   "b - set breakpoint at address or label\n"
-                   "d - destroy breakpoint at address or label\n"
-                   "q - quit\n");
-        } break;
-        default:
+            /*
+             * Store the previous command for repeating it.
+             */
+            memcpy(previous_command, input_buf, sizeof(char) * INPUT_CAPACITY);
+        }
+        else if (err == BDB_EXIT)
         {
-            fprintf(stderr, "?\n");
-        } break;
+            printf("Bye\n");
+            return EXIT_SUCCESS;
         }
     }
 
