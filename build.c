@@ -60,7 +60,8 @@ void run_tests()
             if (strcmp(example + n - 4, "basm") == 0) {
                 const char *example_base = remove_ext(example);
                 CMD(PATH("build", "bin", "bmr"),
-                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")));
+                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
+                    "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
             }
         }
     });
