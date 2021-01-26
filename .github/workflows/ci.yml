@@ -12,8 +12,10 @@ jobs:
           sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          ./build-x86_64.sh
-          ./run-tests.sh
+          # ./build-x86_64.sh
+          # ./run-tests.sh
+          gcc -o build.exe build.c
+          ./build.exe
         env:
           CC: gcc
           CXX: g++
