@@ -202,8 +202,6 @@ void mkdirs_impl(int ignore, ...)
         result[length] = '\0';
 
         printf("[INFO] mkdir %s\n", result);
-        // TODO: MKDIRS does not work on Windows
-        //  https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/mkdir-wmkdir?view=msvc-160
         if (mkdir(result, 0755) < 0) {
             if (errno == EEXIST) {
                 fprintf(stderr, "[WARN] directory %s already exists\n",
@@ -245,11 +243,6 @@ const char *concat_impl(int ignore, ...)
 #ifdef _WIN32
 void build_h_exec(const char **argv)
 {
-    // TODO: CMD does not work on Windows
-    // - https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/execvp-wexecvp?view=msvc-160
-    // - https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/spawnvp-wspawnvp?view=msvc-160
-
-    // if (_execvp(argv[0], (char * const*) argv) < 0) {
     if (_spawnvp(_P_WAIT, argv[0], (char * const*) argv) < 0) {
         fprintf(stderr, "[ERROR] could not execute child process: %s\n",
                 strerror(errno));
@@ -306,3 +299,21 @@ void cmd_impl(int ignore, ...)
         printf("[INFO] %s\n", CONCAT_SEP(" ", __VA_ARGS__));    \
         cmd_impl(69, __VA_ARGS__, NULL);                        \
     } while(0)
+
+const char *remove_ext(const char *path)
+{
+    size_t n = strlen(path);
+    while (n > 0 && path[n - 1] != '.') {
+        n -= 1;
+    }
+
+    if (n > 0) {
+        char *result = malloc(n);
+        memcpy(result, path, n);
+        result[n - 1] = '\0';
+
+        return result;
+    } else {
+        return path;
+    }
+}

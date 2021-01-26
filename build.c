@@ -41,10 +41,27 @@ void build_examples(void)
         if (*example != '.') {
             assert(n >= 4);
             if (strcmp(example + n - 4, "basm") == 0) {
+                const char *example_base = remove_ext(example);
                 CMD(PATH("build", "bin", "basm"),
                     "-g",
                     PATH("examples", example),
-                    PATH("build", CONCAT(example, ".bm")));
+                    PATH("build", "examples", CONCAT(example_base, ".bm")));
+            }
+        }
+    });
+}
+
+void run_tests()
+{
+    FOREACH_FILE_IN_DIR(example, "examples", {
+        size_t n = strlen(example);
+        if (*example != '.') {
+            assert(n >= 4);
+            if (strcmp(example + n - 4, "basm") == 0) {
+                const char *example_base = remove_ext(example);
+                CMD(PATH("build", "bin", "bmr"),
+                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
+                    "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
             }
         }
     });
@@ -54,6 +71,7 @@ int main()
 {
     build_toolchain();
     build_examples();
+    run_tests();
 
     return 0;
 }
