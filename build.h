@@ -294,6 +294,7 @@ void cmd_impl(int ignore, ...)
     FOREACH_VARGS(ignore, arg, args, {
         argv[argc++] = arg;
     });
+    argv[argc] = NULL;
 
     assert(argc >= 1);
 
