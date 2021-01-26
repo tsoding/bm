@@ -51,7 +51,7 @@ struct dirent *readdir(DIR *dirp)
     assert(dirp);
 
     if (dirp->dirent == NULL) {
-        dirp->dirent = (dirent*)calloc(1, sizeof(struct dirent));
+        dirp->dirent = (struct dirent*)calloc(1, sizeof(struct dirent));
     } else {
         if(!FindNextFile(dirp->hFind, &dirp->data)) {
             return NULL;
