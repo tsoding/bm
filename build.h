@@ -170,6 +170,40 @@ const char *concat_impl(int ignore, ...)
 
 #define CONCAT(...) concat_impl(69, __VA_ARGS__, NULL)
 
+#ifdef _WIN32
+void build_h_exec(const char **argv)
+{
+    // TODO: CMD does not work on Windows
+    // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/execvp-wexecvp?view=msvc-160
+    if (_execvp(argv[0], (char * const*) argv) < 0) {
+        fprintf(stderr, "[ERROR] could not execute child process: %s\n",
+                strerror(errno));
+        exit(1);
+    }
+}
+#else
+void build_h_exec(const char **argv)
+{
+    pid_t cpid = fork();
+    if (cpid == -1) {
+        fprintf(stderr, "[ERROR] could not fork a child process: %s\n",
+                strerror(errno));
+        exit(1);
+    }
+
+    if (cpid == 0) {
+        if (execvp(argv[0], (char * const*) argv) < 0) {
+            fprintf(stderr, "[ERROR] could not execute child process: %s\n",
+                    strerror(errno));
+            exit(1);
+        }
+    } else {
+        // TODO: child fail is not properly reported on Linux
+        wait(NULL);
+    }
+}
+#endif // _WIN32
+
 void cmd_impl(int ignore, ...)
 {
     size_t argc = 0;
@@ -188,25 +222,7 @@ void cmd_impl(int ignore, ...)
 
     assert(argc >= 1);
 
-    pid_t cpid = fork();
-    if (cpid == -1) {
-        fprintf(stderr, "[ERROR] could not fork a child process: %s\n",
-                strerror(errno));
-        exit(1);
-    }
-
-    if (cpid == 0) {
-        // TODO: CMD does not work on Windows
-        // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/execvp-wexecvp?view=msvc-160
-        if (execvp(argv[0], (char * const*) argv) < 0) {
-            fprintf(stderr, "[ERROR] could not execute child process: %s\n",
-                    strerror(errno));
-            exit(1);
-        }
-    } else {
-        // TODO: child fail is not properly reported on Linux
-        wait(NULL);
-    }
+    build_h_exec(argv);
 }
 
 #define CMD(...)                                                \
