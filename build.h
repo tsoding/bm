@@ -62,7 +62,7 @@ const char *concat_sep_impl(const char *sep, ...)
 {
     const size_t sep_len = strlen(sep);
     size_t length = 0;
-    ssize_t seps_count = -1;
+    size_t seps_count = 0;
 
     va_list args;
 
@@ -70,8 +70,9 @@ const char *concat_sep_impl(const char *sep, ...)
         length += strlen(arg);
         seps_count += 1;
     });
-
     assert(length > 0);
+
+    seps_count -= 1;
 
     char *result = malloc(length + seps_count * sep_len + 1);
 
@@ -100,7 +101,7 @@ const char *concat_sep_impl(const char *sep, ...)
 void mkdirs_impl(int ignore, ...)
 {
     size_t length = 0;
-    ssize_t seps_count = -1;
+    size_t seps_count = 0;
 
     va_list args;
 
@@ -110,6 +111,7 @@ void mkdirs_impl(int ignore, ...)
     });
 
     assert(length > 0);
+    seps_count -= 1;
 
     char *result = malloc(length + seps_count * PATH_SEP_LEN + 1);
 
