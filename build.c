@@ -53,7 +53,7 @@ void build_examples(void)
 int main()
 {
     build_toolchain();
-    // build_examples();
+    build_examples();
 
     return 0;
 }
