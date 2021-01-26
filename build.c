@@ -26,10 +26,10 @@ void build_toolchain(void)
 {
     MKDIRS("build", "bin");
 
-    // FOREACH_ARRAY(const char *, tool, toolchain, {
-    //     build_c_file(PATH("src", CONCAT(tool, ".c")),
-    //                  PATH("build", "bin", tool));
-    // });
+    FOREACH_ARRAY(const char *, tool, toolchain, {
+        build_c_file(PATH("src", CONCAT(tool, ".c")),
+                     PATH("build", "bin", tool));
+    });
 }
 
 void build_examples(void)
