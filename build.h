@@ -16,12 +16,11 @@
 #endif // _WIN32
 
 #ifdef _WIN32
-struct DIR
-{
+typedef struct {
     HANDLE hFind;
     WIN32_FIND_DATA data;
     struct dirent *dirent;
-};
+} DIR;
 
 DIR *opendir(const char *dirpath)
 {
