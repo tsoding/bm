@@ -245,13 +245,15 @@ const char *concat_impl(int ignore, ...)
 void build_h_exec(const char **argv)
 {
     // TODO: CMD does not work on Windows
-    // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/execvp-wexecvp?view=msvc-160
+    // - https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/execvp-wexecvp?view=msvc-160
+    // - https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/spawnvp-wspawnvp?view=msvc-160
 
     // if (_execvp(argv[0], (char * const*) argv) < 0) {
-    //     fprintf(stderr, "[ERROR] could not execute child process: %s\n",
-    //             strerror(errno));
-    //     exit(1);
-    // }
+    if (_spawnvp(_P_WAIT, argv[0], (char * const*) argv) < 0) {
+        fprintf(stderr, "[ERROR] could not execute child process: %s\n",
+                strerror(errno));
+        exit(1);
+    }
 }
 #else
 void build_h_exec(const char **argv)
