@@ -16,6 +16,11 @@
 #endif // _WIN32
 
 #ifdef _WIN32
+struct dirent
+{
+    char d_name[MAX_PATH+1];
+};
+
 typedef struct {
     HANDLE hFind;
     WIN32_FIND_DATA data;
