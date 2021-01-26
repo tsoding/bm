@@ -55,7 +55,7 @@ jobs:
         shell: cmd
         # this replaces default PowerShell, which can't fail the build
         run: |
-          #./build_msvc.bat examples
+          rem ./build_msvc.bat examples
           cl.exe build.c
           .\build.exe
 # TODO(#21): there is no CI build for FreeBSD
