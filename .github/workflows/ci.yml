@@ -40,8 +40,10 @@ jobs:
       - uses: actions/checkout@v1
       - name: build all and examples
         run: |
-          ./build.sh
-          ./run-tests.sh
+          # ./build.sh
+          # ./run-tests.sh
+          clang -o build.exe ./build.c
+          ./build.exe
         env:
           CC: clang
           CXX: clang++
