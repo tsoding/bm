@@ -13,6 +13,8 @@ $ cc -o nobuild nobuild.c
 $ ./nobuild
 ```
 
+`./nobuild help` for more information.
+
 ### Build on Windows with MSVC
 
 Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160).
@@ -21,6 +23,8 @@ Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-c
 > cl.exe nobuild.c
 > nobuild.exe
 ```
+
+`nobuild.exe help` for more information.
 
 ### Running Examples
 
