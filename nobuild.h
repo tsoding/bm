@@ -126,7 +126,7 @@ void closedir(DIR *dirp)
     do {                                                \
         struct dirent *dp = NULL;                       \
         DIR *dir = opendir(dirpath);                    \
-        while (dp = readdir(dir)) {                     \
+        while ((dp = readdir(dir))) {                   \
             const char *file = dp->d_name;              \
             body;                                       \
         }                                               \
