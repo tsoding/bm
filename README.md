@@ -6,8 +6,29 @@ Simple Virtual Machine with its own Bytecode and Assembly language.
 
 ## Quick Start
 
+### Build on Linux/MacOS/FreeBSD/literally any OS on the planet Earth except Windows with MSVC
+
 ```console
-$ ./build.sh                  # or ./build_msvc.bat if you are on Windows
+$ cc -o nobuild nobuild.c
+$ ./nobuild
+```
+
+`./nobuild help` for more information.
+
+### Build on Windows with MSVC
+
+Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160).
+
+```console
+> cl.exe nobuild.c
+> nobuild.exe
+```
+
+`nobuild.exe help` for more information.
+
+### Running Examples
+
+```console
 $ ./build/bin/bme -i ./build/examples/hello.bm
 $ ./build/bin/bme -i ./build/examples/fib.bm
 $ ./build/bin/bme -i ./build/examples/e.bm

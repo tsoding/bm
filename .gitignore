@@ -12,3 +12,4 @@ debasm
 bdb
 basm2nasm
 build/
+nobuild
