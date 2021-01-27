@@ -243,6 +243,7 @@ const char *concat_impl(int ignore, ...)
 #ifdef _WIN32
 void build_h_exec(const char **argv)
 {
+    // TODO: child fail is not properly reported on Windows
     if (_spawnvp(_P_WAIT, argv[0], (char * const*) argv) < 0) {
         fprintf(stderr, "[ERROR] could not execute child process: %s\n",
                 strerror(errno));

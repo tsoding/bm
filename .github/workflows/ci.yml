@@ -14,8 +14,8 @@ jobs:
         run: |
           # ./build-x86_64.sh
           # ./run-tests.sh
-          gcc -o build.exe build.c
-          ./build.exe
+          $CC -o nobuild nobuild.c
+          ./nobuild
         env:
           CC: gcc
           CXX: g++
@@ -29,8 +29,10 @@ jobs:
           sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          ./build-x86_64.sh
-          ./run-tests.sh
+          # ./build-x86_64.sh
+          # ./run-tests.sh
+          $CC -o nobuild nobuild.c
+          ./nobuild
         env:
           CC: clang
           CXX: clang++
@@ -42,8 +44,8 @@ jobs:
         run: |
           # ./build.sh
           # ./run-tests.sh
-          clang -o build.exe ./build.c
-          ./build.exe
+          $CC -o nobuild nobuild.c
+          ./nobuild
         env:
           CC: clang
           CXX: clang++
@@ -58,8 +60,8 @@ jobs:
         # this replaces default PowerShell, which can't fail the build
         run: |
           rem ./build_msvc.bat examples
-          cl.exe build.c
-          .\build.exe
+          cl.exe nobuild.c
+          .\nobuild.exe
 # TODO(#21): there is no CI build for FreeBSD
 # TODO(#113): the x86_64 examples do not work on Windows
 # TODO(#114): the x86_64 examples do not work on MacOS
