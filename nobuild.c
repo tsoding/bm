@@ -10,17 +10,14 @@ const char *toolchain[] = {
     "basm", "bme", "bmr", "debasm", "bdb", "basm2nasm"
 };
 
+void build_c_file(const char *input_path, const char *output_path)
+{
 #ifdef _WIN32
-void build_c_file(const char *input_path, const char *output_path)
-{
     CMD("cl.exe", CFLAGS, input_path);
-}
 #else
-void build_c_file(const char *input_path, const char *output_path)
-{
     CMD("cc", CFLAGS, "-o", output_path, input_path);
-}
 #endif // WIN32
+}
 
 void build_toolchain(void)
 {
