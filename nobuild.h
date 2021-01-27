@@ -16,6 +16,9 @@
 #   include <unistd.h>
 #endif // _WIN32
 
+// TODO: no way to disable echo in nobuild scripts
+// TODO: no way to ignore fails
+
 #ifdef _WIN32
 struct dirent
 {
@@ -264,8 +267,26 @@ void nobuild_exec(const char **argv)
             exit(1);
         }
     } else {
-        // TODO: child fail is not properly reported on Linux
-        wait(NULL);
+        for (;;) {
+            int wstatus = 0;
+            wait(&wstatus);
+
+            if (WIFEXITED(wstatus)) {
+                int exit_status = WEXITSTATUS(wstatus);
+                if (exit_status != 0) {
+                    fprintf(stderr, "[ERROR] command exited with exit code %d\n", exit_status);
+                    exit(-1);
+                }
+
+                break;
+            }
+
+            if (WIFSIGNALED(wstatus)) {
+                fprintf(stderr, "[ERROR] command process was terminated by signal %d\n",
+                        WTERMSIG(wstatus));
+                exit(-1);
+            }
+        }
     }
 #endif // _WIN32
 }
