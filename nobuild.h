@@ -246,10 +246,16 @@ const char *concat_impl(int ignore, ...)
 void nobuild_exec(const char **argv)
 {
 #ifdef _WIN32
-    // TODO: child fail is not properly reported on Windows
-    if (_spawnvp(_P_WAIT, argv[0], (char * const*) argv) < 0) {
-        fprintf(stderr, "[ERROR] could not execute child process: %s\n",
+    intptr_t status = _spawnvp(_P_WAIT, argv[0], (char * const*) argv);
+    if (status < 0) {
+        fprintf(stderr, "[ERROR] could not start child process: %s\n",
                 strerror(errno));
+        exit(1);
+    }
+
+    if (status > 0) {
+        fprintf(stderr, "[ERROR] command exited with exit code %d\n",
+                status);
         exit(1);
     }
 #else
