@@ -151,8 +151,7 @@ int main(int argc, char *argv[])
 
     bm_load_program_from_file(&bm, program_file_path);
 
-    bm.natives_size = 8;
-    bm.natives[7] = bmr_write;
+    bm_push_native(&bm, bmr_write); // 0
 
     Err err = bm_execute_program(&bm, -1);
     if (err != ERR_OK) {
