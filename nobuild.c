@@ -48,7 +48,29 @@ void build_examples(void)
     });
 }
 
-void run_tests()
+void build_x86_64_example(const char *example)
+{
+    CMD(PATH("build", "bin", "basm2nasm"),
+        PATH("examples", CONCAT(example, ".basm")),
+        PATH("build", "examples", CONCAT(example, ".asm")));
+
+    CMD("nasm", "-felf64", "-F", "dwarf", "-g",
+        PATH("build", "examples", CONCAT(example, ".asm")),
+        "-o",
+        PATH("build", "examples", CONCAT(example, ".o")));
+
+    CMD("ld",
+        "-o", PATH("build", "examples", CONCAT(example, ".exe")),
+        PATH("build", "examples", CONCAT(example, ".o")));
+}
+
+void build_x86_64_examples(void)
+{
+    build_x86_64_example("123i");
+    build_x86_64_example("fib");
+}
+
+void run_tests(void)
 {
     FOREACH_FILE_IN_DIR(example, "examples", {
         size_t n = strlen(example);
@@ -64,11 +86,62 @@ void run_tests()
     });
 }
 
-int main()
+void record_tests(void)
 {
+    FOREACH_FILE_IN_DIR(example, "examples", {
+        size_t n = strlen(example);
+        if (*example != '.') {
+            assert(n >= 4);
+            if (strcmp(example + n - 4, "basm") == 0) {
+                const char *example_base = remove_ext(example);
+                CMD(PATH("build", "bin", "bmr"),
+                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
+                    "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
+            }
+        }
+    });
+}
+
+void print_help(FILE *stream)
+{
+    fprintf(stream, "./nobuild          - Build toolchain and examples\n");
+    fprintf(stream, "./nobuild test     - Run the tests\n");
+    fprintf(stream, "./nobuild record   - Capture the current output of examples as the expected on for the tests\n");
+    fprintf(stream, "./nobuild help     - Show this help message\n");
+}
+
+int main(int argc, char **argv)
+{
+    shift(&argc, &argv);
+
+    const char *subcommand = NULL;
+
+    if (argc > 0) {
+        subcommand = shift(&argc, &argv);
+    }
+
+    if (subcommand != NULL && strcmp(subcommand, "help") == 0) {
+        print_help(stdout);
+        exit(0);
+    }
+
     build_toolchain();
     build_examples();
-    run_tests();
+#ifdef __linux__
+    build_x86_64_examples();
+#endif // __linux__
+
+    if (subcommand) {
+        if (strcmp(subcommand, "test") == 0) {
+            run_tests();
+        } else if (strcmp(subcommand, "record") == 0) {
+            record_tests();
+        } else {
+            print_help(stderr);
+            fprintf(stderr, "[ERROR] unknown subcommand `%s`\n", subcommand);
+            exit(1);
+        }
+    }
 
     return 0;
 }

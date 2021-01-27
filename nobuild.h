@@ -220,6 +220,9 @@ void mkdirs_impl(int ignore, ...)
 
 #define MKDIRS(...) mkdirs_impl(69, __VA_ARGS__, NULL)
 
+// TODO: there is no way to remove a folder
+// TODO: there is no way to remove a file
+
 const char *concat_impl(int ignore, ...)
 {
     size_t length = 0;
@@ -319,6 +322,7 @@ void cmd_impl(int ignore, ...)
     nobuild_exec(argv);
 }
 
+// TODO: there is no way to redirect the output of CMD to a file
 #define CMD(...)                                                \
     do {                                                        \
         printf("[INFO] %s\n", CONCAT_SEP(" ", __VA_ARGS__));    \
@@ -341,4 +345,13 @@ const char *remove_ext(const char *path)
     } else {
         return path;
     }
+}
+
+char *shift(int *argc, char ***argv)
+{
+    assert(*argc > 0);
+    char *result = **argv;
+    *argv += 1;
+    *argc -= 1;
+    return result;
 }

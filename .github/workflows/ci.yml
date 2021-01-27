@@ -15,7 +15,7 @@ jobs:
           # ./build-x86_64.sh
           # ./run-tests.sh
           $CC -o nobuild nobuild.c
-          ./nobuild
+          ./nobuild test
         env:
           CC: gcc
           CXX: g++
@@ -32,7 +32,7 @@ jobs:
           # ./build-x86_64.sh
           # ./run-tests.sh
           $CC -o nobuild nobuild.c
-          ./nobuild
+          ./nobuild test
         env:
           CC: clang
           CXX: clang++
@@ -45,7 +45,7 @@ jobs:
           # ./build.sh
           # ./run-tests.sh
           $CC -o nobuild nobuild.c
-          ./nobuild
+          ./nobuild test
         env:
           CC: clang
           CXX: clang++
@@ -61,7 +61,7 @@ jobs:
         run: |
           rem ./build_msvc.bat examples
           cl.exe nobuild.c
-          .\nobuild.exe
+          .\nobuild.exe test
 # TODO(#21): there is no CI build for FreeBSD
 # TODO(#113): the x86_64 examples do not work on Windows
 # TODO(#114): the x86_64 examples do not work on MacOS
