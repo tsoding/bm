@@ -1,4 +1,4 @@
-%native write       7
+%native write       0
 
 ;; TODO(#127): a better way of allocating memory for standard printing functions
 %const print_memory "******************************"

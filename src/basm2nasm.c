@@ -287,10 +287,7 @@ int main(int argc, char *argv[])
             fprintf(output, "    jmp [rdi]\n");
         } break;
         case INST_NATIVE: {
-            if (inst.operand.as_u64 == 3) {
-                fprintf(output, "    ;; native print_i64\n");
-                fprintf(output, "    call print_i64\n");
-            } else if (inst.operand.as_u64 == 7) {
+            if (inst.operand.as_u64 == 0) {
                 fprintf(output, "    ;; native write\n");
                 fprintf(output, "    mov r11, [stack_top]\n");
                 fprintf(output, "    sub r11, BM_WORD_SIZE\n");
