@@ -1032,7 +1032,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     bm->program_size = fread(bm->program, sizeof(bm->program[0]), meta.program_size, f);
 
     if (bm->program_size != meta.program_size) {
-        fprintf(stderr, "ERROR: %s: read %zd program instructions, but expected %"PRIu64"\n",
+        fprintf(stderr, "ERROR: %s: read %"PRIu64" program instructions, but expected %"PRIu64"\n",
                 file_path,
                 bm->program_size,
                 meta.program_size);
