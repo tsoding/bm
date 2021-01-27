@@ -12,8 +12,6 @@ jobs:
           sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          # ./build-x86_64.sh
-          # ./run-tests.sh
           $CC -o nobuild nobuild.c
           ./nobuild test
         env:
@@ -29,8 +27,6 @@ jobs:
           sudo apt-get install -qq nasm
       - name: build all and examples
         run: |
-          # ./build-x86_64.sh
-          # ./run-tests.sh
           $CC -o nobuild nobuild.c
           ./nobuild test
         env:
@@ -42,8 +38,6 @@ jobs:
       - uses: actions/checkout@v1
       - name: build all and examples
         run: |
-          # ./build.sh
-          # ./run-tests.sh
           $CC -o nobuild nobuild.c
           ./nobuild test
         env:
@@ -59,7 +53,6 @@ jobs:
         shell: cmd
         # this replaces default PowerShell, which can't fail the build
         run: |
-          rem ./build_msvc.bat examples
           cl.exe nobuild.c
           .\nobuild.exe test
 # TODO(#21): there is no CI build for FreeBSD
