@@ -344,7 +344,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         return bdb_continue(state);
     }
-    case EOF:
     case 'q':
     {
         return BDB_EXIT;
