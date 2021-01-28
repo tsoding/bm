@@ -71,8 +71,9 @@ int main(int argc, char **argv)
          *
          */
         for (size_t i = 0; i < basm.bindings_size; ++i) {
-            fprintf(symbol_file, "%"PRIu64"\t"SV_Fmt"\n",
+            fprintf(symbol_file, "%"PRIu64"\t%u\t"SV_Fmt"\n",
                     basm.bindings[i].value.as_u64,
+                    basm.bindings[i].kind,
                     SV_Arg(basm.bindings[i].name));
         }
         fclose(symbol_file);
