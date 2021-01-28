@@ -264,6 +264,24 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *out)
+{
+    if (bdb_parse_label_or_addr(st, in, &out->as_u64) == BDB_OK)
+    {
+        return BDB_OK;
+    }
+
+    for (size_t i = 0; i < st->constants_size; ++i) {
+        if (sv_eq(in, st->constants[i].name))
+        {
+            *out = st->constants[i].value;
+            return BDB_OK;
+        }
+    }
+
+    return BDB_FAIL;
+}
+
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
 {
     switch (*command_word.data)
@@ -299,24 +317,29 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
-        Inst_Addr where = 0;
-        if (bdb_parse_label_or_addr(state, where_sv, &where) == BDB_FAIL)
+        // TODO: Rethink the types in the `examine` command of bdb
+        Word where = word_u64(0);
+        if (bdb_parse_label_addr_or_constant(state, where_sv, &where) == BDB_FAIL)
         {
-            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(where_sv));
+            fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(where_sv));
             return BDB_FAIL;
         }
 
-        Inst_Addr count = 0;
-        if (bdb_parse_label_or_addr(state, count_sv, &count) == BDB_FAIL)
+        Word count = word_u64(0);
+        if (bdb_parse_label_addr_or_constant(state, count_sv, &count) == BDB_FAIL)
         {
-            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(count_sv));
+            fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(count_sv));
             return BDB_FAIL;
         }
 
-        for (Inst_Addr i = 0; i < count && where + i < BM_MEMORY_CAPACITY; ++i) {
-            printf("%02X ", state->bm.memory[where + i]);
+        for (uint64_t i = 0;
+             i < count.as_u64 && where.as_u64 + i < BM_MEMORY_CAPACITY;
+             ++i)
+        {
+            printf("%02X ", state->bm.memory[where.as_u64 + i]);
         }
         printf("\n");
+
     } break;
     /*
      * Dump the stack
