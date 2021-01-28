@@ -39,7 +39,7 @@ void build_examples(void)
         if (*example != '.') {
             assert(n >= 4);
             if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = remove_ext(example);
+                const char *example_base = NOEXT(example);
                 CMD(PATH("build", "bin", "basm"),
                     "-g",
                     PATH("examples", example),
@@ -78,7 +78,7 @@ void run_tests(void)
         if (*example != '.') {
             assert(n >= 4);
             if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = remove_ext(example);
+                const char *example_base = NOEXT(example);
                 CMD(PATH("build", "bin", "bmr"),
                     "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
                     "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
@@ -94,7 +94,7 @@ void record_tests(void)
         if (*example != '.') {
             assert(n >= 4);
             if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = remove_ext(example);
+                const char *example_base = NOEXT(example);
                 CMD(PATH("build", "bin", "bmr"),
                     "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
                     "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
