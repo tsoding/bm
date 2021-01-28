@@ -96,7 +96,7 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
         } break;
         case BINDING_NATIVE:
         {
-            // TODO: Add support for native labels in the bdb
+            state->native_labels[value.as_u64] = label_name;
         } break;
         }
 
@@ -106,12 +106,19 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
     return BDB_OK;
 }
 
-void bdb_print_instr(FILE *f, Inst *i)
+void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
     fprintf(f, "%s ", inst_name(i->type));
     if (inst_has_operand(i->type))
     {
-        fprintf(f, "%" PRIu64, i->operand.as_i64);
+        if (i->type == INST_NATIVE)
+        {
+            fprintf(f, SV_Fmt, SV_Arg(state->native_labels[i->operand.as_u64]));
+        }
+        else
+        {
+            fprintf(f, "%" PRIu64, i->operand.as_i64);
+        }
     }
 }
 
@@ -213,7 +220,7 @@ Bdb_Err bdb_fault(Bdb_State *state, Err err)
 
     fprintf(stderr, "%s at %" PRIu64 " (INSTR: ",
             err_as_cstr(err), state->bm.ip);
-    bdb_print_instr(stderr, &state->bm.program[state->bm.ip]);
+    bdb_print_instr(state, stderr, &state->bm.program[state->bm.ip]);
     fprintf(stderr, ")\n");
     state->bm.halt = 1;
     return BDB_OK;
@@ -298,7 +305,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         }
 
         printf("-> ");
-        bdb_print_instr(stdout, &state->bm.program[state->bm.ip]);
+        bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
         printf("\n");
     } break;
     /*
