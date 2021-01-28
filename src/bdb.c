@@ -62,22 +62,45 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
 
     while (symtab.count > 0)
     {
-        symtab = sv_trim_left(symtab);
-        String_View raw_addr   = sv_chop_by_delim(&symtab, '\t');
-        symtab = sv_trim_left(symtab);
-        String_View label_name = sv_chop_by_delim(&symtab, '\n');
-        Inst_Addr addr = sv_to_u64(raw_addr);
+        symtab                    = sv_trim_left(symtab);
+        String_View  raw_addr     = sv_chop_by_delim(&symtab, '\t');
+        symtab                    = sv_trim_left(symtab);
+        String_View  raw_sym_type = sv_chop_by_delim(&symtab, '\t');
+        symtab                    = sv_trim_left(symtab);
+        String_View  label_name   = sv_chop_by_delim(&symtab, '\n');
+        Word         value        = word_u64(sv_to_u64(raw_addr));
+        Binding_Kind kind         = (Binding_Kind)sv_to_u64(raw_sym_type);
 
-        /*
-         * Huh? you ask? Yes, if we have a label, whose size is bigger
-         * than the program size, which is to say, that it is a
-         * preprocessor label, then we don't wanna overrun our label
-         * storage buffer.
-         */
-        if (addr < BM_PROGRAM_CAPACITY)
+        switch (kind)
         {
-            state->labels[addr] = label_name;
+        case BINDING_CONST:
+        {
+            Bdb_BindingConstant *it = &state->constants[state->constants_size++];
+            it->name                = label_name;
+            it->value               = value;
+
+        } break;
+        case BINDING_LABEL:
+        {
+            /*
+             * Huh? you ask? Yes, if we have a label, whose size is bigger
+             * than the program size, which is to say, that it is a
+             * preprocessor label, then we don't wanna overrun our label
+             * storage buffer.
+             */
+            if (value.as_u64 < BM_PROGRAM_CAPACITY)
+            {
+                state->labels[value.as_u64] = label_name;
+            }
+
+        } break;
+        case BINDING_NATIVE:
+        {
+            // TODO: Add support for native labels in the bdb
+        } break;
         }
+
+
     }
 
     return BDB_OK;

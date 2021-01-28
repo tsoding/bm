@@ -23,12 +23,19 @@ typedef struct Bdb_Breakpoint
     int is_broken;
 } Bdb_Breakpoint;
 
+typedef struct {
+    String_View name;
+    Word value;
+} Bdb_BindingConstant;
+
 typedef struct Bdb_State
 {
     Bm bm;
     String_View cood_file_name;
     Bdb_Breakpoint breakpoints[BM_PROGRAM_CAPACITY];
     String_View labels[BM_PROGRAM_CAPACITY];
+    Bdb_BindingConstant constants[BASM_BINDINGS_CAPACITY];
+    size_t constants_size;
     Arena arena;
 } Bdb_State;
 
