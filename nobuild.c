@@ -126,6 +126,8 @@ int main(int argc, char **argv)
         exit(0);
     }
 
+    RM("build");
+
     build_toolchain();
     build_examples();
 #ifdef __linux__
