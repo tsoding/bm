@@ -335,6 +335,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         if (!state->bm.halt)
         {
             fprintf(stderr, "ERR : Program is already running\n");
+            return BDB_FAIL;
             /* TODO(#88): Reset bm and restart program */
         }
 
@@ -407,7 +408,7 @@ int main(int argc, char **argv)
         fgets(input_buf, INPUT_CAPACITY, stdin);
 
         String_View
-            input_sv = sv_from_cstr(input_buf),
+            input_sv = sv_trim(sv_from_cstr(input_buf)),
             control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
 
         /*
@@ -421,7 +422,7 @@ int main(int argc, char **argv)
                 continue;
             }
 
-            input_sv = sv_from_cstr(previous_command);
+            input_sv = sv_trim(sv_from_cstr(previous_command));
             control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
         }
 
