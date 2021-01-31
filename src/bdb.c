@@ -324,7 +324,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
-        // TODO: Rethink the types in the `examine` command of bdb
         Word where = word_u64(0);
         if (bdb_parse_label_addr_or_constant(state, where_sv, &where) == BDB_FAIL)
         {
