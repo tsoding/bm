@@ -213,7 +213,7 @@ typedef struct {
 } Arena;
 
 void *arena_alloc(Arena *arena, size_t size);
-String_View arena_slurp_file(Arena *arena, String_View file_path);
+int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
@@ -268,6 +268,7 @@ typedef struct {
     Arena arena;
 
     size_t include_level;
+    File_Location include_location;
 } Basm;
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
@@ -1315,7 +1316,19 @@ void basm_save_to_file(Basm *basm, const char *file_path)
 
 void basm_translate_source(Basm *basm, String_View input_file_path)
 {
-    String_View original_source = arena_slurp_file(&basm->arena, input_file_path);
+    String_View original_source = {0};
+    if (arena_slurp_file(&basm->arena, input_file_path, &original_source) < 0) {
+        if (basm->include_level > 0) {
+            fprintf(stderr, FL_Fmt": ERROR: could not read file `"SV_Fmt"`: %s\n",
+                    FL_Arg(basm->include_location),
+                    SV_Arg(input_file_path), strerror(errno));
+        } else {
+            fprintf(stderr, "ERROR: could not read file `"SV_Fmt"`: %s\n",
+                    SV_Arg(input_file_path), strerror(errno));
+        }
+        exit(1);
+    }
+
     String_View source = original_source;
 
     File_Location location = {
@@ -1415,9 +1428,14 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                 exit(1);
                             }
 
-                            basm->include_level += 1;
-                            basm_translate_source(basm, line);
-                            basm->include_level -= 1;
+                            {
+                                File_Location prev_include_location = basm->include_location;
+                                basm->include_level += 1;
+                                basm->include_location = location;
+                                basm_translate_source(basm, line);
+                                basm->include_location = prev_include_location;
+                                basm->include_level -= 1;
+                            }
                         } else {
                             fprintf(stderr,
                                     FL_Fmt": ERROR: include file path has to be surrounded with quotation marks\n",
@@ -1573,56 +1591,46 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     }
 }
 
-String_View arena_slurp_file(Arena *arena, String_View file_path)
+int arena_slurp_file(Arena *arena, String_View file_path, String_View *content)
 {
     const char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
 
     FILE *f = fopen(file_path_cstr, "r");
     if (f == NULL) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path_cstr, strerror(errno));
-        exit(1);
+        return -1;
     }
 
     if (fseek(f, 0, SEEK_END) < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path_cstr, strerror(errno));
-        exit(1);
+        return -1;
     }
 
     long m = ftell(f);
     if (m < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path_cstr, strerror(errno));
-        exit(1);
+        return -1;
     }
 
     char *buffer = arena_alloc(arena, (size_t) m);
     if (buffer == NULL) {
-        fprintf(stderr, "ERROR: Could not allocate memory for file: %s\n",
-                strerror(errno));
-        exit(1);
+        return -1;
     }
 
     if (fseek(f, 0, SEEK_SET) < 0) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path_cstr, strerror(errno));
-        exit(1);
+        return -1;
     }
 
     size_t n = fread(buffer, 1, (size_t) m, f);
     if (ferror(f)) {
-        fprintf(stderr, "ERROR: Could not read file `%s`: %s\n",
-                file_path_cstr, strerror(errno));
-        exit(1);
+        return -1;
     }
 
     fclose(f);
 
-    return (String_View) {
-        .count = n,
-        .data = buffer,
-    };
+    if (content) {
+        content->count = n;
+        content->data = buffer;
+    }
+
+    return 0;
 }
 
 void bm_load_standard_natives(Bm *bm)

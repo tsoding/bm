@@ -58,7 +58,12 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
 {
     assert(state);
 
-    String_View symtab = arena_slurp_file(&state->arena, symtab_file);
+    String_View symtab = {0};
+    if (arena_slurp_file(&state->arena, symtab_file, &symtab) < 0) {
+        fprintf(stderr, "ERROR: could not read file "SV_Fmt": %s\n",
+                SV_Arg(symtab_file), strerror(errno));
+        exit(1);
+    }
 
     while (symtab.count > 0)
     {
