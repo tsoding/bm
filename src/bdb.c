@@ -62,33 +62,63 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
 
     while (symtab.count > 0)
     {
-        symtab = sv_trim_left(symtab);
-        String_View raw_addr   = sv_chop_by_delim(&symtab, '\t');
-        symtab = sv_trim_left(symtab);
-        String_View label_name = sv_chop_by_delim(&symtab, '\n');
-        Inst_Addr addr = sv_to_u64(raw_addr);
+        symtab                    = sv_trim_left(symtab);
+        String_View  raw_addr     = sv_chop_by_delim(&symtab, '\t');
+        symtab                    = sv_trim_left(symtab);
+        String_View  raw_sym_type = sv_chop_by_delim(&symtab, '\t');
+        symtab                    = sv_trim_left(symtab);
+        String_View  label_name   = sv_chop_by_delim(&symtab, '\n');
+        Word         value        = word_u64(sv_to_u64(raw_addr));
+        Binding_Kind kind         = (Binding_Kind)sv_to_u64(raw_sym_type);
 
-        /*
-         * Huh? you ask? Yes, if we have a label, whose size is bigger
-         * than the program size, which is to say, that it is a
-         * preprocessor label, then we don't wanna overrun our label
-         * storage buffer.
-         */
-        if (addr < BM_PROGRAM_CAPACITY)
+        switch (kind)
         {
-            state->labels[addr] = label_name;
+        case BINDING_CONST:
+        {
+            Bdb_BindingConstant *it = &state->constants[state->constants_size++];
+            it->name                = label_name;
+            it->value               = value;
+
+        } break;
+        case BINDING_LABEL:
+        {
+            /*
+             * Huh? you ask? Yes, if we have a label, whose size is bigger
+             * than the program size, which is to say, that it is a
+             * preprocessor label, then we don't wanna overrun our label
+             * storage buffer.
+             */
+            if (value.as_u64 < BM_PROGRAM_CAPACITY)
+            {
+                state->labels[value.as_u64] = label_name;
+            }
+
+        } break;
+        case BINDING_NATIVE:
+        {
+            state->native_labels[value.as_u64] = label_name;
+        } break;
         }
+
+
     }
 
     return BDB_OK;
 }
 
-void bdb_print_instr(FILE *f, Inst *i)
+void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
     fprintf(f, "%s ", inst_name(i->type));
     if (inst_has_operand(i->type))
     {
-        fprintf(f, "%" PRIu64, i->operand.as_i64);
+        if (i->type == INST_NATIVE)
+        {
+            fprintf(f, SV_Fmt, SV_Arg(state->native_labels[i->operand.as_u64]));
+        }
+        else
+        {
+            fprintf(f, "%" PRIu64, i->operand.as_i64);
+        }
     }
 }
 
@@ -190,7 +220,7 @@ Bdb_Err bdb_fault(Bdb_State *state, Err err)
 
     fprintf(stderr, "%s at %" PRIu64 " (INSTR: ",
             err_as_cstr(err), state->bm.ip);
-    bdb_print_instr(stderr, &state->bm.program[state->bm.ip]);
+    bdb_print_instr(state, stderr, &state->bm.program[state->bm.ip]);
     fprintf(stderr, ")\n");
     state->bm.halt = 1;
     return BDB_OK;
@@ -241,6 +271,24 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *out)
+{
+    if (bdb_parse_label_or_addr(st, in, &out->as_u64) == BDB_OK)
+    {
+        return BDB_OK;
+    }
+
+    for (size_t i = 0; i < st->constants_size; ++i) {
+        if (sv_eq(in, st->constants[i].name))
+        {
+            *out = st->constants[i].value;
+            return BDB_OK;
+        }
+    }
+
+    return BDB_FAIL;
+}
+
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
 {
     switch (*command_word.data)
@@ -257,7 +305,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         }
 
         printf("-> ");
-        bdb_print_instr(stdout, &state->bm.program[state->bm.ip]);
+        bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
         printf("\n");
     } break;
     /*
@@ -276,24 +324,28 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
-        Inst_Addr where = 0;
-        if (bdb_parse_label_or_addr(state, where_sv, &where) == BDB_FAIL)
+        Word where = word_u64(0);
+        if (bdb_parse_label_addr_or_constant(state, where_sv, &where) == BDB_FAIL)
         {
-            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(where_sv));
+            fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(where_sv));
             return BDB_FAIL;
         }
 
-        Inst_Addr count = 0;
-        if (bdb_parse_label_or_addr(state, count_sv, &count) == BDB_FAIL)
+        Word count = word_u64(0);
+        if (bdb_parse_label_addr_or_constant(state, count_sv, &count) == BDB_FAIL)
         {
-            fprintf(stderr, "ERR : Cannot parse address or label `"SV_Fmt"`\n", SV_Arg(count_sv));
+            fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(count_sv));
             return BDB_FAIL;
         }
 
-        for (Inst_Addr i = 0; i < count && where + i < BM_MEMORY_CAPACITY; ++i) {
-            printf("%02X ", state->bm.memory[where + i]);
+        for (uint64_t i = 0;
+             i < count.as_u64 && where.as_u64 + i < BM_MEMORY_CAPACITY;
+             ++i)
+        {
+            printf("%02X ", state->bm.memory[where.as_u64 + i]);
         }
         printf("\n");
+
     } break;
     /*
      * Dump the stack
@@ -345,7 +397,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         return bdb_continue(state);
     }
-    case EOF:
     case 'q':
     {
         return BDB_EXIT;
