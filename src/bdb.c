@@ -120,6 +120,10 @@ void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
         {
             fprintf(f, SV_Fmt, SV_Arg(state->native_labels[i->operand.as_u64]));
         }
+        else if (i->type == INST_CALL || i->type == INST_JMP || i->type == INST_JMP_IF)
+        {
+            fprintf(f, SV_Fmt, SV_Arg(state->labels[i->operand.as_u64]));
+        }
         else
         {
             fprintf(f, "%" PRIu64, i->operand.as_i64);
