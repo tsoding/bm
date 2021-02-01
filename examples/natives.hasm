@@ -190,6 +190,7 @@ print_frac:
 
     jmp print_frac_loop_begin
     print_frac_loop_end:
+
     dup 2
     push 0.5
     lef
@@ -279,6 +280,22 @@ dump_f64:
         native write
     dump_f64_skip_negative:
 
+debug:
+    push FRAC_PRECISION
+    call b
+    push 2.0
+    divf
+
+    push 1.0
+    dup 2
+    call frac
+    minusf
+
+    gef
+    jmp_if dump_f64_no_frac
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     dup 0
     f2i
     call print_positive
@@ -293,6 +310,33 @@ dump_f64:
 
     call frac
     call print_frac
+
+    jmp dump_f64_no_frac_end
+
+dump_f64_no_frac:
+
+    f2i
+    push 1
+    plusi
+    call print_positive
+
+    push print_memory
+    push '.'
+    write8
+
+    push print_memory
+    push 1
+    native write
+
+    push print_memory
+    push '0'
+    write8
+
+    push print_memory
+    push 1
+    native write
+
+dump_f64_no_frac_end:
 
     push print_memory
     push 10

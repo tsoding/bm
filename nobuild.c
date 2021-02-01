@@ -35,16 +35,11 @@ void build_examples(void)
     MKDIRS("build", "examples");
 
     FOREACH_FILE_IN_DIR(example, "examples", {
-        size_t n = strlen(example);
-        if (*example != '.') {
-            assert(n >= 4);
-            if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = NOEXT(example);
-                CMD(PATH("build", "bin", "basm"),
-                    "-g",
-                    PATH("examples", example),
-                    PATH("build", "examples", CONCAT(example_base, ".bm")));
-            }
+        if (ENDS_WITH(example, ".basm")) {
+            CMD(PATH("build", "bin", "basm"),
+                "-g",
+                PATH("examples", example),
+                PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
         }
     });
 }
@@ -75,14 +70,11 @@ void run_tests(void)
 {
     FOREACH_FILE_IN_DIR(example, "examples", {
         size_t n = strlen(example);
-        if (*example != '.') {
-            assert(n >= 4);
-            if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = NOEXT(example);
-                CMD(PATH("build", "bin", "bmr"),
-                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
-                    "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
-            }
+        if (ENDS_WITH(example, ".basm")) {
+            const char *example_base = NOEXT(example);
+            CMD(PATH("build", "bin", "bmr"),
+                "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
+                "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
         }
     });
 }
@@ -91,14 +83,11 @@ void record_tests(void)
 {
     FOREACH_FILE_IN_DIR(example, "examples", {
         size_t n = strlen(example);
-        if (*example != '.') {
-            assert(n >= 4);
-            if (strcmp(example + n - 4, "basm") == 0) {
-                const char *example_base = NOEXT(example);
-                CMD(PATH("build", "bin", "bmr"),
-                    "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
-                    "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
-            }
+        if (ENDS_WITH(example, ".basm")) {
+            const char *example_base = NOEXT(example);
+            CMD(PATH("build", "bin", "bmr"),
+                "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
+                "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
         }
     });
 }

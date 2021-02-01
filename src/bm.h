@@ -53,6 +53,7 @@ String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
 bool sv_eq(String_View a, String_View b);
+bool sv_has_prefix(String_View sv, String_View prefix);
 uint64_t sv_to_u64(String_View sv);
 
 typedef enum {
@@ -1115,6 +1116,21 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
     return result;
 }
 
+bool sv_has_prefix(String_View sv, String_View prefix)
+{
+    if (prefix.count <= sv.count) {
+        for (size_t i = 0; i < prefix.count; ++i) {
+            if (prefix.data[i] != sv.data[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool sv_eq(String_View a, String_View b)
 {
     if (a.count != b.count) {
@@ -1254,6 +1270,17 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
         sv.data += 1;
         sv.count -= 2;
         *output = basm_push_string_to_memory(basm, sv);
+    } else if (sv_has_prefix(sv, sv_from_cstr("0x"))) {
+        const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
+        char *endptr = 0;
+        Word result = {0};
+
+        result.as_u64 = strtoull(cstr, &endptr, 16);
+        if ((size_t) (endptr - cstr) != sv.count) {
+            return false;
+        }
+
+        *output = result;
     } else {
         const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
         char *endptr = 0;
