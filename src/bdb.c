@@ -280,6 +280,27 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_Err bdb_print_location(Bdb_State *state)
+{
+    assert(state);
+
+    Inst_Addr ip = state->bm.ip;
+
+    for (Inst_Addr loc = ip; loc >= 0; --loc) {
+        if (state->labels[loc].data)
+        {
+            Inst_Addr offset = ip - loc;
+            printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
+                   ip, SV_Arg(state->labels[loc]), offset);
+            return BDB_OK;
+        }
+    }
+
+    printf("WARN : No location info available\n");
+
+    return BDB_OK;
+}
+
 Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *out)
 {
     if (bdb_parse_label_or_addr(st, in, &out->as_u64) == BDB_OK)
@@ -363,6 +384,13 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         bm_dump_stack(stdout, &state->bm);
     } break;
+    /*
+     * Where - print information about the current location in the program
+     */
+    case 'w':
+    {
+        return bdb_print_location(state);
+    } break;
     case 'b':
     {
         Inst_Addr break_addr;
@@ -416,6 +444,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                "n - next instruction\n"
                "c - continue program execution\n"
                "s - stack dump\n"
+               "w - print location info\n"
                "i - instruction pointer\n"
                "x - inspect the memory\n"
                "b - set breakpoint at address or label\n"
