@@ -296,7 +296,9 @@ Bdb_Err bdb_print_location(Bdb_State *state)
         }
     }
 
-    printf("WARN : No location info available\n");
+    printf("ip = %"PRIu64"\n"
+           "WARN : No location info available\n",
+           ip);
 
     return BDB_OK;
 }
@@ -337,13 +339,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         printf("-> ");
         bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
         printf("\n");
-    } break;
-    /*
-     * Print the IP
-     */
-    case 'i':
-    {
-        printf("ip = %" PRIu64 "\n", state->bm.ip);
     } break;
     /*
      * Inspect the memory
@@ -445,7 +440,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                "c - continue program execution\n"
                "s - stack dump\n"
                "w - print location info\n"
-               "i - instruction pointer\n"
                "x - inspect the memory\n"
                "b - set breakpoint at address or label\n"
                "d - destroy breakpoint at address or label\n"
