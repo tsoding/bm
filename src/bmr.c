@@ -177,7 +177,12 @@ int main(int argc, char *argv[])
 
     if (expected_output_file_path) {
         static Arena expected_arena = {0};
-        String_View expected_output = arena_slurp_file(&expected_arena, sv_from_cstr(expected_output_file_path));
+        String_View expected_output = {0};
+        if (arena_slurp_file(&expected_arena, sv_from_cstr(expected_output_file_path), &expected_output) < 0) {
+            fprintf(stderr, "ERROR: could not read file %s: %s",
+                    expected_output_file_path, strerror(errno));
+            exit(1);
+        }
         String_View actual_output = sv_from_arena(&actual_arena);
 
         compare_outputs(expected_output_file_path, expected_output, actual_output);
