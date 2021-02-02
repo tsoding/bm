@@ -193,6 +193,18 @@ Bdb_Err bdb_continue(Bdb_State *state)
 
     do
     {
+        if (state->is_in_step_over_mode)
+        {
+            if (state->bm.program[state->bm.ip].type == INST_CALL)
+            {
+                state->step_over_mode_call_depth += 1;
+            }
+            else if (state->bm.program[state->bm.ip].type == INST_RET)
+            {
+                state->step_over_mode_call_depth -= 1;
+            }
+        }
+
         Bdb_Breakpoint *bp = &state->breakpoints[state->bm.ip];
         if (!bp->is_broken && bp->is_enabled)
         {
@@ -205,6 +217,9 @@ Bdb_Err bdb_continue(Bdb_State *state)
             fprintf(stdout, "\n");
             bp->is_broken = 1;
 
+            state->step_over_mode_call_depth = 0;
+            state->is_in_step_over_mode = 0;
+
             return BDB_OK;
         }
 
@@ -215,6 +230,13 @@ Bdb_Err bdb_continue(Bdb_State *state)
         {
             return bdb_fault(state, err);
         }
+
+        if (state->is_in_step_over_mode &&
+            state->step_over_mode_call_depth == 0)
+        {
+            return BDB_OK;
+        }
+
     }
     while (!state->bm.halt);
 
@@ -233,6 +255,17 @@ Bdb_Err bdb_fault(Bdb_State *state, Err err)
     fprintf(stderr, ")\n");
     state->bm.halt = 1;
     return BDB_OK;
+}
+
+Bdb_Err bdb_step_over_instr(Bdb_State *state)
+{
+    state->is_in_step_over_mode = 1;
+    state->step_over_mode_call_depth = 0;
+
+    Bdb_Err err = bdb_continue(state);
+    state->is_in_step_over_mode = 0;
+
+    return err;
 }
 
 Bdb_Err bdb_step_instr(Bdb_State *state)
@@ -329,9 +362,24 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     /*
      * Next instruction
      */
-    case 'n':
+    case 's':
     {
         Bdb_Err err = bdb_step_instr(state);
+        if (err)
+        {
+            return err;
+        }
+
+        printf("-> ");
+        bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
+        printf("\n");
+    } break;
+    /*
+     * Step over instruction
+     */
+    case 'n':
+    {
+        Bdb_Err err = bdb_step_over_instr(state);
         if (err)
         {
             return err;
@@ -376,7 +424,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     /*
      * Dump the stack
      */
-    case 's':
+    case 'p':
     {
         bm_dump_stack(stdout, &state->bm);
     } break;
@@ -437,9 +485,10 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     case 'h':
     {
         printf("r - run program\n"
-               "n - next instruction\n"
+               "n - step over instruction\n"
+               "s - step instruction\n"
                "c - continue program execution\n"
-               "s - stack dump\n"
+               "p - print a stack dump\n"
                "w - print location info\n"
                "x - inspect the memory\n"
                "b - set breakpoint at address or label\n"

@@ -41,12 +41,16 @@ typedef struct Bdb_State
 
     String_View native_labels[BM_NATIVES_CAPACITY];
 
+    int is_in_step_over_mode;
+    unsigned int step_over_mode_call_depth;
+
     Arena arena;
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *executable);
 Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file);
 Bdb_Err bdb_step_instr(Bdb_State *);
+Bdb_Err bdb_step_over_instr(Bdb_State *state);
 Bdb_Err bdb_continue(Bdb_State *);
 Bdb_Err bdb_find_addr_of_label(Bdb_State *, String_View, Inst_Addr *);
 Bdb_Err bdb_parse_label_or_addr(Bdb_State *, String_View, Inst_Addr *);
