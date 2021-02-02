@@ -3,6 +3,46 @@
 
 #include <stdarg.h>
 
+typedef struct {
+    size_t size;
+    size_t capacity;
+    char *data;
+} Buffer;
+
+static void buffer_resize(Buffer *buffer, size_t new_capacity)
+{
+    buffer->capacity = new_capacity;
+    buffer->data = realloc(buffer->data, buffer->capacity);
+}
+
+static void buffer_write(Buffer *buffer, const char *data, size_t size)
+{
+    if (buffer->size + size > buffer->capacity) {
+        buffer_resize(buffer, buffer->capacity * 2 + size);
+    }
+
+    memcpy(buffer->data + buffer->size, data, size);
+    buffer->size += size;
+}
+
+static void buffer_free(Buffer *buffer)
+{
+    free(buffer->data);
+    buffer->data = NULL;
+    buffer->size = 0;
+    buffer->capacity = 0;
+}
+
+static String_View buffer_to_sv(Buffer *buffer)
+{
+    return (String_View) {
+        .count = buffer->size,
+        .data = buffer->data
+    };
+}
+
+static Buffer actual_buffer = {0};
+
 static void panic(const char *fmt, ...)
 {
     fprintf(stderr, "ERROR: ");
@@ -29,16 +69,6 @@ static void panic_errno(const char *fmt, ...)
     fprintf(stderr, ": %s\n", strerror(errno));
 
     exit(1);
-}
-
-static Arena actual_arena = {0};
-
-static String_View sv_from_arena(Arena *arena)
-{
-    return (String_View) {
-        .count = arena->size,
-        .data = arena->buffer,
-    };
 }
 
 static char *shift(int *argc, char ***argv)
@@ -75,8 +105,7 @@ static Err bmr_write(Bm *bm)
         return ERR_ILLEGAL_MEMORY_ACCESS;
     }
 
-    char *chunk = arena_alloc(&actual_arena, count);
-    memcpy(chunk, &bm->memory[addr], count);
+    buffer_write(&actual_buffer, (void*) &bm->memory[addr], count);
 
     bm->stack_size -= 2;
 
@@ -164,9 +193,8 @@ int main(int argc, char *argv[])
             panic_errno("could not save output to file `%s`", output_file);
         }
 
-        fwrite(actual_arena.buffer, sizeof(actual_arena.buffer[0]),
-               actual_arena.size,
-               output_file);
+        fwrite(actual_buffer.data, sizeof(actual_buffer.data[0]),
+               actual_buffer.size, output_file);
 
         if (ferror(output_file)) {
             panic_errno("could not save output to file `%s`", output_file);
@@ -183,11 +211,13 @@ int main(int argc, char *argv[])
                     expected_output_file_path, strerror(errno));
             exit(1);
         }
-        String_View actual_output = sv_from_arena(&actual_arena);
+        String_View actual_output = buffer_to_sv(&actual_buffer);
 
         compare_outputs(expected_output_file_path, expected_output, actual_output);
         printf("Expected output\n");
     }
+
+    buffer_free(&actual_buffer);
 
     return 0;
 }

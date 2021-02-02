@@ -32,9 +32,6 @@
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
 
-//#define ARENA_CAPACITY (1000 * 1000 * 1000)
-#define ARENA_CAPACITY (640 * 1000)
-
 typedef struct {
     size_t count;
     const char *data;
@@ -208,12 +205,28 @@ PACK(struct Bm_File_Meta {
 typedef struct Bm_File_Meta Bm_File_Meta;
 
 // NOTE: https://en.wikipedia.org/wiki/Region-based_memory_management
-typedef struct {
-    char buffer[ARENA_CAPACITY];
+typedef struct Region Region;
+
+struct Region {
+    Region *next;
+    size_t capacity;
     size_t size;
+    char buffer[];
+};
+
+Region *region_create(size_t capacity);
+
+typedef struct {
+    size_t capacity;
+    Region *first;
+    Region *last;
 } Arena;
 
 void *arena_alloc(Arena *arena, size_t size);
+void arena_clean(Arena *arena);
+void arena_free(Arena *arena);
+void arena_summary(Arena *arena);
+
 int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
@@ -1183,13 +1196,82 @@ String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
     };
 }
 
+Region *region_create(size_t capacity)
+{
+    const size_t region_size = sizeof(Region) + capacity;
+    Region *region = malloc(region_size);
+    memset(region, 0, region_size);
+    region->capacity = capacity;
+    return region;
+}
+
 void *arena_alloc(Arena *arena, size_t size)
 {
-    assert(arena->size + size <= ARENA_CAPACITY);
+    if (arena->last == NULL) {
+        assert(arena->first == NULL);
 
-    void *result = arena->buffer + arena->size;
-    arena->size += size;
+        Region *region = region_create(
+            size > arena->capacity ? size : arena->capacity);
+
+        arena->last = region;
+        arena->first = region;
+    }
+
+    while (arena->last->size + size > arena->last->capacity &&
+           arena->last->next) {
+        arena->last = arena->last->next;
+    }
+
+    if (arena->last->size + size > arena->last->capacity) {
+        Region *region = region_create(
+            size > arena->capacity ? size : arena->capacity);
+
+        arena->last->next = region;
+        arena->last = region;
+    }
+
+    void *result = arena->last->buffer + arena->last->size;
+    arena->last->size += size;
     return result;
+}
+
+void arena_clean(Arena *arena)
+{
+    for (Region *iter = arena->first;
+         iter != NULL;
+         iter = iter->next)
+    {
+        iter->size = 0;
+    }
+
+    arena->last = arena->first;
+}
+
+void arena_free(Arena *arena)
+{
+    Region *iter = arena->first;
+    while (iter != NULL) {
+        Region *next = iter->next;
+        free(iter);
+        iter = next;
+    }
+    arena->first = NULL;
+    arena->last = NULL;
+}
+
+void arena_summary(Arena *arena)
+{
+    if (arena->first == NULL) {
+        printf("[empty]");
+    }
+
+    for (Region *iter = arena->first;
+         iter != NULL;
+         iter = iter->next)
+    {
+        printf("[%zu/%zu] -> ", iter->size, iter->capacity);
+    }
+    printf("\n");
 }
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding)
