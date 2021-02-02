@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -36,6 +37,8 @@ typedef struct {
     size_t count;
     const char *data;
 } String_View;
+
+#define SV_NULL (String_View) {0}
 
 // printf macros for String_View
 #define SV_Fmt "%.*s"
@@ -231,10 +234,18 @@ void arena_summary(Arena *arena);
 
 int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
 // TODO: make arena concat functions more universal (whatever is that suppose to mean)
+String_View arena_sv_concat(Arena *arena, ...);
+const char *arena_cstr_concat(Arena *arena, ...);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
 String_View arena_sv_sv_concat2(Arena *arena, String_View a, String_View b);
 String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
 const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
+
+#define SV_CONCAT(arena, ...)                   \
+    arena_sv_concat(arena, __VA_ARGS__, SV_NULL)
+
+#define CSTR_CONCAT(arena, ...)                 \
+    arena_cstr_concat(arena, __VA_ARGS__, NULL)
 
 typedef struct {
     String_View file_path;
@@ -1218,6 +1229,68 @@ String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
         .count = a_len + b_len,
         .data = buf,
     };
+}
+
+String_View arena_sv_concat(Arena *arena, ...)
+{
+    size_t len = 0;
+
+    va_list args;
+    va_start(args, arena);
+    String_View sv = va_arg(args, String_View);
+    while (sv.data != NULL) {
+        len += sv.count;
+        sv = va_arg(args, String_View);
+    }
+    va_end(args);
+
+    char *buffer = arena_alloc(arena, len);
+    len = 0;
+
+    va_start(args, arena);
+    sv = va_arg(args, String_View);
+    while (sv.data != NULL) {
+        memcpy(buffer + len, sv.data, sv.count);
+        len += sv.count;
+        sv = va_arg(args, String_View);
+    }
+    va_end(args);
+
+    return (String_View) {
+        .count = len,
+        .data = buffer
+    };
+}
+
+const char *arena_cstr_concat(Arena *arena, ...)
+{
+    size_t len = 0;
+
+    va_list args;
+    va_start(args, arena);
+    const char *cstr = va_arg(args, const char*);
+    while (cstr != NULL) {
+        len += strlen(cstr);
+        cstr = va_arg(args, const char*);
+    }
+    va_end(args);
+
+    char *buffer = arena_alloc(arena, len + 1);
+    len = 0;
+
+    va_start(args, arena);
+    cstr = va_arg(args, const char*);
+    while (cstr != NULL) {
+        size_t n = strlen(cstr);
+        memcpy(buffer + len, cstr, n);
+        len += n;
+        cstr = va_arg(args, const char*);
+    }
+    va_end(args);
+
+    buffer[len] = '\0';
+
+    return buffer;
 }
 
 Region *region_create(size_t capacity)
