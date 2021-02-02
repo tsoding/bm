@@ -313,6 +313,30 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
     return BDB_OK;
 }
 
+Bdb_Err bdb_print_location(Bdb_State *state)
+{
+    assert(state);
+
+    Inst_Addr ip = state->bm.ip;
+
+    Inst_Addr loc = ip;
+    while (loc > 0 && state->labels[loc].data == NULL) {
+        --loc;
+    }
+
+    if (state->labels[loc].data) {
+        Inst_Addr offset = ip - loc;
+        printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
+               ip, SV_Arg(state->labels[loc]), offset);
+    } else {
+        printf("ip = %"PRIu64"\n"
+               "WARN : No location info available\n",
+               ip);
+    }
+
+    return BDB_OK;
+}
+
 Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *out)
 {
     if (bdb_parse_label_or_addr(st, in, &out->as_u64) == BDB_OK)
@@ -366,13 +390,6 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         printf("\n");
     } break;
     /*
-     * Print the IP
-     */
-    case 'i':
-    {
-        printf("ip = %" PRIu64 "\n", state->bm.ip);
-    } break;
-    /*
      * Inspect the memory
      */
     case 'x':
@@ -410,6 +427,13 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     case 'p':
     {
         bm_dump_stack(stdout, &state->bm);
+    } break;
+    /*
+     * Where - print information about the current location in the program
+     */
+    case 'w':
+    {
+        return bdb_print_location(state);
     } break;
     case 'b':
     {
@@ -461,11 +485,11 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     case 'h':
     {
         printf("r - run program\n"
-               "s - step instruction\n"
                "n - step over instruction\n"
+               "s - step instruction\n"
                "c - continue program execution\n"
                "p - print a stack dump\n"
-               "i - instruction pointer\n"
+               "w - print location info\n"
                "x - inspect the memory\n"
                "b - set breakpoint at address or label\n"
                "d - destroy breakpoint at address or label\n"
