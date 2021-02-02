@@ -34,7 +34,7 @@ Bdb_Err bdb_state_init(Bdb_State *state,
     bm_load_standard_natives(&state->bm);
 
     fprintf(stdout, "INFO : Loading debug symbols...\n");
-    return bdb_load_symtab(state, arena_sv_concat2(&state->arena, executable, ".sym"));
+    return bdb_load_symtab(state, sv_from_cstr(CSTR_CONCAT(&state->arena, executable, ".sym")));
 }
 
 Bdb_Err bdb_find_addr_of_label(Bdb_State *state, String_View name, Inst_Addr *out)

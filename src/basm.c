@@ -55,7 +55,7 @@ int main(int argc, char **argv)
     basm_save_to_file(&basm, output_file_path);
 
     if (have_symbol_table) {
-        const char *sym_file_name = arena_cstr_concat2(&basm.arena, output_file_path, ".sym");
+        const char *sym_file_name = CSTR_CONCAT(&basm.arena, output_file_path, ".sym");
 
         FILE *symbol_file = fopen(sym_file_name, "w");
         if (!symbol_file) {

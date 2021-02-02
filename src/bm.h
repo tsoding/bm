@@ -233,13 +233,9 @@ void arena_free(Arena *arena);
 void arena_summary(Arena *arena);
 
 int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
-// TODO: make arena concat functions more universal (whatever is that suppose to mean)
 String_View arena_sv_concat(Arena *arena, ...);
 const char *arena_cstr_concat(Arena *arena, ...);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
-String_View arena_sv_sv_concat2(Arena *arena, String_View a, String_View b);
-String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
-const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
 
 #define SV_CONCAT(arena, ...)                   \
     arena_sv_concat(arena, __VA_ARGS__, SV_NULL)
@@ -1196,41 +1192,6 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv)
     return cstr;
 }
 
-String_View arena_sv_sv_concat2(Arena *arena, String_View a, String_View b)
-{
-    char *buffer = arena_alloc(arena, a.count + b.count);
-    memcpy(buffer, a.data, a.count);
-    memcpy(buffer + a.count, b.data, b.count);
-    return (String_View) {
-        .count = a.count + b.count,
-        .data = buffer
-    };
-}
-
-const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b)
-{
-    const size_t a_len = strlen(a);
-    const size_t b_len = strlen(b);
-    char *buf = arena_alloc(arena, a_len + b_len + 1);
-    memcpy(buf, a, a_len);
-    memcpy(buf + a_len, b, b_len);
-    buf[a_len + b_len] = '\0';
-    return buf;
-}
-
-String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
-{
-    const size_t a_len = strlen(a);
-    const size_t b_len = strlen(b);
-    char *buf = arena_alloc(arena, a_len + b_len);
-    memcpy(buf, a, a_len);
-    memcpy(buf + a_len, b, b_len);
-    return (String_View) {
-        .count = a_len + b_len,
-        .data = buf,
-    };
-}
-
 String_View arena_sv_concat(Arena *arena, ...)
 {
     size_t len = 0;
@@ -1587,7 +1548,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         basm_bind_value(basm, name, word, BINDING_CONST, location);
 
                         if (kind == LITERAL_STR) {
-                            String_View name_len = arena_sv_sv_concat2(&basm->arena, name, sv_from_cstr(".len"));
+                            String_View name_len = SV_CONCAT(&basm->arena, name, sv_from_cstr(".len"));
                             basm_bind_value(basm, name_len, word_u64(value.count - 2), BINDING_CONST, location);
                         }
                     } else {
