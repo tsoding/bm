@@ -219,10 +219,9 @@ struct Region {
 
 Region *region_create(size_t capacity);
 
-#define ARENA_RECOMMENDED_CAPACITY (640 * 1000)
+#define ARENA_DEFAULT_CAPACITY (640 * 1000)
 
 typedef struct {
-    size_t capacity;
     Region *first;
     Region *last;
 } Arena;
@@ -1269,7 +1268,7 @@ void *arena_alloc(Arena *arena, size_t size)
         assert(arena->first == NULL);
 
         Region *region = region_create(
-            size > arena->capacity ? size : arena->capacity);
+            size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
 
         arena->last = region;
         arena->first = region;
@@ -1282,7 +1281,7 @@ void *arena_alloc(Arena *arena, size_t size)
 
     if (arena->last->size + size > arena->last->capacity) {
         Region *region = region_create(
-            size > arena->capacity ? size : arena->capacity);
+            size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
 
         arena->last->next = region;
         arena->last = region;
