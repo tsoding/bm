@@ -355,6 +355,14 @@ Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *ou
     return BDB_FAIL;
 }
 
+Bdb_Err bdb_reset(Bdb_State *state)
+{
+    arena_free(&state->arena);
+    const char *program_name = state->cood_file_name.data;
+    *state = (Bdb_State) {0};
+    return bdb_state_init(state, program_name);
+}
+
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
 {
     switch (*command_word.data)
@@ -467,9 +475,40 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         if (!state->bm.halt)
         {
-            fprintf(stderr, "ERR : Program is already running\n");
-            return BDB_FAIL;
-            /* TODO(#88): Reset bm and restart program */
+            fprintf(stderr,
+                    "INFO : Program is already running\n");
+
+            char answer;
+
+            /*
+             * NOTE(Nico):
+             *
+             * Dear Dijkstra-Gang, if I wouldn't use a goto here, I
+             * would be using a do-while-loop. That however would
+             * duplicate the iteration condition and the switch
+             * cases. So please don't sue me for using a goto. It is
+             * way easier to read this way.
+             */
+        ask_again:
+            fprintf(stdout,
+                    "     : Restart the program? [y|N] ");
+            answer = (char)(getchar());
+
+            switch (answer)
+            {
+            case 'y':
+            case 'Y':
+                getchar(); // Consume the '\n'
+                return bdb_reset(state);
+            case 'n':
+            case 'N':
+                getchar(); // See above
+                /* fall through */
+            case '\n':
+                return BDB_OK;
+            default:
+                goto ask_again;
+            }
         }
 
         state->bm.halt = 0;
