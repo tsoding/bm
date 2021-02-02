@@ -286,19 +286,20 @@ Bdb_Err bdb_print_location(Bdb_State *state)
 
     Inst_Addr ip = state->bm.ip;
 
-    for (Inst_Addr loc = ip; loc >= 0; --loc) {
-        if (state->labels[loc].data)
-        {
-            Inst_Addr offset = ip - loc;
-            printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
-                   ip, SV_Arg(state->labels[loc]), offset);
-            return BDB_OK;
-        }
+    Inst_Addr loc = ip;
+    while (loc > 0 && state->labels[loc].data == NULL) {
+        --loc;
     }
 
-    printf("ip = %"PRIu64"\n"
-           "WARN : No location info available\n",
-           ip);
+    if (state->labels[loc].data) {
+        Inst_Addr offset = ip - loc;
+        printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
+               ip, SV_Arg(state->labels[loc]), offset);
+    } else {
+        printf("ip = %"PRIu64"\n"
+               "WARN : No location info available\n",
+               ip);
+    }
 
     return BDB_OK;
 }
