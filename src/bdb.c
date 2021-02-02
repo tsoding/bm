@@ -357,9 +357,23 @@ Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *ou
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
+    /*
+     * We don't want to remove breakpoints that the user may have
+     * already set. So what we have to do here, is to find all the
+     * labels of previously set breakpoints and store those somewhere.
+     * Then we can safely zero out the bdb state and reload the
+     * program. Now possibly shifted labels can be used as breakpoints
+     * again.
+     */
+
+    // @@@ store labels of breakpoints and reset
+
     arena_free(&state->arena);
     const char *program_name = state->cood_file_name.data;
-    *state = (Bdb_State) {0};
+
+    state->bm = (Bm) {0};
+    state->is_in_step_over_mode = 0;
+    state->step_over_mode_call_depth = 0;
     return bdb_state_init(state, program_name);
 }
 
@@ -490,8 +504,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
              * way easier to read this way.
              */
         ask_again:
-            fprintf(stdout,
-                    "     : Restart the program? [y|N] ");
+            printf("     : Restart the program? [y|N] ");
             answer = (char)(getchar());
 
             switch (answer)
