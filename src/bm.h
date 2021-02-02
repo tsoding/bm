@@ -1450,8 +1450,6 @@ Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output)
             return LITERAL_INT;
         }
     }
-
-    return LITERAL_INVALID;
 }
 
 void basm_save_to_file(Basm *basm, const char *file_path)
