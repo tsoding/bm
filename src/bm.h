@@ -216,6 +216,8 @@ struct Region {
 
 Region *region_create(size_t capacity);
 
+#define ARENA_RECOMMENDED_CAPACITY (640 * 1000)
+
 typedef struct {
     size_t capacity;
     Region *first;

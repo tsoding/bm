@@ -215,6 +215,8 @@ int main(int argc, char *argv[])
 
         compare_outputs(expected_output_file_path, expected_output, actual_output);
         printf("Expected output\n");
+
+        arena_free(&expected_arena);
     }
 
     buffer_free(&actual_buffer);
