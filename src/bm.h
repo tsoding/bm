@@ -299,7 +299,7 @@ typedef struct {
 } Basm;
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
-bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location, Binding *existing_binding);
+void basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location);
 Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
@@ -1310,12 +1310,20 @@ bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding)
     return false;
 }
 
-bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location, Binding *existing_binding)
+void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    if (basm_resolve_binding(basm, name, existing_binding)) {
-        return false;
+    Binding existing = {0};
+    if (basm_resolve_binding(basm, name, &existing)) {
+        fprintf(stderr,
+                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
+                FL_Arg(location),
+                SV_Arg(name));
+        fprintf(stderr,
+                FL_Fmt": NOTE: first binding is located here\n",
+                FL_Arg(existing.location));
+        exit(1);
     }
 
     basm->bindings[basm->bindings_size++] = (Binding) {
@@ -1324,7 +1332,6 @@ bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
         .kind = kind,
         .location = location,
     };
-    return true;
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location)
@@ -1504,31 +1511,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        Binding existing = {0};
-                        // TODO: Make `basm_bind_value()` report the "already bound" error
-                        if (!basm_bind_value(basm, name, word, BINDING_CONST, location, &existing)) {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                    FL_Arg(location),
-                                    SV_Arg(name));
-                            fprintf(stderr,
-                                    FL_Fmt": NOTE: first binding is located here\n",
-                                    FL_Arg(existing.location));
-                            exit(1);
-                        }
+                        basm_bind_value(basm, name, word, BINDING_CONST, location);
 
                         if (kind == LITERAL_STR) {
                             String_View name_len = arena_sv_sv_concat2(&basm->arena, name, sv_from_cstr(".len"));
-                            if (!basm_bind_value(basm, name_len, word_u64(value.count - 2), BINDING_CONST, location, &existing)) {
-                                fprintf(stderr,
-                                        FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                        FL_Arg(location),
-                                        SV_Arg(name_len));
-                                fprintf(stderr,
-                                        FL_Fmt": NOTE: first binding is located here\n",
-                                        FL_Arg(existing.location));
-                                exit(1);
-                            }
+                            basm_bind_value(basm, name_len, word_u64(value.count - 2), BINDING_CONST, location);
                         }
                     } else {
                         fprintf(stderr,
@@ -1551,17 +1538,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        Binding existing = {0};
-                        if (!basm_bind_value(basm, name, word, BINDING_NATIVE, location, &existing)) {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                    FL_Arg(location),
-                                    SV_Arg(name));
-                            fprintf(stderr,
-                                    FL_Fmt": NOTE: first binding is located here\n",
-                                    FL_Arg(existing.location));
-                            exit(1);
-                        }
+                        basm_bind_value(basm, name, word, BINDING_NATIVE, location);
                     } else {
                         fprintf(stderr,
                                 FL_Fmt": ERROR: binding name is not provided\n",
@@ -1648,18 +1625,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         .data = token.data
                     };
 
-                    Binding existing = {0};
-                    if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location, &existing)) {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                FL_Arg(location),
-                                SV_Arg(label));
-                        fprintf(stderr,
-                                FL_Fmt": NOTE: first binding is located here\n",
-                                FL_Arg(existing.location));
-                        exit(1);
-                    }
-
+                    basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location);
                     token = sv_trim(sv_chop_by_delim(&line, ' '));
                 }
 
