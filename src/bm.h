@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -36,6 +37,8 @@ typedef struct {
     size_t count;
     const char *data;
 } String_View;
+
+#define SV_NULL (String_View) {0}
 
 // printf macros for String_View
 #define SV_Fmt "%.*s"
@@ -230,9 +233,15 @@ void arena_free(Arena *arena);
 void arena_summary(Arena *arena);
 
 int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
+String_View arena_sv_concat(Arena *arena, ...);
+const char *arena_cstr_concat(Arena *arena, ...);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
-String_View arena_sv_concat2(Arena *arena, const char *a, const char *b);
-const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b);
+
+#define SV_CONCAT(arena, ...)                   \
+    arena_sv_concat(arena, __VA_ARGS__, SV_NULL)
+
+#define CSTR_CONCAT(arena, ...)                 \
+    arena_cstr_concat(arena, __VA_ARGS__, NULL)
 
 typedef struct {
     String_View file_path;
@@ -241,6 +250,15 @@ typedef struct {
 
 #define FL_Fmt SV_Fmt":%d"
 #define FL_Arg(location) SV_Arg(location.file_path), location.line_number
+
+typedef enum {
+    LITERAL_INVALID = 0,
+    LITERAL_CHAR,
+    LITERAL_STR,
+    LITERAL_HEX,
+    LITERAL_INT,
+    LITERAL_FLOAT,
+} Literal_Kind;
 
 typedef enum {
     BINDING_CONST = 0,
@@ -288,9 +306,9 @@ typedef struct {
 } Basm;
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
-bool basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location, Binding *existing_binding);
+void basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location);
-bool basm_translate_literal(Basm *basm, String_View sv, Word *output);
+Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 void basm_translate_source(Basm *basm,
@@ -1174,28 +1192,66 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv)
     return cstr;
 }
 
-const char *arena_cstr_concat2(Arena *arena, const char *a, const char *b)
+String_View arena_sv_concat(Arena *arena, ...)
 {
-    const size_t a_len = strlen(a);
-    const size_t b_len = strlen(b);
-    char *buf = arena_alloc(arena, a_len + b_len + 1);
-    memcpy(buf, a, a_len);
-    memcpy(buf + a_len, b, b_len);
-    buf[a_len + b_len] = '\0';
-    return buf;
+    size_t len = 0;
+
+    va_list args;
+    va_start(args, arena);
+    String_View sv = va_arg(args, String_View);
+    while (sv.data != NULL) {
+        len += sv.count;
+        sv = va_arg(args, String_View);
+    }
+    va_end(args);
+
+    char *buffer = arena_alloc(arena, len);
+    len = 0;
+
+    va_start(args, arena);
+    sv = va_arg(args, String_View);
+    while (sv.data != NULL) {
+        memcpy(buffer + len, sv.data, sv.count);
+        len += sv.count;
+        sv = va_arg(args, String_View);
+    }
+    va_end(args);
+
+    return (String_View) {
+        .count = len,
+        .data = buffer
+    };
 }
 
-String_View arena_sv_concat2(Arena *arena, const char *a, const char *b)
+const char *arena_cstr_concat(Arena *arena, ...)
 {
-    const size_t a_len = strlen(a);
-    const size_t b_len = strlen(b);
-    char *buf = arena_alloc(arena, a_len + b_len);
-    memcpy(buf, a, a_len);
-    memcpy(buf + a_len, b, b_len);
-    return (String_View) {
-        .count = a_len + b_len,
-        .data = buf,
-    };
+    size_t len = 0;
+
+    va_list args;
+    va_start(args, arena);
+    const char *cstr = va_arg(args, const char*);
+    while (cstr != NULL) {
+        len += strlen(cstr);
+        cstr = va_arg(args, const char*);
+    }
+    va_end(args);
+
+    char *buffer = arena_alloc(arena, len + 1);
+    len = 0;
+
+    va_start(args, arena);
+    cstr = va_arg(args, const char*);
+    while (cstr != NULL) {
+        size_t n = strlen(cstr);
+        memcpy(buffer + len, cstr, n);
+        len += n;
+        cstr = va_arg(args, const char*);
+    }
+    va_end(args);
+
+    buffer[len] = '\0';
+
+    return buffer;
 }
 
 Region *region_create(size_t capacity)
@@ -1288,12 +1344,20 @@ bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding)
     return false;
 }
 
-bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location, Binding *existing_binding)
+void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    if (basm_resolve_binding(basm, name, existing_binding)) {
-        return false;
+    Binding existing = {0};
+    if (basm_resolve_binding(basm, name, &existing)) {
+        fprintf(stderr,
+                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
+                FL_Arg(location),
+                SV_Arg(name));
+        fprintf(stderr,
+                FL_Fmt": NOTE: first binding is located here\n",
+                FL_Arg(existing.location));
+        exit(1);
     }
 
     basm->bindings[basm->bindings_size++] = (Binding) {
@@ -1302,7 +1366,6 @@ bool basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
         .kind = kind,
         .location = location,
     };
-    return true;
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location)
@@ -1339,21 +1402,23 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
     }
 }
 
-bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
+Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output)
 {
     if (sv.count >= 2 && *sv.data == '\'' && sv.data[sv.count - 1] == '\'') {
         if (sv.count - 2 != 1) {
-            return false;
+            return LITERAL_INVALID;
         }
 
         *output = word_u64((uint64_t) sv.data[1]);
 
-        return true;
+        return LITERAL_CHAR;
     } else if (sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
         // TODO(#66): string literals don't support escaped characters
         sv.data += 1;
         sv.count -= 2;
         *output = basm_push_string_to_memory(basm, sv);
+
+        return LITERAL_STR;
     } else if (sv_has_prefix(sv, sv_from_cstr("0x"))) {
         const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
         char *endptr = 0;
@@ -1361,10 +1426,11 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
 
         result.as_u64 = strtoull(cstr, &endptr, 16);
         if ((size_t) (endptr - cstr) != sv.count) {
-            return false;
+            return LITERAL_INVALID;
         }
 
         *output = result;
+        return LITERAL_HEX;
     } else {
         const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
         char *endptr = 0;
@@ -1374,13 +1440,16 @@ bool basm_translate_literal(Basm *basm, String_View sv, Word *output)
         if ((size_t) (endptr - cstr) != sv.count) {
             result.as_f64 = strtod(cstr, &endptr);
             if ((size_t) (endptr - cstr) != sv.count) {
-                return false;
+                return LITERAL_INVALID;
+            } else {
+                *output = result;
+                return LITERAL_FLOAT;
             }
+        } else {
+            *output = result;
+            return LITERAL_INT;
         }
-
-        *output = result;
     }
-    return true;
 }
 
 void basm_save_to_file(Basm *basm, const char *file_path)
@@ -1468,21 +1537,17 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         line = sv_trim(line);
                         String_View value = line;
                         Word word = {0};
-                        if (!basm_translate_literal(basm, value, &word)) {
-                            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number", FL_Arg(location), SV_Arg(value));
+                        Literal_Kind kind = basm_translate_literal(basm, value, &word);
+                        if (kind == LITERAL_INVALID) {
+                            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a valid literal", FL_Arg(location), SV_Arg(value));
                             exit(1);
                         }
 
-                        Binding existing = {0};
-                        if (!basm_bind_value(basm, name, word, BINDING_CONST, location, &existing)) {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                    FL_Arg(location),
-                                    SV_Arg(name));
-                            fprintf(stderr,
-                                    FL_Fmt": NOTE: first binding is located here\n",
-                                    FL_Arg(existing.location));
-                            exit(1);
+                        basm_bind_value(basm, name, word, BINDING_CONST, location);
+
+                        if (kind == LITERAL_STR) {
+                            String_View name_len = SV_CONCAT(&basm->arena, name, sv_from_cstr(".len"));
+                            basm_bind_value(basm, name_len, word_u64(value.count - 2), BINDING_CONST, location);
                         }
                     } else {
                         fprintf(stderr,
@@ -1497,7 +1562,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         line = sv_trim(line);
                         String_View value = line;
                         Word word = {0};
-                        if (!basm_translate_literal(basm, value, &word)) {
+                        if (basm_translate_literal(basm, value, &word) == LITERAL_INVALID) {
                             fprintf(stderr,
                                     FL_Fmt": ERROR: `"SV_Fmt"` is not a number",
                                     FL_Arg(location),
@@ -1505,17 +1570,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             exit(1);
                         }
 
-                        Binding existing = {0};
-                        if (!basm_bind_value(basm, name, word, BINDING_NATIVE, location, &existing)) {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                    FL_Arg(location),
-                                    SV_Arg(name));
-                            fprintf(stderr,
-                                    FL_Fmt": NOTE: first binding is located here\n",
-                                    FL_Arg(existing.location));
-                            exit(1);
-                        }
+                        basm_bind_value(basm, name, word, BINDING_NATIVE, location);
                     } else {
                         fprintf(stderr,
                                 FL_Fmt": ERROR: binding name is not provided\n",
@@ -1578,7 +1633,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     Word entry = {0};
 
-                    if (!basm_translate_literal(basm, line, &entry)) {
+                    if (basm_translate_literal(basm, line, &entry) == LITERAL_INVALID) {
                         basm->deferred_entry_binding_name = line;
                     } else {
                         basm->entry = entry.as_u64;
@@ -1602,18 +1657,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                         .data = token.data
                     };
 
-                    Binding existing = {0};
-                    if (!basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location, &existing)) {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
-                                FL_Arg(location),
-                                SV_Arg(label));
-                        fprintf(stderr,
-                                FL_Fmt": NOTE: first binding is located here\n",
-                                FL_Arg(existing.location));
-                        exit(1);
-                    }
-
+                    basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location);
                     token = sv_trim(sv_chop_by_delim(&line, ' '));
                 }
 
@@ -1633,10 +1677,10 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                 exit(1);
                             }
 
-                            if (!basm_translate_literal(
+                            if (basm_translate_literal(
                                     basm,
                                     operand,
-                                    &basm->program[basm->program_size].operand)) {
+                                    &basm->program[basm->program_size].operand) == LITERAL_INVALID) {
                                 basm_push_deferred_operand(basm, basm->program_size, operand, location);
                             }
                         }
