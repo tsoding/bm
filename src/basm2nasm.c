@@ -39,11 +39,7 @@ int main(int argc, char *argv[])
 
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
-    static Basm basm = {
-        .arena = {
-            .capacity = ARENA_RECOMMENDED_CAPACITY
-        }
-    };
+    static Basm basm = {0};
     basm_translate_source(&basm, sv_from_cstr(input_file_path));
 
     FILE *output = fopen(output_file_path, "wb");

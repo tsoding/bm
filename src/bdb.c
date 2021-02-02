@@ -513,11 +513,7 @@ int main(int argc, char **argv)
     }
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
-    static Bdb_State state = {
-        .arena = {
-            .capacity = ARENA_RECOMMENDED_CAPACITY
-        }
-    };
+    static Bdb_State state = {0};
     state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n"
