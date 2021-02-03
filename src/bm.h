@@ -52,6 +52,8 @@ String_View sv_trim_left(String_View sv);
 String_View sv_trim_right(String_View sv);
 String_View sv_trim(String_View sv);
 String_View sv_chop_by_delim(String_View *sv, char delim);
+String_View sv_chop_left(String_View *sv, size_t n);
+bool sv_index_of(String_View sv, char c, size_t *index);
 bool sv_eq(String_View a, String_View b);
 bool sv_has_prefix(String_View sv, String_View prefix);
 uint64_t sv_to_u64(String_View sv);
@@ -279,6 +281,58 @@ typedef struct {
     String_View name;
     File_Location location;
 } Deferred_Operand;
+
+typedef enum {
+    TOKEN_KIND_STR,
+    TOKEN_KIND_CHAR,
+    TOKEN_KIND_SYMBOL,
+} Token_Kind;
+
+typedef struct {
+    Token_Kind kind;
+    String_View text;
+} Token;
+
+#define TOKENS_CAPACITY 1024
+
+typedef struct {
+    Token elems[TOKENS_CAPACITY];
+    size_t count;
+} Tokens;
+
+void tokens_push(Tokens *tokens, Token token);
+void tokenize(String_View source, Tokens *tokens);
+
+typedef struct {
+    const Token *elems;
+    size_t count;
+} Tokens_View;
+
+Tokens_View tokens_as_view(const Tokens *tokens);
+Tokens_View tv_chop_left(Tokens_View *tv, size_t n);
+
+typedef enum {
+    EXPR_KIND_BINDING,
+    EXPR_KIND_LIT_INT,
+    EXPR_KIND_LIT_FLOAT,
+    EXPR_KIND_LIT_CHAR,
+    EXPR_KIND_LIT_STR
+} Expr_Kind;
+
+typedef union {
+    String_View as_binding;
+    uint64_t as_lit_int;
+    double as_lit_float;
+    char as_lit_char;
+    String_View as_lit_str;
+} Expr_Value;
+
+typedef struct {
+    Expr_Kind kind;
+    Expr_Value value;
+} Expr;
+
+Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
 
 typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
@@ -1125,6 +1179,38 @@ String_View sv_trim(String_View sv)
     return sv_trim_right(sv_trim_left(sv));
 }
 
+String_View sv_chop_left(String_View *sv, size_t n)
+{
+    if (n > sv->count) {
+        n = sv->count;
+    }
+
+    String_View result = {
+        .data = sv->data,
+        .count = n,
+    };
+
+    sv->data  += n;
+    sv->count -= n;
+
+    return result;
+}
+
+bool sv_index_of(String_View sv, char c, size_t *index)
+{
+    size_t i = 0;
+    while (i < sv.count && sv.data[i] != c) {
+        i += 1;
+    }
+
+    if (i < sv.count) {
+        *index = i;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 String_View sv_chop_by_delim(String_View *sv, char delim)
 {
     size_t i = 0;
@@ -1908,6 +1994,163 @@ Err native_write(Bm *bm)
     bm->stack_size -= 2;
 
     return ERR_OK;
+}
+
+void tokens_push(Tokens *tokens, Token token)
+{
+    assert(tokens->count < TOKENS_CAPACITY);
+    tokens->elems[tokens->count++] = token;
+}
+
+void tokenize(String_View source, Tokens *tokens)
+{
+    source = sv_trim_left(source);
+    while (source.count > 0) {
+        switch (*source.data) {
+        case '"': {
+            sv_chop_left(&source, 1);
+
+            size_t index = 0;
+
+            if (sv_index_of(source, '"', &index)) {
+                String_View text = sv_chop_left(&source, index);
+                sv_chop_left(&source, 1);
+                tokens_push(tokens, (Token) {.kind = TOKEN_KIND_STR, .text = text});
+            } else {
+                // TODO: proper error reporting
+                fprintf(stderr, "Could not find closing \"\n");
+                exit(1);
+            }
+        } break;
+
+        case '\'': {
+            sv_chop_left(&source, 1);
+
+            size_t index = 0;
+
+            if (sv_index_of(source, '\'', &index)) {
+                String_View text = sv_chop_left(&source, index);
+                sv_chop_left(&source, 1);
+                tokens_push(tokens, (Token) {.kind = TOKEN_KIND_CHAR, .text = text});
+            } else {
+                // TODO: proper error reporting
+                fprintf(stderr, "Could not find closing \'\n");
+                exit(1);
+            }
+        } break;
+
+        default: {
+            String_View text = sv_chop_by_delim(&source, ' ');
+            tokens_push(tokens, (Token) {.kind = TOKEN_KIND_SYMBOL, .text = text});
+        }
+        }
+
+        source = sv_trim_left(source);
+    }
+}
+
+Tokens_View tokens_as_view(const Tokens *tokens)
+{
+    return (Tokens_View) {
+        .elems = tokens->elems,
+        .count = tokens->count,
+    };
+}
+
+Tokens_View tv_chop_left(Tokens_View *tv, size_t n)
+{
+    if (n > tv->count) {
+        n = tv->count;
+    }
+
+    Tokens_View result = {
+        .elems = tv->elems,
+        .count = n,
+    };
+
+    tv->elems += n;
+    tv->count -= n;
+
+    return result;
+}
+
+Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
+{
+    if (tokens->count == 0) {
+        // TODO: proper error reporting
+        fprintf(stderr, "Cannot parse empty tokens\n");
+        exit(1);
+    }
+
+    switch (tokens->elems->kind) {
+    case TOKEN_KIND_STR: {
+        Expr *result = arena_alloc(arena, sizeof(Expr));
+        memset(result, 0, sizeof(Expr));
+        result->kind = EXPR_KIND_LIT_STR;
+        result->value.as_lit_str = tokens->elems->text;
+        tv_chop_left(tokens, 1);
+        return result;
+    } break;
+
+    case TOKEN_KIND_CHAR: {
+        if (tokens->elems->text.count != 1) {
+            // TODO: proper error reporting
+            fprintf(stderr, "The length of char has to be exactly one\n");
+            exit(1);
+        }
+
+        Expr *result = arena_alloc(arena, sizeof(Expr));
+        memset(result, 0, sizeof(Expr));
+        result->kind = EXPR_KIND_LIT_CHAR;
+        result->value.as_lit_char = tokens->elems->text.data[0];
+        tv_chop_left(tokens, 1);
+        return result;
+    } break;
+
+    case TOKEN_KIND_SYMBOL: {
+        String_View text = tokens->elems->text;
+        Expr *result = arena_alloc(arena, sizeof(Expr));
+        memset(result, 0, sizeof(Expr));
+
+        const char *cstr = arena_sv_to_cstr(arena, text);
+        char *endptr = 0;
+
+        if (sv_has_prefix(text, sv_from_cstr("0x"))) {
+            result->value.as_lit_int = strtoull(cstr, &endptr, 16);
+            if ((size_t) (endptr - cstr) != text.count) {
+                // TODO: proper error reporting
+                fprintf(stderr, SV_Fmt" is not a hex literal\n", SV_Arg(text));
+                exit(1);
+            }
+
+            result->kind = EXPR_KIND_LIT_INT;
+            tv_chop_left(tokens, 1);
+
+            return result;
+        } else {
+            result->value.as_lit_int = strtoull(cstr, &endptr, 10);
+            if ((size_t) (endptr - cstr) != text.count) {
+                result->value.as_lit_float = strtod(cstr, &endptr);
+                if ((size_t) (endptr - cstr) != text.count) {
+                    result->value.as_binding = text;
+                    result->kind = EXPR_KIND_BINDING;
+                } else {
+                    result->kind = EXPR_KIND_LIT_FLOAT;
+                }
+            } else {
+                result->kind = EXPR_KIND_LIT_INT;
+            }
+
+            tv_chop_left(tokens, 1);
+            return result;
+        }
+    } break;
+
+    default: {
+        assert(false && "unreachable");
+        exit(1);
+    }
+    }
 }
 
 #endif // BM_IMPLEMENTATION
