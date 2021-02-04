@@ -300,8 +300,11 @@ typedef enum {
     EXPR_KIND_LIT_INT,
     EXPR_KIND_LIT_FLOAT,
     EXPR_KIND_LIT_CHAR,
-    EXPR_KIND_LIT_STR
+    EXPR_KIND_LIT_STR,
+    EXPR_KIND_BINARY_OP,
 } Expr_Kind;
+
+typedef struct Binary_Op Binary_Op;
 
 typedef union {
     String_View as_binding;
@@ -309,6 +312,7 @@ typedef union {
     double as_lit_float;
     char as_lit_char;
     String_View as_lit_str;
+    Binary_Op *as_binary_op;
 } Expr_Value;
 
 // TODO(#178): compile time expressions don't support math operations
@@ -317,6 +321,18 @@ typedef struct {
     Expr_Value value;
 } Expr;
 
+typedef enum {
+    BINARY_OP_PLUS
+} Binary_Op_Kind;
+
+struct Binary_Op {
+    Binary_Op_Kind kind;
+    Expr left;
+    Expr right;
+};
+
+Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
+Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
@@ -1807,6 +1823,23 @@ Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
     return binding->value;
 }
 
+static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
+{
+    switch (binary_op->kind) {
+    case BINARY_OP_PLUS: {
+        Word left = basm_expr_eval(basm, binary_op->left, location);
+        Word right = basm_expr_eval(basm, binary_op->right, location);
+        // TODO: compile-time sum can only work with integers
+        return word_u64(left.as_u64 + right.as_u64);
+    } break;
+
+    default: {
+        assert(false && "basm_binary_op_eval: unreachable");
+        exit(1);
+    }
+    }
+}
+
 Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
 {
     switch (expr.kind) {
@@ -1832,6 +1865,10 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
         }
 
         return basm_binding_eval(basm, binding, location);
+    } break;
+
+    case EXPR_KIND_BINARY_OP: {
+        return basm_binary_op_eval(basm, expr.value.as_binary_op, location);
     } break;
 
     default: {
@@ -2200,7 +2237,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
     return result;
 }
 
-Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
         fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
@@ -2234,6 +2271,7 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loc
     case TOKEN_KIND_NAME: {
         result.value.as_binding = tokens->elems->text;
         result.kind = EXPR_KIND_BINDING;
+        tv_chop_left(tokens, 1);
     } break;
 
     case TOKEN_KIND_NUMBER: {
@@ -2255,14 +2293,57 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loc
         return expr;
     } break;
 
-    case TOKEN_KIND_PLUS:
+    case TOKEN_KIND_PLUS: {
+        assert(false && "TODO: better error report on TOKEN_KIND_PLUS in parse_primary_from_tokens");
+    } break;
+
     default: {
-        assert(false && "parse_expr_from_tokens: unreachable");
+        assert(false && "parse_primary_from_tokens: unreachable");
         exit(1);
     }
     }
 
     return result;
+}
+
+Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+{
+    Expr left = parse_primary_from_tokens(arena, tokens, location);
+
+    if (tokens->count != 0) {
+        if (tokens->elems->kind != TOKEN_KIND_PLUS) {
+            fprintf(stderr, FL_Fmt": ERROR: expected %s but found %s\n",
+                    FL_Arg(location),
+                    token_kind_name(TOKEN_KIND_PLUS),
+                    token_kind_name(tokens->elems->kind));
+            exit(1);
+        }
+
+        tv_chop_left(tokens, 1);
+
+        Expr right = parse_expr_from_tokens(arena, tokens, location);
+
+        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
+        binary_op->kind = BINARY_OP_PLUS;
+        binary_op->left = left;
+        binary_op->right = right;
+
+        Expr result = {
+            .kind = EXPR_KIND_BINARY_OP,
+            .value = {
+                .as_binary_op = binary_op,
+            }
+        };
+
+        return result;
+    } else {
+        return left;
+    }
+}
+
+Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+{
+    return parse_sum_from_tokens(arena, tokens, location);
 }
 
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)

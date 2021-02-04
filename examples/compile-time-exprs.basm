@@ -1,0 +1,29 @@
+%include "./examples/natives.hasm"
+
+%const A 66
+%const B A + 1
+%const C B + 1
+%const D C + 1
+
+main:
+    push A
+    call dump_u64
+
+    push B
+    call dump_u64
+
+    push C
+    call dump_u64
+
+    push D
+    call dump_u64
+
+    push 400 + A
+    call dump_u64
+
+    push 1 + 2 + 3
+    call dump_u64
+
+    halt
+
+%entry main
