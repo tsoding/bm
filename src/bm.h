@@ -1589,7 +1589,7 @@ static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Lo
 
         basm_bind_expr(basm, name, expr, binding_kind, location);
 
-        // TODO: there is not way to get the length of the stream again
+        // TODO(#182): there is not way to get the length of the string again
         // I removed it. Oops.
     } else {
         fprintf(stderr,
