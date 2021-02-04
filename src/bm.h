@@ -260,7 +260,7 @@ typedef enum {
 
 const char *binding_kind_as_cstr(Binding_Kind kind);
 
-// TODO: bindings don't support expressions
+// TODO(#177): bindings don't support expressions
 typedef struct {
     Binding_Kind kind;
     String_View name;
@@ -313,6 +313,7 @@ typedef union {
     String_View as_lit_str;
 } Expr_Value;
 
+// TODO: compile time expressions don't support math operations
 typedef struct {
     Expr_Kind kind;
     Expr_Value value;
