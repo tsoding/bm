@@ -366,15 +366,43 @@ Bdb_Err bdb_reset(Bdb_State *state)
      * again.
      */
 
-    // @@@ store labels of breakpoints and reset
+    /* Store the pointers to the old arena. We lose access to it when
+     * we do the bdb_state_init */
 
-    arena_free(&state->arena);
+    Arena old_arena;
+    String_View old_labels[BM_PROGRAM_CAPACITY];
+    Bdb_Breakpoint old_breakpoints[BM_PROGRAM_CAPACITY];
+
+    memcpy(&old_arena, &state->arena, sizeof(Arena));
+    memcpy(old_labels, state->labels, sizeof(String_View) * BM_PROGRAM_CAPACITY);
+    memcpy(old_breakpoints, state->breakpoints, sizeof(Bdb_Breakpoint) * BM_PROGRAM_CAPACITY);
+
     const char *program_name = state->cood_file_name.data;
 
-    state->bm = (Bm) {0};
-    state->is_in_step_over_mode = 0;
-    state->step_over_mode_call_depth = 0;
-    return bdb_state_init(state, program_name);
+    *state = (Bdb_State){0};
+
+    if (bdb_state_init(state, program_name) == BDB_FAIL)
+    {
+        fprintf(stderr, "ERR : Unable to reset the debugger\n");
+        return BDB_FAIL;
+    }
+
+    for (size_t old_label_addr = 0; old_label_addr < BM_PROGRAM_CAPACITY; ++old_label_addr) {
+        if (old_breakpoints[old_label_addr].is_enabled && old_labels[old_label_addr].data)
+        {
+            for (size_t new_addr = 0; new_addr < BM_PROGRAM_CAPACITY; ++new_addr) {
+                if (sv_eq(state->labels[new_addr], old_labels[old_label_addr]))
+                {
+                    state->breakpoints[new_addr].is_enabled = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    arena_free(&old_arena);
+
+    return BDB_OK;
 }
 
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
