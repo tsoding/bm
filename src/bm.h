@@ -318,7 +318,7 @@ typedef struct {
     Expr_Value value;
 } Expr;
 
-Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
+Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
 typedef struct {
@@ -1763,9 +1763,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 Word basm_expr_eval(Basm *basm, Expr expr)
 {
     switch (expr.kind) {
-    case EXPR_KIND_BINDING:
-        assert(false && "TODO: not implemented");
-        break;
     case EXPR_KIND_LIT_INT:
         return word_u64(expr.value.as_lit_int);
     case EXPR_KIND_LIT_FLOAT:
@@ -1774,6 +1771,7 @@ Word basm_expr_eval(Basm *basm, Expr expr)
         return word_u64((uint64_t) expr.value.as_lit_char);
     case EXPR_KIND_LIT_STR:
         return basm_push_string_to_memory(basm, expr.value.as_lit_str);
+    case EXPR_KIND_BINDING:
     default: {
         assert(false && "basm_expr_eval: unreachable");
         exit(1);
@@ -2025,11 +2023,11 @@ Tokens_View tv_chop_left(Tokens_View *tv, size_t n)
     return result;
 }
 
-Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
+Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
-        // TODO: proper error reporting
-        fprintf(stderr, "Cannot parse empty tokens\n");
+        fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
+                FL_Arg(location));
         exit(1);
     }
 
@@ -2037,6 +2035,7 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
 
     switch (tokens->elems->kind) {
     case TOKEN_KIND_STR: {
+        // TODO(#66): string literals don't support escaped characters
         result.kind = EXPR_KIND_LIT_STR;
         result.value.as_lit_str = tokens->elems->text;
         tv_chop_left(tokens, 1);
@@ -2045,8 +2044,9 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
 
     case TOKEN_KIND_CHAR: {
         if (tokens->elems->text.count != 1) {
-            // TODO: proper error reporting
-            fprintf(stderr, "The length of char has to be exactly one\n");
+            // TODO: char literals don't support escaped characters
+            fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
+                    FL_Arg(location));
             exit(1);
         }
 
@@ -2065,8 +2065,8 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
         if (sv_has_prefix(text, sv_from_cstr("0x"))) {
             result.value.as_lit_int = strtoull(cstr, &endptr, 16);
             if ((size_t) (endptr - cstr) != text.count) {
-                // TODO: proper error reporting
-                fprintf(stderr, SV_Fmt" is not a hex literal\n", SV_Arg(text));
+                fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",
+                        FL_Arg(location), SV_Arg(text));
                 exit(1);
             }
 
@@ -2094,7 +2094,7 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
     } break;
 
     default: {
-        assert(false && "unreachable");
+        assert(false && "parse_expr_from_tokens: unreachable");
         exit(1);
     }
     }
@@ -2106,7 +2106,7 @@ Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location
     tokenize(source, &tokens, location);
 
     Tokens_View tv = tokens_as_view(&tokens);
-    return parse_expr_from_tokens(arena, &tv);
+    return parse_expr_from_tokens(arena, &tv, location);
 }
 
 #endif // BM_IMPLEMENTATION
