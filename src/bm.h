@@ -269,18 +269,13 @@ typedef enum {
 
 const char *binding_kind_as_cstr(Binding_Kind kind);
 
+// TODO: bindings don't support expressions
 typedef struct {
     Binding_Kind kind;
     String_View name;
     Word value;
     File_Location location;
 } Binding;
-
-typedef struct {
-    Inst_Addr addr;
-    String_View name;
-    File_Location location;
-} Deferred_Operand;
 
 typedef enum {
     TOKEN_KIND_STR,
@@ -332,7 +327,13 @@ typedef struct {
     Expr_Value value;
 } Expr;
 
-Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
+Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
+
+typedef struct {
+    Inst_Addr addr;
+    String_View name;
+    File_Location location;
+} Deferred_Operand;
 
 typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
@@ -2074,7 +2075,7 @@ Tokens_View tv_chop_left(Tokens_View *tv, size_t n)
     return result;
 }
 
-Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
+Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
 {
     if (tokens->count == 0) {
         // TODO: proper error reporting
@@ -2082,12 +2083,12 @@ Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
         exit(1);
     }
 
+    Expr result = {0};
+
     switch (tokens->elems->kind) {
     case TOKEN_KIND_STR: {
-        Expr *result = arena_alloc(arena, sizeof(Expr));
-        memset(result, 0, sizeof(Expr));
-        result->kind = EXPR_KIND_LIT_STR;
-        result->value.as_lit_str = tokens->elems->text;
+        result.kind = EXPR_KIND_LIT_STR;
+        result.value.as_lit_str = tokens->elems->text;
         tv_chop_left(tokens, 1);
         return result;
     } break;
@@ -2099,46 +2100,42 @@ Expr *parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
             exit(1);
         }
 
-        Expr *result = arena_alloc(arena, sizeof(Expr));
-        memset(result, 0, sizeof(Expr));
-        result->kind = EXPR_KIND_LIT_CHAR;
-        result->value.as_lit_char = tokens->elems->text.data[0];
+        result.kind = EXPR_KIND_LIT_CHAR;
+        result.value.as_lit_char = tokens->elems->text.data[0];
         tv_chop_left(tokens, 1);
         return result;
     } break;
 
     case TOKEN_KIND_SYMBOL: {
         String_View text = tokens->elems->text;
-        Expr *result = arena_alloc(arena, sizeof(Expr));
-        memset(result, 0, sizeof(Expr));
 
         const char *cstr = arena_sv_to_cstr(arena, text);
         char *endptr = 0;
 
         if (sv_has_prefix(text, sv_from_cstr("0x"))) {
-            result->value.as_lit_int = strtoull(cstr, &endptr, 16);
+            result.value.as_lit_int = strtoull(cstr, &endptr, 16);
             if ((size_t) (endptr - cstr) != text.count) {
                 // TODO: proper error reporting
                 fprintf(stderr, SV_Fmt" is not a hex literal\n", SV_Arg(text));
                 exit(1);
             }
 
-            result->kind = EXPR_KIND_LIT_INT;
+            result.kind = EXPR_KIND_LIT_INT;
             tv_chop_left(tokens, 1);
 
             return result;
         } else {
-            result->value.as_lit_int = strtoull(cstr, &endptr, 10);
+            result.value.as_lit_int = strtoull(cstr, &endptr, 10);
             if ((size_t) (endptr - cstr) != text.count) {
-                result->value.as_lit_float = strtod(cstr, &endptr);
+                result.value.as_lit_float = strtod(cstr, &endptr);
                 if ((size_t) (endptr - cstr) != text.count) {
-                    result->value.as_binding = text;
-                    result->kind = EXPR_KIND_BINDING;
+                    result.value.as_binding = text;
+                    result.kind = EXPR_KIND_BINDING;
                 } else {
-                    result->kind = EXPR_KIND_LIT_FLOAT;
+                    result.kind = EXPR_KIND_LIT_FLOAT;
                 }
             } else {
-                result->kind = EXPR_KIND_LIT_INT;
+                result.kind = EXPR_KIND_LIT_INT;
             }
 
             tv_chop_left(tokens, 1);
