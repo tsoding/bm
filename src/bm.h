@@ -2296,7 +2296,9 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     } break;
 
     case TOKEN_KIND_PLUS: {
-        assert(false && "TODO: better error report on TOKEN_KIND_PLUS in parse_primary_from_tokens");
+        fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
+                FL_Arg(location), token_kind_name(tokens->elems->kind));
+        exit(1);
     } break;
 
     default: {
