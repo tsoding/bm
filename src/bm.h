@@ -2045,7 +2045,7 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loc
 
     case TOKEN_KIND_CHAR: {
         if (tokens->elems->text.count != 1) {
-            // TODO: char literals don't support escaped characters
+            // TODO(#179): char literals don't support escaped characters
             fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
                     FL_Arg(location));
             exit(1);
