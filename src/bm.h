@@ -253,15 +253,6 @@ typedef struct {
 #define FL_Arg(location) SV_Arg(location.file_path), location.line_number
 
 typedef enum {
-    LITERAL_INVALID = 0,
-    LITERAL_CHAR,
-    LITERAL_STR,
-    LITERAL_HEX,
-    LITERAL_INT,
-    LITERAL_FLOAT,
-} Literal_Kind;
-
-typedef enum {
     BINDING_CONST = 0,
     BINDING_LABEL,
     BINDING_NATIVE,
@@ -328,10 +319,11 @@ typedef struct {
 } Expr;
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
+Expr parse_expr_from_sv(Arena *arena, String_View source);
 
 typedef struct {
     Inst_Addr addr;
-    String_View name;
+    Expr expr;
     File_Location location;
 } Deferred_Operand;
 
@@ -361,12 +353,12 @@ typedef struct {
 
 bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
 void basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location);
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location);
-Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output);
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path);
+Word basm_expr_eval(Basm *basm, Expr expr);
 
 void bm_load_standard_natives(Bm *bm);
 
@@ -1454,11 +1446,11 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
     };
 }
 
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, String_View name, File_Location location)
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
 {
     assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
-        (Deferred_Operand) {.addr = addr, .name = name, .location = location};
+        (Deferred_Operand) {.addr = addr, .expr = expr, .location = location};
 }
 
 Word basm_push_string_to_memory(Basm *basm, String_View sv)
@@ -1485,56 +1477,6 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
         default:
             assert(false && "binding_kind_as_cstr: unreachable");
             exit(0);
-    }
-}
-
-Literal_Kind basm_translate_literal(Basm *basm, String_View sv, Word *output)
-{
-    if (sv.count >= 2 && *sv.data == '\'' && sv.data[sv.count - 1] == '\'') {
-        if (sv.count - 2 != 1) {
-            return LITERAL_INVALID;
-        }
-
-        *output = word_u64((uint64_t) sv.data[1]);
-
-        return LITERAL_CHAR;
-    } else if (sv.count >= 2 && *sv.data == '"' && sv.data[sv.count - 1] == '"') {
-        // TODO(#66): string literals don't support escaped characters
-        sv.data += 1;
-        sv.count -= 2;
-        *output = basm_push_string_to_memory(basm, sv);
-
-        return LITERAL_STR;
-    } else if (sv_has_prefix(sv, sv_from_cstr("0x"))) {
-        const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
-        char *endptr = 0;
-        Word result = {0};
-
-        result.as_u64 = strtoull(cstr, &endptr, 16);
-        if ((size_t) (endptr - cstr) != sv.count) {
-            return LITERAL_INVALID;
-        }
-
-        *output = result;
-        return LITERAL_HEX;
-    } else {
-        const char *cstr = arena_sv_to_cstr(&basm->arena, sv);
-        char *endptr = 0;
-        Word result = {0};
-
-        result.as_u64 = strtoull(cstr, &endptr, 10);
-        if ((size_t) (endptr - cstr) != sv.count) {
-            result.as_f64 = strtod(cstr, &endptr);
-            if ((size_t) (endptr - cstr) != sv.count) {
-                return LITERAL_INVALID;
-            } else {
-                *output = result;
-                return LITERAL_FLOAT;
-            }
-        } else {
-            *output = result;
-            return LITERAL_INT;
-        }
     }
 }
 
@@ -1580,6 +1522,36 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
+static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind)
+{
+    *line = sv_trim(*line);
+    String_View name = sv_chop_by_delim(line, ' ');
+    if (name.count > 0) {
+        *line = sv_trim(*line);
+        Expr expr = parse_expr_from_sv(&basm->arena, *line);
+
+        if (expr.kind == EXPR_KIND_BINDING) {
+            fprintf(stderr, FL_Fmt": ERROR: bindings cannot depend on other bindings yet. We are working on it.\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+
+        Word value = basm_expr_eval(basm, expr);
+
+        basm_bind_value(basm, name, value, binding_kind, location);
+
+        if (expr.kind == EXPR_KIND_LIT_STR) {
+            String_View name_len = SV_CONCAT(&basm->arena, name, sv_from_cstr(".len"));
+            basm_bind_value(basm, name_len, word_u64(expr.value.as_lit_str.count), BINDING_CONST, location);
+        }
+    } else {
+        fprintf(stderr,
+                FL_Fmt": ERROR: binding name is not provided\n",
+                FL_Arg(location));
+        exit(1);
+    }
+}
+
 void basm_translate_source(Basm *basm, String_View input_file_path)
 {
     String_View original_source = {0};
@@ -1617,52 +1589,9 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     fprintf(stderr, FL_Fmt": ERROR: %%bind directive has been removed! Use %%const directive to define consts. Use %%native directive to define native functions.\n", FL_Arg(location));
                     exit(1);
                 } else if (sv_eq(token, sv_from_cstr("const"))) {
-                    line = sv_trim(line);
-                    String_View name = sv_chop_by_delim(&line, ' ');
-                    if (name.count > 0) {
-                        line = sv_trim(line);
-                        String_View value = line;
-                        Word word = {0};
-                        Literal_Kind kind = basm_translate_literal(basm, value, &word);
-                        if (kind == LITERAL_INVALID) {
-                            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a valid literal", FL_Arg(location), SV_Arg(value));
-                            exit(1);
-                        }
-
-                        basm_bind_value(basm, name, word, BINDING_CONST, location);
-
-                        if (kind == LITERAL_STR) {
-                            String_View name_len = SV_CONCAT(&basm->arena, name, sv_from_cstr(".len"));
-                            basm_bind_value(basm, name_len, word_u64(value.count - 2), BINDING_CONST, location);
-                        }
-                    } else {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: binding name is not provided\n",
-                                FL_Arg(location));
-                        exit(1);
-                    }
+                    basm_translate_bind_directive(basm, &line, location, BINDING_CONST);
                 } else if (sv_eq(token, sv_from_cstr("native"))) {
-                    line = sv_trim(line);
-                    String_View name = sv_chop_by_delim(&line, ' ');
-                    if (name.count > 0) {
-                        line = sv_trim(line);
-                        String_View value = line;
-                        Word word = {0};
-                        if (basm_translate_literal(basm, value, &word) == LITERAL_INVALID) {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: `"SV_Fmt"` is not a number",
-                                    FL_Arg(location),
-                                    SV_Arg(value));
-                            exit(1);
-                        }
-
-                        basm_bind_value(basm, name, word, BINDING_NATIVE, location);
-                    } else {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: binding name is not provided\n",
-                                FL_Arg(location));
-                        exit(1);
-                    }
+                    basm_translate_bind_directive(basm, &line, location, BINDING_NATIVE);
                 } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
@@ -1710,21 +1639,15 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     line = sv_trim(line);
 
-                    if (line.count == 0) {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: literal or binding name is expected\n",
+                    Expr expr = parse_expr_from_sv(&basm->arena, line);
+
+                    if (expr.kind != EXPR_KIND_BINDING) {
+                        fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
                                 FL_Arg(location));
                         exit(1);
                     }
 
-                    Word entry = {0};
-
-                    if (basm_translate_literal(basm, line, &entry) == LITERAL_INVALID) {
-                        basm->deferred_entry_binding_name = line;
-                    } else {
-                        basm->entry = entry.as_u64;
-                    }
-
+                    basm->deferred_entry_binding_name = expr.value.as_binding;
                     basm->has_entry = true;
                     basm->entry_location = location;
                 } else {
@@ -1763,11 +1686,14 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                 exit(1);
                             }
 
-                            if (basm_translate_literal(
-                                    basm,
-                                    operand,
-                                    &basm->program[basm->program_size].operand) == LITERAL_INVALID) {
-                                basm_push_deferred_operand(basm, basm->program_size, operand, location);
+                            Expr expr = parse_expr_from_sv(&basm->arena, operand);
+
+                            if (expr.kind == EXPR_KIND_BINDING) {
+                                basm_push_deferred_operand(basm, basm->program_size, expr, location);
+                            } else {
+                                assert(expr.kind != EXPR_KIND_BINDING);
+                                basm->program[basm->program_size].operand =
+                                    basm_expr_eval(basm, expr);
                             }
                         }
 
@@ -1785,7 +1711,10 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        String_View name = basm->deferred_operands[i].name;
+        Expr expr = basm->deferred_operands[i].expr;
+        assert(expr.kind == EXPR_KIND_BINDING);
+        String_View name = expr.value.as_binding;
+
         Inst_Addr addr = basm->deferred_operands[i].addr;
         Binding binding = {0};
         if (!basm_resolve_binding(
@@ -1828,6 +1757,27 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
         }
 
         basm->entry = binding.value.as_u64;
+    }
+}
+
+Word basm_expr_eval(Basm *basm, Expr expr)
+{
+    switch (expr.kind) {
+    case EXPR_KIND_BINDING:
+        assert(false && "TODO: not implemented");
+        break;
+    case EXPR_KIND_LIT_INT:
+        return word_u64(expr.value.as_lit_int);
+    case EXPR_KIND_LIT_FLOAT:
+        return word_f64(expr.value.as_lit_float);
+    case EXPR_KIND_LIT_CHAR:
+        return word_u64((uint64_t) expr.value.as_lit_char);
+    case EXPR_KIND_LIT_STR:
+        return basm_push_string_to_memory(basm, expr.value.as_lit_str);
+    default: {
+        assert(false && "basm_expr_eval: unreachable");
+        exit(1);
+    } break;
     }
 }
 
@@ -2148,6 +2098,15 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
         exit(1);
     }
     }
+}
+
+Expr parse_expr_from_sv(Arena *arena, String_View source)
+{
+    Tokens tokens = {0};
+    tokenize(source, &tokens);
+
+    Tokens_View tv = tokens_as_view(&tokens);
+    return parse_expr_from_tokens(arena, &tv);
 }
 
 #endif // BM_IMPLEMENTATION
