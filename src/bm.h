@@ -287,7 +287,7 @@ typedef struct {
 } Tokens;
 
 void tokens_push(Tokens *tokens, Token token);
-void tokenize(String_View source, Tokens *tokens);
+void tokenize(String_View source, Tokens *tokens, File_Location location);
 
 typedef struct {
     const Token *elems;
@@ -319,7 +319,7 @@ typedef struct {
 } Expr;
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens);
-Expr parse_expr_from_sv(Arena *arena, String_View source);
+Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
 typedef struct {
     Inst_Addr addr;
@@ -1528,7 +1528,7 @@ static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Lo
     String_View name = sv_chop_by_delim(line, ' ');
     if (name.count > 0) {
         *line = sv_trim(*line);
-        Expr expr = parse_expr_from_sv(&basm->arena, *line);
+        Expr expr = parse_expr_from_sv(&basm->arena, *line, location);
 
         if (expr.kind == EXPR_KIND_BINDING) {
             fprintf(stderr, FL_Fmt": ERROR: bindings cannot depend on other bindings yet. We are working on it.\n",
@@ -1639,7 +1639,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
 
                     line = sv_trim(line);
 
-                    Expr expr = parse_expr_from_sv(&basm->arena, line);
+                    Expr expr = parse_expr_from_sv(&basm->arena, line, location);
 
                     if (expr.kind != EXPR_KIND_BINDING) {
                         fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
@@ -1686,7 +1686,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                                 exit(1);
                             }
 
-                            Expr expr = parse_expr_from_sv(&basm->arena, operand);
+                            Expr expr = parse_expr_from_sv(&basm->arena, operand, location);
 
                             if (expr.kind == EXPR_KIND_BINDING) {
                                 basm_push_deferred_operand(basm, basm->program_size, expr, location);
@@ -1953,7 +1953,7 @@ void tokens_push(Tokens *tokens, Token token)
     tokens->elems[tokens->count++] = token;
 }
 
-void tokenize(String_View source, Tokens *tokens)
+void tokenize(String_View source, Tokens *tokens, File_Location location)
 {
     source = sv_trim_left(source);
     while (source.count > 0) {
@@ -1968,8 +1968,8 @@ void tokenize(String_View source, Tokens *tokens)
                 sv_chop_left(&source, 1);
                 tokens_push(tokens, (Token) {.kind = TOKEN_KIND_STR, .text = text});
             } else {
-                // TODO: proper error reporting
-                fprintf(stderr, "Could not find closing \"\n");
+                fprintf(stderr, FL_Fmt": ERROR: Could not find closing \"\n",
+                        FL_Arg(location));
                 exit(1);
             }
         } break;
@@ -1984,8 +1984,8 @@ void tokenize(String_View source, Tokens *tokens)
                 sv_chop_left(&source, 1);
                 tokens_push(tokens, (Token) {.kind = TOKEN_KIND_CHAR, .text = text});
             } else {
-                // TODO: proper error reporting
-                fprintf(stderr, "Could not find closing \'\n");
+                fprintf(stderr, FL_Fmt": ERROR: Could not find closing \'\n",
+                        FL_Arg(location));
                 exit(1);
             }
         } break;
@@ -2100,10 +2100,10 @@ Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens)
     }
 }
 
-Expr parse_expr_from_sv(Arena *arena, String_View source)
+Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
 {
     Tokens tokens = {0};
-    tokenize(source, &tokens);
+    tokenize(source, &tokens, location);
 
     Tokens_View tv = tokens_as_view(&tokens);
     return parse_expr_from_tokens(arena, &tv);
