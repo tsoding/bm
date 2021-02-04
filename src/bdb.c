@@ -515,10 +515,18 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     } break;
     case 'r':
     {
-        if (!state->bm.halt)
+        if (!state->bm.halt || (state->bm.halt && state->bm.program[state->bm.ip].type == INST_HALT))
         {
-            fprintf(stderr,
-                    "INFO : Program is already running\n");
+            if (state->bm.halt)
+            {
+                fprintf(stderr,
+                        "INFO : Program has halted.\n");
+            }
+            else
+            {
+                fprintf(stderr,
+                        "INFO : Program is already running.\n");
+            }
 
             char answer;
 
