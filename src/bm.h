@@ -1737,7 +1737,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         Expr expr = basm->deferred_operands[i].expr;
-        File_Location location = basm->deferred_operands[i].location;
         assert(expr.kind == EXPR_KIND_BINDING);
         String_View name = expr.value.as_binding;
 
@@ -1760,7 +1759,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             exit(1);
         }
 
-        basm->program[addr].operand = basm_binding_eval(basm, binding, location);
+        basm->program[addr].operand = basm_binding_eval(basm, binding, basm->deferred_operands[i].location);
     }
 
     // Resolving deferred entry point
