@@ -260,14 +260,6 @@ typedef enum {
 
 const char *binding_kind_as_cstr(Binding_Kind kind);
 
-// TODO(#177): bindings don't support expressions
-typedef struct {
-    Binding_Kind kind;
-    String_View name;
-    Word value;
-    File_Location location;
-} Binding;
-
 typedef enum {
     TOKEN_KIND_STR,
     TOKEN_KIND_CHAR,
@@ -322,6 +314,16 @@ typedef struct {
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
+// TODO(#177): bindings don't support expressions
+typedef struct {
+    Binding_Kind kind;
+    String_View name;
+    Word value;
+    Expr expr;
+    bool evaluated;
+    File_Location location;
+} Binding;
+
 typedef struct {
     Inst_Addr addr;
     Expr expr;
@@ -352,7 +354,7 @@ typedef struct {
     File_Location include_location;
 } Basm;
 
-bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding);
+Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
@@ -1411,31 +1413,30 @@ void arena_summary(Arena *arena)
     printf("\n");
 }
 
-bool basm_resolve_binding(const Basm *basm, String_View name, Binding *binding)
+Binding *basm_resolve_binding(Basm *basm, String_View name)
 {
     for (size_t i = 0; i < basm->bindings_size; ++i) {
         if (sv_eq(basm->bindings[i].name, name)) {
-            if (binding) *binding = basm->bindings[i];
-            return true;
+            return &basm->bindings[i];
         }
     }
 
-    return false;
+    return NULL;
 }
 
 void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    Binding existing = {0};
-    if (basm_resolve_binding(basm, name, &existing)) {
+    Binding *existing = basm_resolve_binding(basm, name);
+    if (existing) {
         fprintf(stderr,
                 FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
                 FL_Arg(location),
                 SV_Arg(name));
         fprintf(stderr,
                 FL_Fmt": NOTE: first binding is located here\n",
-                FL_Arg(existing.location));
+                FL_Arg(existing->location));
         exit(1);
     }
 
@@ -1717,47 +1718,45 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
         String_View name = expr.value.as_binding;
 
         Inst_Addr addr = basm->deferred_operands[i].addr;
-        Binding binding = {0};
-        if (!basm_resolve_binding(
-                basm,
-                name,
-                &binding)) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name));
+        Binding *binding = basm_resolve_binding(basm, name);
+        if (binding == NULL) {
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                    FL_Arg(basm->deferred_operands[i].location),
+                    SV_Arg(name));
             exit(1);
         }
 
-        if (basm->program[addr].type == INST_CALL && binding.kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding.kind));
+        if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
             exit(1);
         }
 
-        if (basm->program[addr].type == INST_NATIVE && binding.kind != BINDING_NATIVE) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding.kind));
+        if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
             exit(1);
         }
 
-        basm->program[addr].operand = binding.value;
+        basm->program[addr].operand = binding->value;
     }
 
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
-        Binding binding = {0};
-        if (!basm_resolve_binding(
-                basm,
-                basm->deferred_entry_binding_name,
-                &binding)) {
+        Binding *binding = basm_resolve_binding(
+            basm,
+            basm->deferred_entry_binding_name);
+        if (binding == NULL) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
                     FL_Arg(basm->entry_location),
                     SV_Arg(basm->deferred_entry_binding_name));
             exit(1);
         }
 
-        if (binding.kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding.kind));
+        if (binding->kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
             exit(1);
         }
 
-        basm->entry = binding.value.as_u64;
+        basm->entry = binding->value.as_u64;
     }
 }
 
