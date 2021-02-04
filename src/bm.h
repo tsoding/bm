@@ -314,13 +314,19 @@ typedef struct {
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
+typedef enum {
+    BINDING_UNEVALUATED = 0,
+    BINDING_EVALUATING,
+    BINDING_EVALUATED,
+} Binding_Status;
+
 // TODO(#177): bindings don't support expressions
 typedef struct {
     Binding_Kind kind;
     String_View name;
     Word value;
     Expr expr;
-    bool evaluated;
+    Binding_Status status;
     File_Location location;
 } Binding;
 
@@ -355,13 +361,15 @@ typedef struct {
 } Basm;
 
 Binding *basm_resolve_binding(Basm *basm, String_View name);
-void basm_bind_value(Basm *basm, String_View name, Word word, Binding_Kind kind, File_Location location);
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
+void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path);
-Word basm_expr_eval(Basm *basm, Expr expr);
+Word basm_expr_eval(Basm *basm, Expr expr, File_Location location);
+Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location);
 
 void bm_load_standard_natives(Bm *bm);
 
@@ -1443,6 +1451,31 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
     basm->bindings[basm->bindings_size++] = (Binding) {
         .name = name,
         .value = value,
+        .status = BINDING_EVALUATED,
+        .kind = kind,
+        .location = location,
+    };
+}
+
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
+{
+    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
+
+    Binding *existing = basm_resolve_binding(basm, name);
+    if (existing) {
+        fprintf(stderr,
+                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
+                FL_Arg(location),
+                SV_Arg(name));
+        fprintf(stderr,
+                FL_Fmt": NOTE: first binding is located here\n",
+                FL_Arg(existing->location));
+        exit(1);
+    }
+
+    basm->bindings[basm->bindings_size++] = (Binding) {
+        .name = name,
+        .expr = expr,
         .kind = kind,
         .location = location,
     };
@@ -1532,20 +1565,10 @@ static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Lo
         *line = sv_trim(*line);
         Expr expr = parse_expr_from_sv(&basm->arena, *line, location);
 
-        if (expr.kind == EXPR_KIND_BINDING) {
-            fprintf(stderr, FL_Fmt": ERROR: bindings cannot depend on other bindings yet. We are working on it.\n",
-                    FL_Arg(location));
-            exit(1);
-        }
+        basm_bind_expr(basm, name, expr, binding_kind, location);
 
-        Word value = basm_expr_eval(basm, expr);
-
-        basm_bind_value(basm, name, value, binding_kind, location);
-
-        if (expr.kind == EXPR_KIND_LIT_STR) {
-            String_View name_len = SV_CONCAT(&basm->arena, name, sv_from_cstr(".len"));
-            basm_bind_value(basm, name_len, word_u64(expr.value.as_lit_str.count), BINDING_CONST, location);
-        }
+        // TODO: there is not way to get the length of the stream again
+        // I removed it. Oops.
     } else {
         fprintf(stderr,
                 FL_Fmt": ERROR: binding name is not provided\n",
@@ -1695,7 +1718,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                             } else {
                                 assert(expr.kind != EXPR_KIND_BINDING);
                                 basm->program[basm->program_size].operand =
-                                    basm_expr_eval(basm, expr);
+                                    basm_expr_eval(basm, expr, location);
                             }
                         }
 
@@ -1714,6 +1737,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         Expr expr = basm->deferred_operands[i].expr;
+        File_Location location = basm->deferred_operands[i].location;
         assert(expr.kind == EXPR_KIND_BINDING);
         String_View name = expr.value.as_binding;
 
@@ -1736,7 +1760,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             exit(1);
         }
 
-        basm->program[addr].operand = binding->value;
+        basm->program[addr].operand = basm_binding_eval(basm, binding, location);
     }
 
     // Resolving deferred entry point
@@ -1756,22 +1780,55 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             exit(1);
         }
 
-        basm->entry = binding->value.as_u64;
+        basm->entry = basm_binding_eval(basm, binding, basm->entry_location).as_u64;
     }
 }
 
-Word basm_expr_eval(Basm *basm, Expr expr)
+Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
+{
+    if (binding->status == BINDING_EVALUATING) {
+        fprintf(stderr, FL_Fmt": ERROR: cycling binding definition.\n",
+        FL_Arg(binding->location));
+        exit(1);
+    }
+
+    if (binding->status == BINDING_UNEVALUATED) {
+        binding->status = BINDING_EVALUATING;
+        Word value = basm_expr_eval(basm, binding->expr, location);
+        binding->status = BINDING_EVALUATED;
+        binding->value = value;
+    }
+
+    return binding->value;
+}
+
+Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
 {
     switch (expr.kind) {
     case EXPR_KIND_LIT_INT:
         return word_u64(expr.value.as_lit_int);
+
     case EXPR_KIND_LIT_FLOAT:
         return word_f64(expr.value.as_lit_float);
+
     case EXPR_KIND_LIT_CHAR:
         return word_u64((uint64_t) expr.value.as_lit_char);
+
     case EXPR_KIND_LIT_STR:
         return basm_push_string_to_memory(basm, expr.value.as_lit_str);
-    case EXPR_KIND_BINDING:
+
+    case EXPR_KIND_BINDING: {
+        String_View name = expr.value.as_binding;
+        Binding *binding = basm_resolve_binding(basm, name);
+        if (binding == NULL) {
+            fprintf(stderr, FL_Fmt": ERROR: could find binding `"SV_Fmt"`.\n",
+                    FL_Arg(location), SV_Arg(name));
+            exit(1);
+        }
+
+        return basm_binding_eval(basm, binding, location);
+    } break;
+
     default: {
         assert(false && "basm_expr_eval: unreachable");
         exit(1);
