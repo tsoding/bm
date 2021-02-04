@@ -313,7 +313,7 @@ typedef union {
     String_View as_lit_str;
 } Expr_Value;
 
-// TODO: compile time expressions don't support math operations
+// TODO(#178): compile time expressions don't support math operations
 typedef struct {
     Expr_Kind kind;
     Expr_Value value;
