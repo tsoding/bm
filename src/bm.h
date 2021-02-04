@@ -2283,7 +2283,9 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
         Expr expr = parse_number_from_tokens(arena, tokens, location);
 
         if (expr.kind == EXPR_KIND_LIT_INT) {
-            expr.value.as_lit_int = -expr.value.as_lit_int;
+            // TODO: more cross-platform way to negate integer literals
+            // what if somewhere the numbers are not two's complement
+            expr.value.as_lit_int = (~expr.value.as_lit_int + 1);
         } else if (expr.kind == EXPR_KIND_LIT_FLOAT) {
             expr.value.as_lit_float = -expr.value.as_lit_float;
         } else {
