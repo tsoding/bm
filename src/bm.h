@@ -1829,7 +1829,7 @@ static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location 
     case BINARY_OP_PLUS: {
         Word left = basm_expr_eval(basm, binary_op->left, location);
         Word right = basm_expr_eval(basm, binary_op->right, location);
-        // TODO: compile-time sum can only work with integers
+        // TODO(#183): compile-time sum can only work with integers
         return word_u64(left.as_u64 + right.as_u64);
     } break;
 
