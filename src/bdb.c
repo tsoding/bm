@@ -363,11 +363,13 @@ Bdb_Err bdb_reset(Bdb_State *state)
      * labels of previously set breakpoints and store those somewhere.
      * Then we can safely zero out the bdb state and reload the
      * program. Now possibly shifted labels can be used as breakpoints
-     * again.
+     * again by searching through the old ones and finding the label
+     * in the new program.
      */
 
-    /* Store the pointers to the old arena. We lose access to it when
-     * we do the bdb_state_init */
+    /* Store the pointers to the old arena. We lose access to them
+     * when we do the call to bdb_state_init.
+     */
 
     Arena old_arena;
     String_View old_labels[BM_PROGRAM_CAPACITY];
@@ -379,8 +381,10 @@ Bdb_Err bdb_reset(Bdb_State *state)
 
     const char *program_name = state->cood_file_name.data;
 
+    /*
+     *  Reinitialize the debugger
+     */
     *state = (Bdb_State){0};
-
     if (bdb_state_init(state, program_name) == BDB_FAIL)
     {
         fprintf(stderr, "ERR : Unable to reset the debugger\n");
@@ -394,7 +398,7 @@ Bdb_Err bdb_reset(Bdb_State *state)
                 if (sv_eq(state->labels[new_addr], old_labels[old_label_addr]))
                 {
                     state->breakpoints[new_addr].is_enabled = 1;
-                    break;
+                    break; /* the inner for loop */
                 }
             }
         }
