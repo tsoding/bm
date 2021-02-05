@@ -196,11 +196,11 @@ void bm_push_native(Bm *bm, Bm_Native native);
 void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
-#define BM_FILE_MAGIC 0x6D62
-#define BM_FILE_VERSION 5
+#define BM_FILE_MAGIC 0x626d6f62 // "bomb"
+#define BM_FILE_VERSION 6
 
 PACK(struct Bm_File_Meta {
-    uint16_t magic;
+    uint32_t magic;
     uint16_t version;
     uint64_t program_size;
     uint64_t entry;
