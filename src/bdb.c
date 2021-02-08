@@ -38,18 +38,17 @@ Bdb_Err bdb_state_init(Bdb_State *state,
     return bdb_load_symtab(state, program_file_path);
 }
 
-Bdb_Err bdb_resolve_binding(const Bdb_State *bdb, String_View name, Bdb_Binding *binding)
+Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name)
 {
     assert(bdb);
 
     for (size_t i = 0; i < bdb->bindings_size; ++i) {
         if (sv_eq(bdb->bindings[i].name, name)) {
-            if (binding) *binding = bdb->bindings[i];
-            return BDB_OK;
+            return &bdb->bindings[i];
         }
     }
 
-    return BDB_FAIL;
+    return NULL;
 }
 
 Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
@@ -172,7 +171,7 @@ Bdb_Err bdb_continue(Bdb_State *state)
             if (!bp->is_broken) {
                 fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
 
-                // TODO: hitting breakpoint does not print the label anymore
+                // FIXME: hitting breakpoint does not print the label anymore
                 if (bp->label.data)
                 {
                     fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
@@ -267,14 +266,13 @@ Bdb_Err bdb_parse_binding_or_value(Bdb_State *st, String_View addr, Word *out)
 
     uint64_t value = strtoull(addr.data, &endptr, 10);
     if (endptr != addr.data + addr.count) {
-        Bdb_Binding binding = {0};
+        Bdb_Binding *binding = bdb_resolve_binding(st, addr);
 
-        if (bdb_resolve_binding(st, addr, &binding) == BDB_FAIL)
-        {
+        if (binding) {
+            value = binding->value.as_u64;
+        } else {
             return BDB_FAIL;
         }
-
-        value = binding.value.as_u64;
     }
 
     if (out) out->as_u64 = value;
@@ -329,9 +327,9 @@ Bdb_Err bdb_reset(Bdb_State *state)
         state->breakpoints[i].is_broken = 0;
 
         if (state->breakpoints[i].label.data) {
-            Bdb_Binding binding = {0};
-            if (bdb_resolve_binding(state, state->breakpoints[i].label, &binding) == BDB_OK) {
-                state->breakpoints[i].addr = binding.value.as_u64;
+            Bdb_Binding *binding = bdb_resolve_binding(state, state->breakpoints[i].label);
+            if (binding) {
+                state->breakpoints[i].addr = binding->value.as_u64;
             } else {
                 fprintf(stderr, "WARNING: label `"SV_Fmt"` got removed\n",
                         SV_Arg(state->breakpoints[i].label));
@@ -386,6 +384,8 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
+        // FIXME: inspecting memory does not check kinds of bindings in the arguments
+
         Word where = word_u64(0);
         if (bdb_parse_binding_or_value(state, where_sv, &where) == BDB_FAIL)
         {
@@ -427,6 +427,8 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         Word break_addr;
         String_View addr = sv_trim(arguments);
+
+        // FIXME: add or deleting breakpoints does not check kinds of bindings
 
         if (bdb_parse_binding_or_value(state, addr, &break_addr) == BDB_FAIL)
         {

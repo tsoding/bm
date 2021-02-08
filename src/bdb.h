@@ -53,7 +53,7 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path);
 Bdb_Err bdb_step_instr(Bdb_State *);
 Bdb_Err bdb_step_over_instr(Bdb_State *state);
 Bdb_Err bdb_continue(Bdb_State *);
-Bdb_Err bdb_resolve_binding(const Bdb_State *bdb, String_View name, Bdb_Binding *binding);
+Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name);
 Bdb_Err bdb_parse_binding_or_value(Bdb_State *st, String_View addr, Word *out);
 Bdb_Err bdb_run_command(Bdb_State *, String_View command_word, String_View arguments);
 void bdb_print_location(Bdb_State*);
