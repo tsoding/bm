@@ -482,8 +482,11 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             {
             case 'y':
             case 'Y':
+                // TODO: ^D makes the ask_again loop go crazy.
+                // I guess you can blame Dijkstra for that Kapp
                 getchar(); // Consume the '\n'
-                return bdb_reset(state);
+                bdb_reset(state);
+                break;
             case 'n':
             case 'N':
                 getchar(); // See above
