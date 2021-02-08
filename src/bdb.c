@@ -478,7 +478,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                         "INFO : Program is already running.\n");
             }
 
-            char answer;
+            int answer;
 
             /*
              * NOTE(Nico):
@@ -491,15 +491,15 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
              */
         ask_again:
             printf("     : Restart the program? [y|N] ");
-            answer = (char)(getchar());
+            answer = getchar();
 
             switch (answer)
             {
             case 'y':
             case 'Y': {
-                // TODO: ^D makes the ask_again loop go crazy.
-                // I guess you can blame Dijkstra for that Kapp
-                getchar(); // Consume the '\n'
+                // Consume the '\n'
+                getchar();
+
                 Bdb_Err err = bdb_reset(state);
                 if (err != BDB_OK) {
                     return err;
@@ -511,6 +511,9 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                 /* fall through */
             case '\n':
                 return BDB_OK;
+
+            case EOF:
+                return BDB_EXIT;
             default:
                 goto ask_again;
             }
