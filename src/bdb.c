@@ -23,21 +23,6 @@ void usage(void)
             "usage: bdb <executable>\n");
 }
 
-Bdb_Err bdb_state_init(Bdb_State *state,
-                       const char *program_file_path)
-{
-    assert(state);
-    assert(program_file_path);
-
-    state->program_file_path = program_file_path;
-    bm_load_program_from_file(&state->bm, program_file_path);
-    state->bm.halt = 1;
-    bm_load_standard_natives(&state->bm);
-
-    fprintf(stdout, "INFO : Loading debug symbols...\n");
-    return bdb_load_symtab(state, program_file_path);
-}
-
 Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name)
 {
     assert(bdb);
@@ -320,7 +305,6 @@ void bdb_print_location(Bdb_State *state)
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
-    // TODO: duplicate code in bdb_reset and bdb_init something something
     bm_load_program_from_file(&state->bm, state->program_file_path);
     state->bm.halt = 1;
     bm_load_standard_natives(&state->bm);
@@ -512,12 +496,15 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             switch (answer)
             {
             case 'y':
-            case 'Y':
+            case 'Y': {
                 // TODO: ^D makes the ask_again loop go crazy.
                 // I guess you can blame Dijkstra for that Kapp
                 getchar(); // Consume the '\n'
-                bdb_reset(state);
-                break;
+                Bdb_Err err = bdb_reset(state);
+                if (err != BDB_OK) {
+                    return err;
+                }
+            } break;
             case 'n':
             case 'N':
                 getchar(); // See above
@@ -571,10 +558,11 @@ int main(int argc, char **argv)
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Bdb_State state = {0};
+    state.program_file_path = argv[1];
 
     printf("BDB - The birtual machine debugger.\n"
            "Type 'h' and enter for a quick help\n");
-    if (bdb_state_init(&state, argv[1]) == BDB_FAIL)
+    if (bdb_reset(&state) == BDB_FAIL)
     {
         fprintf(stderr,
                 "FATAL : Unable to initialize the debugger: %s\n",
