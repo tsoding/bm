@@ -59,7 +59,7 @@ Bdb_Err bdb_run_command(Bdb_State *, String_View command_word, String_View argum
 void bdb_print_location(Bdb_State*);
 Bdb_Err bdb_reset(Bdb_State *);
 void bdb_print_instr(Bdb_State *, FILE *, Inst *);
-void bdb_add_breakpoint(Bdb_State *, Inst_Addr);
+void bdb_add_breakpoint(Bdb_State *, Inst_Addr, String_View label);
 void bdb_delete_breakpoint(Bdb_State *, Inst_Addr);
 Bdb_Breakpoint *bdb_find_breakpoint_by_addr(Bdb_State *, Inst_Addr);
 Bdb_Err bdb_fault(Bdb_State *, Err);

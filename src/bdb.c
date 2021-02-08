@@ -109,7 +109,7 @@ Bdb_Breakpoint *bdb_find_breakpoint_by_addr(Bdb_State *bdb, Inst_Addr addr)
     return NULL;
 }
 
-void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
+void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr, String_View label)
 {
     assert(state);
     assert(state->breakpoints_size < BDB_BREAKPOINTS_CAPACITY);
@@ -120,7 +120,7 @@ void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
     }
 
     state->breakpoints[state->breakpoints_size].is_broken = 0;
-    state->breakpoints[state->breakpoints_size].label = SV_NULL;
+    state->breakpoints[state->breakpoints_size].label = label;
     state->breakpoints[state->breakpoints_size].addr = addr;
     state->breakpoints_size += 1;
 }
@@ -434,7 +434,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             return BDB_FAIL;
         }
 
-        bdb_add_breakpoint(state, break_addr.as_u64);
+        bdb_add_breakpoint(state, break_addr.as_u64, SV_NULL);
         fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr.as_u64);
     } break;
     case 'd':
