@@ -147,6 +147,8 @@ void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
     if (state->breakpoints_size == 0) {
         arena_clean(&state->break_arena);
     }
+
+    fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", addr);
 }
 
 Bdb_Err bdb_continue(Bdb_State *state)
@@ -257,31 +259,35 @@ Bdb_Err bdb_step_instr(Bdb_State *state)
     }
 }
 
-// TODO: bdb should be able to break on BASM expression
-Bdb_Err bdb_parse_binding_or_value(Bdb_State *st, String_View addr, Word *out)
+Bdb_Err bdb_parse_word(Bdb_State *st, String_View sv, Word *output)
 {
-    assert(st);
-    assert(out);
+    const char *cstr = arena_sv_to_cstr(&st->tmp_arena, sv);
+    char *endptr = NULL;
 
-    if (addr.count == 0)
-    {
+    // IMPORTANT!!! strtoull expects NULL-terminated string.
+    uint64_t value = strtoull(cstr, &endptr, 10);
+    if (endptr != cstr + sv.count) {
         return BDB_FAIL;
     }
 
-    char *endptr = NULL;
+    if (output) {
+        output->as_u64 = value;
+    }
 
-    uint64_t value = strtoull(addr.data, &endptr, 10);
-    if (endptr != addr.data + addr.count) {
-        Bdb_Binding *binding = bdb_resolve_binding(st, addr);
+    return BDB_OK;
+}
 
+// TODO: bdb should be able to break on BASM expression
+Bdb_Err bdb_parse_binding_or_word(Bdb_State *st, String_View input, Word *output)
+{
+    if (bdb_parse_word(st, input, output) == BDB_FAIL) {
+        Bdb_Binding *binding = bdb_resolve_binding(st, input);
         if (binding) {
-            value = binding->value.as_u64;
+            *output = binding->value;
         } else {
             return BDB_FAIL;
         }
     }
-
-    if (out) out->as_u64 = value;
 
     return BDB_OK;
 }
@@ -314,6 +320,7 @@ void bdb_print_location(Bdb_State *state)
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
+    // TODO: duplicate code in bdb_reset and bdb_init something something
     bm_load_program_from_file(&state->bm, state->program_file_path);
     state->bm.halt = 1;
     bm_load_standard_natives(&state->bm);
@@ -390,17 +397,15 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
-        // FIXME: inspecting memory does not check kinds of bindings in the arguments
-
         Word where = word_u64(0);
-        if (bdb_parse_binding_or_value(state, where_sv, &where) == BDB_FAIL)
+        if (bdb_parse_binding_or_word(state, where_sv, &where) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(where_sv));
             return BDB_FAIL;
         }
 
         Word count = word_u64(0);
-        if (bdb_parse_binding_or_value(state, count_sv, &count) == BDB_FAIL)
+        if (bdb_parse_binding_or_word(state, count_sv, &count) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(count_sv));
             return BDB_FAIL;
@@ -429,6 +434,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     {
         bdb_print_location(state);
     } break;
+
     case 'b':
     {
         String_View addr = sv_trim(arguments);
@@ -441,29 +447,37 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                         binding_kind_as_cstr(binding->kind));
             }
         } else {
-            char *endptr = NULL;
-            uint64_t value = strtoull(addr.data, &endptr, 10);
-            if (endptr != addr.data + addr.count) {
+            Word value = {0};
+
+            if (bdb_parse_word(state, addr, &value) == BDB_FAIL) {
                 fprintf(stderr, "ERR : `"SV_Fmt"` is not a number\n",
                         SV_Arg(addr));
             }
-            bdb_add_breakpoint(state, value, SV_NULL);
+
+            bdb_add_breakpoint(state, value.as_u64, SV_NULL);
         }
     } break;
     case 'd':
     {
-        // FIXME: deleting breakpoints does not check kinds of bindings
-        Word break_addr;
         String_View addr = sv_trim(arguments);
+        Bdb_Binding *binding = bdb_resolve_binding(state, addr);
+        if (binding) {
+            if (binding->kind == BINDING_LABEL) {
+                bdb_delete_breakpoint(state, binding->value.as_u64);
+            } else {
+                fprintf(stderr, "ERR : Expected label but got %s\n",
+                        binding_kind_as_cstr(binding->kind));
+            }
+        } else {
+            Word value = {0};
 
-        if (bdb_parse_binding_or_value(state, addr, &break_addr) == BDB_FAIL)
-        {
-            fprintf(stderr, "ERR : Cannot parse address or label\n");
-            return BDB_FAIL;
+            if (bdb_parse_word(state, addr, &value) == BDB_FAIL) {
+                fprintf(stderr, "ERR : `"SV_Fmt"` is not a number\n",
+                        SV_Arg(addr));
+            }
+
+            bdb_delete_breakpoint(state, value.as_u64);
         }
-
-        bdb_delete_breakpoint(state, break_addr.as_u64);
-        fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr.as_u64);
     } break;
     case 'r':
     {
@@ -616,10 +630,13 @@ int main(int argc, char **argv)
             printf("Bye\n");
             return EXIT_SUCCESS;
         }
+
+        arena_clean(&state.tmp_arena);
     }
 
     arena_free(&state.sym_arena);
     arena_free(&state.break_arena);
+    arena_free(&state.tmp_arena);
 
     return EXIT_SUCCESS;
 }

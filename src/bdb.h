@@ -44,8 +44,12 @@ typedef struct Bdb_State {
     int is_in_step_over_mode;
     unsigned int step_over_mode_call_depth;
 
+    // for any strings from the .sym file or related to it
     Arena sym_arena;
+    // for labels of breakpoints
     Arena break_arena;
+    // for temporary things that will be cleaned up on each iterations of "event loop"
+    Arena tmp_arena;
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *program_file_path);
@@ -54,7 +58,8 @@ Bdb_Err bdb_step_instr(Bdb_State *);
 Bdb_Err bdb_step_over_instr(Bdb_State *state);
 Bdb_Err bdb_continue(Bdb_State *);
 Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name);
-Bdb_Err bdb_parse_binding_or_value(Bdb_State *st, String_View addr, Word *out);
+Bdb_Err bdb_parse_word(Bdb_State *st, String_View input, Word *output);
+Bdb_Err bdb_parse_binding_or_word(Bdb_State *st, String_View input, Word *out);
 Bdb_Err bdb_run_command(Bdb_State *, String_View command_word, String_View arguments);
 void bdb_print_location(Bdb_State*);
 Bdb_Err bdb_reset(Bdb_State *);
