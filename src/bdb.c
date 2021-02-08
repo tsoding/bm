@@ -292,7 +292,7 @@ void bdb_print_location(Bdb_State *state)
     for (size_t i = 0; i < state->bindings_size; ++i) {
         const Bdb_Binding *current = &state->bindings[i];
         if (current->kind == BINDING_LABEL && current->value.as_u64 <= ip) {
-            if (location == NULL || location->value.as_u64 > current->value.as_u64) {
+            if (location == NULL || location->value.as_u64 < current->value.as_u64) {
                 location = current;
             }
         }
@@ -300,7 +300,7 @@ void bdb_print_location(Bdb_State *state)
 
     if (location) {
         printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
-               ip, SV_Arg(location->name), location->value.as_u64);
+               ip, SV_Arg(location->name), ip - location->value.as_u64);
     } else {
         printf("ip = %"PRIu64"\n"
                "WARN : No location info available\n",
