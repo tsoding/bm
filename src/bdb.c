@@ -105,7 +105,8 @@ void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr, String_View label)
 
     state->breakpoints[state->breakpoints_size].is_broken = 0;
     state->breakpoints[state->breakpoints_size].label =
-        arena_sv_dup(&state->break_arena, label);
+        arena_sv_dup(&state->break_arena, label); // NOTE: moving the label to an arena
+                                                  // with longer lifetime
     state->breakpoints[state->breakpoints_size].addr = addr;
     state->breakpoints_size += 1;
 
@@ -130,6 +131,8 @@ void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
             state->breakpoints_size - (size_t) (state->breakpoints - breakpoint));
 
     if (state->breakpoints_size == 0) {
+        // NOTE: since all of the breakpoints are removed nothing from break_arena
+        // need at this point. We can safely clean it up.
         arena_clean(&state->break_arena);
     }
 
