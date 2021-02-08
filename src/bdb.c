@@ -311,6 +311,7 @@ void bdb_print_location(Bdb_State *state)
 Bdb_Err bdb_reset(Bdb_State *state)
 {
     bm_load_program_from_file(&state->bm, state->program_file_path);
+    state->bm.halt = 1;
     bm_load_standard_natives(&state->bm);
 
     arena_clean(&state->sym_arena);
@@ -325,6 +326,8 @@ Bdb_Err bdb_reset(Bdb_State *state)
 
     // Update addresses of breakpoints on labels
     for (size_t i = 0; i < state->breakpoints_size; ++i) {
+        state->breakpoints[i].is_broken = 0;
+
         if (state->breakpoints[i].label.data) {
             Bdb_Binding binding = {0};
             if (bdb_resolve_binding(state, state->breakpoints[i].label, &binding) == BDB_OK) {
