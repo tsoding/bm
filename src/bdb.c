@@ -31,6 +31,7 @@ Bdb_Err bdb_state_init(Bdb_State *state,
 
     state->program_file_path = program_file_path;
     bm_load_program_from_file(&state->bm, program_file_path);
+    state->bm.halt = 1;
     bm_load_standard_natives(&state->bm);
 
     fprintf(stdout, "INFO : Loading debug symbols...\n");
@@ -536,7 +537,6 @@ int main(int argc, char **argv)
 
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Bdb_State state = {0};
-    state.bm.halt = 1;
 
     printf("BDB - The birtual machine debugger.\n"
            "Type 'h' and enter for a quick help\n");
