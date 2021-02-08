@@ -119,9 +119,12 @@ void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr, String_View label)
     }
 
     state->breakpoints[state->breakpoints_size].is_broken = 0;
-    state->breakpoints[state->breakpoints_size].label = label;
+    state->breakpoints[state->breakpoints_size].label =
+        arena_sv_dup(&state->break_arena, label);
     state->breakpoints[state->breakpoints_size].addr = addr;
     state->breakpoints_size += 1;
+
+    fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", addr);
 }
 
 void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
@@ -140,6 +143,10 @@ void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
     memmove(breakpoint,
             breakpoint + 1,
             state->breakpoints_size - (size_t) (state->breakpoints - breakpoint));
+
+    if (state->breakpoints_size == 0) {
+        arena_clean(&state->break_arena);
+    }
 }
 
 Bdb_Err bdb_continue(Bdb_State *state)
@@ -171,7 +178,6 @@ Bdb_Err bdb_continue(Bdb_State *state)
             if (!bp->is_broken) {
                 fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
 
-                // FIXME: hitting breakpoint does not print the label anymore
                 if (bp->label.data)
                 {
                     fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
@@ -425,22 +431,28 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     } break;
     case 'b':
     {
-        Word break_addr;
         String_View addr = sv_trim(arguments);
-
-        // FIXME: add or deleting breakpoints does not check kinds of bindings
-
-        if (bdb_parse_binding_or_value(state, addr, &break_addr) == BDB_FAIL)
-        {
-            fprintf(stderr, "ERR : Cannot parse address or label\n");
-            return BDB_FAIL;
+        Bdb_Binding *binding = bdb_resolve_binding(state, addr);
+        if (binding) {
+            if (binding->kind == BINDING_LABEL) {
+                bdb_add_breakpoint(state, binding->value.as_u64, binding->name);
+            } else {
+                fprintf(stderr, "ERR : Expected label but got %s\n",
+                        binding_kind_as_cstr(binding->kind));
+            }
+        } else {
+            char *endptr = NULL;
+            uint64_t value = strtoull(addr.data, &endptr, 10);
+            if (endptr != addr.data + addr.count) {
+                fprintf(stderr, "ERR : `"SV_Fmt"` is not a number\n",
+                        SV_Arg(addr));
+            }
+            bdb_add_breakpoint(state, value, SV_NULL);
         }
-
-        bdb_add_breakpoint(state, break_addr.as_u64, SV_NULL);
-        fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr.as_u64);
     } break;
     case 'd':
     {
+        // FIXME: deleting breakpoints does not check kinds of bindings
         Word break_addr;
         String_View addr = sv_trim(arguments);
 
