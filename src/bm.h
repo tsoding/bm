@@ -235,6 +235,7 @@ int arena_slurp_file(Arena *arena, String_View file_path, String_View *content);
 String_View arena_sv_concat(Arena *arena, ...);
 const char *arena_cstr_concat(Arena *arena, ...);
 const char *arena_sv_to_cstr(Arena *arena, String_View sv);
+String_View arena_sv_dup(Arena *arena, String_View sv);
 
 #define SV_CONCAT(arena, ...)                   \
     arena_sv_concat(arena, __VA_ARGS__, SV_NULL)
@@ -1191,6 +1192,16 @@ const char *arena_sv_to_cstr(Arena *arena, String_View sv)
     memcpy(cstr, sv.data, sv.count);
     cstr[sv.count] = '\0';
     return cstr;
+}
+
+String_View arena_sv_dup(Arena *arena, String_View sv)
+{
+    char *buffer = arena_alloc(arena, sv.count);
+    memcpy(buffer, sv.data, sv.count);
+    return (String_View) {
+        .count = sv.count,
+        .data = buffer,
+    };
 }
 
 String_View arena_sv_concat(Arena *arena, ...)
