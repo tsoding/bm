@@ -1001,6 +1001,8 @@ void bm_dump_stack(FILE *stream, const Bm *bm)
 
 void bm_load_program_from_file(Bm *bm, const char *file_path)
 {
+    memset(bm, 0, sizeof(*bm));
+
     FILE *f = fopen(file_path, "rb");
     if (f == NULL) {
         fprintf(stderr, "ERROR: Could not open file `%s`: %s\n",

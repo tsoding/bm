@@ -24,29 +24,26 @@ void usage(void)
 }
 
 Bdb_Err bdb_state_init(Bdb_State *state,
-                       const char *executable)
+                       const char *program_file_path)
 {
     assert(state);
-    assert(executable);
+    assert(program_file_path);
 
-    state->cood_file_name = sv_from_cstr(executable);
-    bm_load_program_from_file(&state->bm, executable);
+    state->program_file_path = program_file_path;
+    bm_load_program_from_file(&state->bm, program_file_path);
     bm_load_standard_natives(&state->bm);
 
     fprintf(stdout, "INFO : Loading debug symbols...\n");
-    return bdb_load_symtab(state, sv_from_cstr(CSTR_CONCAT(&state->arena, executable, ".sym")));
+    return bdb_load_symtab(state, program_file_path);
 }
 
-Bdb_Err bdb_find_addr_of_label(Bdb_State *state, String_View name, Inst_Addr *out)
+Bdb_Err bdb_resolve_binding(const Bdb_State *bdb, String_View name, Bdb_Binding *binding)
 {
-    assert(state);
-    assert(out);
+    assert(bdb);
 
-    for (Inst_Addr i = 0; i < BM_PROGRAM_CAPACITY; ++i)
-    {
-        if (state->labels[i].data && sv_eq(state->labels[i], name))
-        {
-            *out = i;
+    for (size_t i = 0; i < bdb->bindings_size; ++i) {
+        if (sv_eq(bdb->bindings[i].name, name)) {
+            if (binding) *binding = bdb->bindings[i];
             return BDB_OK;
         }
     }
@@ -54,131 +51,95 @@ Bdb_Err bdb_find_addr_of_label(Bdb_State *state, String_View name, Inst_Addr *ou
     return BDB_FAIL;
 }
 
-Bdb_Err bdb_load_symtab(Bdb_State *state, String_View symtab_file)
+Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
 {
     assert(state);
 
+    String_View symtab_file =
+        sv_from_cstr(CSTR_CONCAT(&state->sym_arena, program_file_path, ".sym"));
+
     String_View symtab = {0};
-    if (arena_slurp_file(&state->arena, symtab_file, &symtab) < 0) {
+    if (arena_slurp_file(&state->sym_arena, symtab_file, &symtab) < 0) {
         fprintf(stderr, "ERROR: could not read file "SV_Fmt": %s\n",
                 SV_Arg(symtab_file), strerror(errno));
         exit(1);
     }
 
-    while (symtab.count > 0)
-    {
+    while (symtab.count > 0) {
         symtab                    = sv_trim_left(symtab);
         String_View  raw_addr     = sv_chop_by_delim(&symtab, '\t');
         symtab                    = sv_trim_left(symtab);
         String_View  raw_sym_type = sv_chop_by_delim(&symtab, '\t');
         symtab                    = sv_trim_left(symtab);
-        String_View  label_name   = sv_chop_by_delim(&symtab, '\n');
+        String_View  name         = sv_chop_by_delim(&symtab, '\n');
         Word         value        = word_u64(sv_to_u64(raw_addr));
         Binding_Kind kind         = (Binding_Kind)sv_to_u64(raw_sym_type);
 
-        switch (kind)
-        {
-        case BINDING_CONST:
-        {
-            Bdb_BindingConstant *it = &state->constants[state->constants_size++];
-            it->name                = label_name;
-            it->value               = value;
-
-        } break;
-        case BINDING_LABEL:
-        {
-            /*
-             * Huh? you ask? Yes, if we have a label, whose size is bigger
-             * than the program size, which is to say, that it is a
-             * preprocessor label, then we don't wanna overrun our label
-             * storage buffer.
-             */
-            if (value.as_u64 < BM_PROGRAM_CAPACITY)
-            {
-                state->labels[value.as_u64] = label_name;
-            }
-
-        } break;
-        case BINDING_NATIVE:
-        {
-            state->native_labels[value.as_u64] = label_name;
-        } break;
-        }
-
-
+        state->bindings[state->bindings_size].name = name;
+        state->bindings[state->bindings_size].value = value;
+        state->bindings[state->bindings_size].kind = kind;
+        state->bindings_size += 1;
     }
 
     return BDB_OK;
 }
 
+// TODO: bdb_print_instr should take information from the actual source code
 void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
+    (void) state;               // NOTE: don't forget to remove this
+                                // when you start using the state.
+
     fprintf(f, "%s ", inst_name(i->type));
     if (inst_has_operand(i->type))
     {
-        if (i->type == INST_NATIVE)
-        {
-            fprintf(f, SV_Fmt, SV_Arg(state->native_labels[i->operand.as_u64]));
-        }
-        else if (i->type == INST_CALL || i->type == INST_JMP || i->type == INST_JMP_IF)
-        {
-            fprintf(f, SV_Fmt, SV_Arg(state->labels[i->operand.as_u64]));
-        }
-        else
-        {
-            fprintf(f, "%" PRIu64, i->operand.as_i64);
+        fprintf(f, "%" PRIu64, i->operand.as_i64);
+    }
+}
+
+Bdb_Breakpoint *bdb_find_breakpoint_by_addr(Bdb_State *bdb, Inst_Addr addr)
+{
+    for (size_t i = 0; i < bdb->breakpoints_size; ++i) {
+        if (bdb->breakpoints[i].addr == addr) {
+            return &bdb->breakpoints[i];
         }
     }
+
+    return NULL;
 }
 
 void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
     assert(state);
+    assert(state->breakpoints_size < BDB_BREAKPOINTS_CAPACITY);
 
-    if (addr > state->bm.program_size)
-    {
-        fprintf(stderr, "ERR : Symbol out of program\n");
-        return;
-    }
-
-    if (addr > BM_PROGRAM_CAPACITY)
-    {
-        fprintf(stderr, "ERR : Symbol out of memory\n");
-        return;
-    }
-
-    if (state->breakpoints[addr].is_enabled)
-    {
+    if (bdb_find_breakpoint_by_addr(state, addr)) {
         fprintf(stderr, "ERR : Breakpoint already set\n");
         return;
     }
 
-    state->breakpoints[addr].is_enabled = 1;
+    state->breakpoints[state->breakpoints_size].is_broken = 0;
+    state->breakpoints[state->breakpoints_size].label = SV_NULL;
+    state->breakpoints[state->breakpoints_size].addr = addr;
+    state->breakpoints_size += 1;
 }
 
 void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
 {
     assert(state);
 
-    if (addr > state->bm.program_size)
-    {
-        fprintf(stderr, "ERR : Symbol out of program\n");
-        return;
-    }
-
-    if (addr > BM_PROGRAM_CAPACITY)
-    {
-        fprintf(stderr, "ERR : Symbol out of memory\n");
-        return;
-    }
-
-    if (!state->breakpoints[addr].is_enabled)
-    {
+    Bdb_Breakpoint *breakpoint = bdb_find_breakpoint_by_addr(state, addr);
+    if (breakpoint == NULL) {
         fprintf(stderr, "ERR : No such breakpoint\n");
         return;
     }
 
-    state->breakpoints[addr].is_enabled = 0;
+    assert(breakpoint <= state->breakpoints);
+
+    state->breakpoints_size -= 1;
+    memmove(breakpoint,
+            breakpoint + 1,
+            state->breakpoints_size - (size_t) (state->breakpoints - breakpoint));
 }
 
 Bdb_Err bdb_continue(Bdb_State *state)
@@ -205,13 +166,14 @@ Bdb_Err bdb_continue(Bdb_State *state)
             }
         }
 
-        Bdb_Breakpoint *bp = &state->breakpoints[state->bm.ip];
-        if (!bp->is_broken && bp->is_enabled)
+        Bdb_Breakpoint *bp = bdb_find_breakpoint_by_addr(state, state->bm.ip);
+        if (bp != NULL && !bp->is_broken)
         {
             fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
-            if (state->labels[state->bm.ip].data)
+
+            if (bp->label.data)
             {
-                fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(state->labels[state->bm.ip]));
+                fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
             }
 
             fprintf(stdout, "\n");
@@ -289,7 +251,8 @@ Bdb_Err bdb_step_instr(Bdb_State *state)
     }
 }
 
-Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
+// TODO: bdb should be able to break on BASM expression
+Bdb_Err bdb_parse_binding_or_value(Bdb_State *st, String_View addr, Word *out)
 {
     assert(st);
     assert(out);
@@ -301,110 +264,77 @@ Bdb_Err bdb_parse_label_or_addr(Bdb_State *st, String_View addr, Inst_Addr *out)
 
     char *endptr = NULL;
 
-    *out = strtoull(addr.data, &endptr, 10);
-    if (endptr != addr.data + addr.count)
-    {
-        if (bdb_find_addr_of_label(st, addr, out) == BDB_FAIL)
+    uint64_t value = strtoull(addr.data, &endptr, 10);
+    if (endptr != addr.data + addr.count) {
+        Bdb_Binding binding = {0};
+
+        if (bdb_resolve_binding(st, addr, &binding) == BDB_FAIL)
         {
             return BDB_FAIL;
         }
+
+        value = binding.value.as_u64;
     }
+
+    if (out) out->as_u64 = value;
 
     return BDB_OK;
 }
 
-Bdb_Err bdb_print_location(Bdb_State *state)
+void bdb_print_location(Bdb_State *state)
 {
     assert(state);
 
     Inst_Addr ip = state->bm.ip;
+    const Bdb_Binding *location = NULL;
 
-    Inst_Addr loc = ip;
-    while (loc > 0 && state->labels[loc].data == NULL) {
-        --loc;
+    for (size_t i = 0; i < state->bindings_size; ++i) {
+        const Bdb_Binding *current = &state->bindings[i];
+        if (current->kind == BINDING_LABEL && current->value.as_u64 <= ip) {
+            if (location == NULL || location->value.as_u64 > current->value.as_u64) {
+                location = current;
+            }
+        }
     }
 
-    if (state->labels[loc].data) {
-        Inst_Addr offset = ip - loc;
+    if (location) {
         printf("At address %"PRIu64": "SV_Fmt"+%"PRIu64"\n",
-               ip, SV_Arg(state->labels[loc]), offset);
+               ip, SV_Arg(location->name), location->value.as_u64);
     } else {
         printf("ip = %"PRIu64"\n"
                "WARN : No location info available\n",
                ip);
     }
-
-    return BDB_OK;
-}
-
-Bdb_Err bdb_parse_label_addr_or_constant(Bdb_State *st, String_View in, Word *out)
-{
-    if (bdb_parse_label_or_addr(st, in, &out->as_u64) == BDB_OK)
-    {
-        return BDB_OK;
-    }
-
-    for (size_t i = 0; i < st->constants_size; ++i) {
-        if (sv_eq(in, st->constants[i].name))
-        {
-            *out = st->constants[i].value;
-            return BDB_OK;
-        }
-    }
-
-    return BDB_FAIL;
 }
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
-    /*
-     * We don't want to remove breakpoints that the user may have
-     * already set. So what we have to do here, is to find all the
-     * labels of previously set breakpoints and store those somewhere.
-     * Then we can safely zero out the bdb state and reload the
-     * program. Now possibly shifted labels can be used as breakpoints
-     * again by searching through the old ones and finding the label
-     * in the new program.
-     */
+    bm_load_program_from_file(&state->bm, state->program_file_path);
+    bm_load_standard_natives(&state->bm);
 
-    /* Store the pointers to the old arena. We lose access to them
-     * when we do the call to bdb_state_init.
-     */
+    arena_clean(&state->sym_arena);
+    state->bindings_size = 0;
+    state->is_in_step_over_mode = 0;
+    state->step_over_mode_call_depth = 0;
 
-    Arena old_arena;
-    String_View old_labels[BM_PROGRAM_CAPACITY];
-    Bdb_Breakpoint old_breakpoints[BM_PROGRAM_CAPACITY];
-
-    memcpy(&old_arena, &state->arena, sizeof(Arena));
-    memcpy(old_labels, state->labels, sizeof(String_View) * BM_PROGRAM_CAPACITY);
-    memcpy(old_breakpoints, state->breakpoints, sizeof(Bdb_Breakpoint) * BM_PROGRAM_CAPACITY);
-
-    const char *program_name = state->cood_file_name.data;
-
-    /*
-     *  Reinitialize the debugger
-     */
-    *state = (Bdb_State){0};
-    if (bdb_state_init(state, program_name) == BDB_FAIL)
-    {
-        fprintf(stderr, "ERR : Unable to reset the debugger\n");
+    fprintf(stdout, "INFO : Loading debug symbols...\n");
+    if (bdb_load_symtab(state, state->program_file_path) == BDB_FAIL) {
         return BDB_FAIL;
     }
 
-    for (size_t old_label_addr = 0; old_label_addr < BM_PROGRAM_CAPACITY; ++old_label_addr) {
-        if (old_breakpoints[old_label_addr].is_enabled && old_labels[old_label_addr].data)
-        {
-            for (size_t new_addr = 0; new_addr < BM_PROGRAM_CAPACITY; ++new_addr) {
-                if (sv_eq(state->labels[new_addr], old_labels[old_label_addr]))
-                {
-                    state->breakpoints[new_addr].is_enabled = 1;
-                    break; /* the inner for loop */
-                }
+    // Update addresses of breakpoints on labels
+    for (size_t i = 0; i < state->breakpoints_size; ++i) {
+        if (state->breakpoints[i].label.data) {
+            Bdb_Binding binding = {0};
+            if (bdb_resolve_binding(state, state->breakpoints[i].label, &binding) == BDB_OK) {
+                state->breakpoints[i].addr = binding.value.as_u64;
+            } else {
+                fprintf(stderr, "WARNING: label `"SV_Fmt"` got removed\n",
+                        SV_Arg(state->breakpoints[i].label));
+                state->breakpoints[i].label = SV_NULL;
             }
         }
     }
-
-    arena_free(&old_arena);
 
     return BDB_OK;
 }
@@ -453,14 +383,14 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View count_sv = arguments;
 
         Word where = word_u64(0);
-        if (bdb_parse_label_addr_or_constant(state, where_sv, &where) == BDB_FAIL)
+        if (bdb_parse_binding_or_value(state, where_sv, &where) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(where_sv));
             return BDB_FAIL;
         }
 
         Word count = word_u64(0);
-        if (bdb_parse_label_addr_or_constant(state, count_sv, &count) == BDB_FAIL)
+        if (bdb_parse_binding_or_value(state, count_sv, &count) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(count_sv));
             return BDB_FAIL;
@@ -487,35 +417,35 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
      */
     case 'w':
     {
-        return bdb_print_location(state);
+        bdb_print_location(state);
     } break;
     case 'b':
     {
-        Inst_Addr break_addr;
+        Word break_addr;
         String_View addr = sv_trim(arguments);
 
-        if (bdb_parse_label_or_addr(state, addr, &break_addr) == BDB_FAIL)
+        if (bdb_parse_binding_or_value(state, addr, &break_addr) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address or label\n");
             return BDB_FAIL;
         }
 
-        bdb_add_breakpoint(state, break_addr);
-        fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr);
+        bdb_add_breakpoint(state, break_addr.as_u64);
+        fprintf(stdout, "INFO : Breakpoint set at %"PRIu64"\n", break_addr.as_u64);
     } break;
     case 'd':
     {
-        Inst_Addr break_addr;
+        Word break_addr;
         String_View addr = sv_trim(arguments);
 
-        if (bdb_parse_label_or_addr(state, addr, &break_addr) == BDB_FAIL)
+        if (bdb_parse_binding_or_value(state, addr, &break_addr) == BDB_FAIL)
         {
             fprintf(stderr, "ERR : Cannot parse address or label\n");
             return BDB_FAIL;
         }
 
-        bdb_delete_breakpoint(state, break_addr);
-        fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr);
+        bdb_delete_breakpoint(state, break_addr.as_u64);
+        fprintf(stdout, "INFO : Deleted breakpoint at %"PRIu64"\n", break_addr.as_u64);
     } break;
     case 'r':
     {
@@ -668,7 +598,8 @@ int main(int argc, char **argv)
         }
     }
 
-    arena_free(&state.arena);
+    arena_free(&state.sym_arena);
+    arena_free(&state.break_arena);
 
     return EXIT_SUCCESS;
 }
