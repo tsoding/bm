@@ -44,12 +44,17 @@ typedef struct Bdb_State {
     int is_in_step_over_mode;
     unsigned int step_over_mode_call_depth;
 
-    // for any strings from the .sym file or related to it
-    Arena sym_arena;
-    // for labels of breakpoints
-    Arena break_arena;
-    // for temporary things that will be cleaned up on each iterations of "event loop"
+    // For temporary things that will be cleaned up on each iterations of "event loop".
+    // Lifetime: single iterations of the event loop
     Arena tmp_arena;
+
+    // For any strings from the .sym file or related to it.
+    // Lifetime: objects that live for a single execution session
+    Arena sym_arena;
+
+    // For labels of breakpoints.
+    // Lifetime: objects that survive even after bdb_reset()
+    Arena break_arena;
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *program_file_path);
