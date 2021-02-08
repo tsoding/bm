@@ -168,25 +168,25 @@ Bdb_Err bdb_continue(Bdb_State *state)
         }
 
         Bdb_Breakpoint *bp = bdb_find_breakpoint_by_addr(state, state->bm.ip);
-        if (bp != NULL && !bp->is_broken)
-        {
-            fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
+        if (bp != NULL) {
+            if (!bp->is_broken) {
+                fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
 
-            if (bp->label.data)
-            {
-                fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
+                // TODO: hitting breakpoint does not print the label anymore
+                if (bp->label.data)
+                {
+                    fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
+                }
+
+                fprintf(stdout, "\n");
+                bp->is_broken = 1;
+
+                state->step_over_mode_call_depth = 0;
+                state->is_in_step_over_mode = 0;
+
+                return BDB_OK;
             }
-
-            fprintf(stdout, "\n");
-            bp->is_broken = 1;
-
-            state->step_over_mode_call_depth = 0;
-            state->is_in_step_over_mode = 0;
-
-            return BDB_OK;
         }
-
-        bp->is_broken = 0;
 
         Err err = bm_execute_inst(&state->bm);
         if (err)
