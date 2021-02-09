@@ -129,9 +129,9 @@ void bdb_delete_breakpoint(Bdb_State *state, Inst_Addr addr)
     assert(breakpoint <= state->breakpoints);
 
     state->breakpoints_size -= 1;
-    memmove(breakpoint,
-            breakpoint + 1,
-            state->breakpoints_size - (size_t) (state->breakpoints - breakpoint));
+
+    const size_t n = (state->breakpoints_size - (size_t) (state->breakpoints - breakpoint)) * sizeof(state->breakpoints[0]);
+    memmove(breakpoint, breakpoint + 1, n);
 
     if (state->breakpoints_size == 0) {
         // NOTE: since all of the breakpoints are removed nothing from break_arena
