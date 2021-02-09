@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 
     if (argc == 0) {
         print_help(stderr);
-        fprintf(stderr, "ERROR: no commands were provided");
+        fprintf(stderr, "ERROR: no commands were provided\n");
         exit(1);
     }
 
