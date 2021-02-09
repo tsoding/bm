@@ -72,7 +72,7 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
     return BDB_OK;
 }
 
-// TODO: bdb_print_instr should take information from the actual source code
+// TODO(#187): bdb_print_instr should take information from the actual source code
 void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
     (void) state;               // NOTE: don't forget to remove this
