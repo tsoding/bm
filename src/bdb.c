@@ -181,6 +181,10 @@ Bdb_Err bdb_continue(Bdb_State *state)
 
                 return BDB_OK;
             }
+            else
+            {
+                bp->is_broken = 0;
+            }
         }
 
         Err err = bm_execute_inst(&state->bm);
