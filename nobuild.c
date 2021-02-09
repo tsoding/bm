@@ -126,7 +126,7 @@ Command commands[] = {
     {.name = "examples", .description = "Build examples", .run = build_examples},
     {.name = "test", .description = "Run the tests", .run = run_tests},
     {.name = "record", .description = "Capture the current output of examples as the expected on for the tests", .run = record_tests},
-    {.name = "fmt", .description = "Format the source code", .run = fmt},
+    {.name = "fmt", .description = "Format the source code using astyle", .run = fmt},
     {.name = "help", .description = "Show this help message", .run = help_command},
 };
 
