@@ -1,15 +1,21 @@
 %include "./examples/natives.hasm"
 %const hello "Hello, World" ; message
 
+;; TODO(#192): no %assert translation directive
+;; ---
+;; %assert len(hello) > 0
+
 main:
     push hello
-    push 12
-    plusi
+    push len(hello)
+    native write
+
+    push hello
     push 10
     write8
-    
+
     push hello
-    push 13
+    push 1
     native write
     
     halt
