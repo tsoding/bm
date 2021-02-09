@@ -1,0 +1,20 @@
+name: Check formatting
+
+on: [push, pull_request]
+
+jobs:
+  build-linux-gcc:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: install 3rd party dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install astyle
+      - name: bootstrap building tool
+      - run: |
+          cc -o nobuild nobuild.c
+      - name: validate formatting
+      - run: |
+          ./nobuild fmt
+          git diff --exit-code
