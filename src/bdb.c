@@ -272,7 +272,7 @@ Bdb_Err bdb_parse_word(Bdb_State *st, String_View sv, Word *output)
     return BDB_OK;
 }
 
-// TODO: bdb should be able to break on BASM expression
+// TODO(#188): bdb should be able to break on BASM expression
 Bdb_Err bdb_parse_binding_or_word(Bdb_State *st, String_View input, Word *output)
 {
     if (bdb_parse_word(st, input, output) == BDB_FAIL) {
