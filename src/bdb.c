@@ -1,8 +1,11 @@
 /*
  * BDB - Debugger for the Birtual Machine
- * Copyright 2020 by Nico Sonack
+ * Copyright 2020, 2021 by Nico Sonack and Alexey Kutepov
  *
  * Contribution to https://github.com/tsoding/bm
+ *
+ * License: MIT License. Please refer to the LICENSE file attached to
+ * this distribution for more details.
  */
 
 #include <assert.h>
