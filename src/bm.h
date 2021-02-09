@@ -411,93 +411,162 @@ Err native_write(Bm *bm);
 
 Word word_u64(uint64_t u64)
 {
-    return (Word) { .as_u64 = u64 };
+    return (Word) {
+        .as_u64 = u64
+    };
 }
 
 Word word_i64(int64_t i64)
 {
-    return (Word) { .as_i64 = i64 };
+    return (Word) {
+        .as_i64 = i64
+    };
 }
 
 Word word_f64(double f64)
 {
-    return (Word) { .as_f64 = f64 };
+    return (Word) {
+        .as_f64 = f64
+    };
 }
 
 Word word_ptr(void *ptr)
 {
-    return (Word) { .as_ptr = ptr };
+    return (Word) {
+        .as_ptr = ptr
+    };
 }
 
 
 bool inst_has_operand(Inst_Type type)
 {
     switch (type) {
-    case INST_NOP:     return false;
-    case INST_PUSH:    return true;
-    case INST_DROP:    return false;
-    case INST_DUP:     return true;
-    case INST_PLUSI:   return false;
-    case INST_MINUSI:  return false;
-    case INST_MULTI:   return false;
-    case INST_DIVI:    return false;
-    case INST_MODI:    return false;
-    case INST_MULTU:   return false;
-    case INST_DIVU:    return false;
-    case INST_MODU:    return false;
-    case INST_PLUSF:   return false;
-    case INST_MINUSF:  return false;
-    case INST_MULTF:   return false;
-    case INST_DIVF:    return false;
-    case INST_JMP:     return true;
-    case INST_JMP_IF:  return true;
-    case INST_HALT:    return false;
-    case INST_SWAP:    return true;
-    case INST_NOT:     return false;
-    case INST_EQF:     return false;
-    case INST_GEF:     return false;
-    case INST_GTF:     return false;
-    case INST_LEF:     return false;
-    case INST_LTF:     return false;
-    case INST_NEF:     return false;
+    case INST_NOP:
+        return false;
+    case INST_PUSH:
+        return true;
+    case INST_DROP:
+        return false;
+    case INST_DUP:
+        return true;
+    case INST_PLUSI:
+        return false;
+    case INST_MINUSI:
+        return false;
+    case INST_MULTI:
+        return false;
+    case INST_DIVI:
+        return false;
+    case INST_MODI:
+        return false;
+    case INST_MULTU:
+        return false;
+    case INST_DIVU:
+        return false;
+    case INST_MODU:
+        return false;
+    case INST_PLUSF:
+        return false;
+    case INST_MINUSF:
+        return false;
+    case INST_MULTF:
+        return false;
+    case INST_DIVF:
+        return false;
+    case INST_JMP:
+        return true;
+    case INST_JMP_IF:
+        return true;
+    case INST_HALT:
+        return false;
+    case INST_SWAP:
+        return true;
+    case INST_NOT:
+        return false;
+    case INST_EQF:
+        return false;
+    case INST_GEF:
+        return false;
+    case INST_GTF:
+        return false;
+    case INST_LEF:
+        return false;
+    case INST_LTF:
+        return false;
+    case INST_NEF:
+        return false;
 
-    case INST_EQI:     return false;
-    case INST_GEI:     return false;
-    case INST_GTI:     return false;
-    case INST_LEI:     return false;
-    case INST_LTI:     return false;
-    case INST_NEI:     return false;
+    case INST_EQI:
+        return false;
+    case INST_GEI:
+        return false;
+    case INST_GTI:
+        return false;
+    case INST_LEI:
+        return false;
+    case INST_LTI:
+        return false;
+    case INST_NEI:
+        return false;
 
-    case INST_EQU:     return false;
-    case INST_GEU:     return false;
-    case INST_GTU:     return false;
-    case INST_LEU:     return false;
-    case INST_LTU:     return false;
-    case INST_NEU:     return false;
+    case INST_EQU:
+        return false;
+    case INST_GEU:
+        return false;
+    case INST_GTU:
+        return false;
+    case INST_LEU:
+        return false;
+    case INST_LTU:
+        return false;
+    case INST_NEU:
+        return false;
 
-    case INST_RET:     return false;
-    case INST_CALL:    return true;
-    case INST_NATIVE:  return true;
-    case INST_ANDB:    return false;
-    case INST_ORB:     return false;
-    case INST_XOR:     return false;
-    case INST_SHR:     return false;
-    case INST_SHL:     return false;
-    case INST_NOTB:    return false;
-    case INST_READ8:   return false;
-    case INST_READ16:  return false;
-    case INST_READ32:  return false;
-    case INST_READ64:  return false;
-    case INST_WRITE8:  return false;
-    case INST_WRITE16: return false;
-    case INST_WRITE32: return false;
-    case INST_WRITE64: return false;
-    case INST_I2F:     return false;
-    case INST_U2F:     return false;
-    case INST_F2I:     return false;
-    case INST_F2U:     return false;
+    case INST_RET:
+        return false;
+    case INST_CALL:
+        return true;
+    case INST_NATIVE:
+        return true;
+    case INST_ANDB:
+        return false;
+    case INST_ORB:
+        return false;
+    case INST_XOR:
+        return false;
+    case INST_SHR:
+        return false;
+    case INST_SHL:
+        return false;
+    case INST_NOTB:
+        return false;
+    case INST_READ8:
+        return false;
+    case INST_READ16:
+        return false;
+    case INST_READ32:
+        return false;
+    case INST_READ64:
+        return false;
+    case INST_WRITE8:
+        return false;
+    case INST_WRITE16:
+        return false;
+    case INST_WRITE32:
+        return false;
+    case INST_WRITE64:
+        return false;
+    case INST_I2F:
+        return false;
+    case INST_U2F:
+        return false;
+    case INST_F2I:
+        return false;
+    case INST_F2U:
+        return false;
     case NUMBER_OF_INSTS:
-    default: assert(false && "inst_has_operand: unreachable");
+    default:
+        assert(false && "inst_has_operand: unreachable");
         exit(1);
     }
 }
@@ -517,71 +586,132 @@ bool inst_by_name(String_View name, Inst_Type *output)
 const char *inst_name(Inst_Type type)
 {
     switch (type) {
-    case INST_NOP:     return "nop";
-    case INST_PUSH:    return "push";
-    case INST_DROP:    return "drop";
-    case INST_DUP:     return "dup";
-    case INST_PLUSI:   return "plusi";
-    case INST_MINUSI:  return "minusi";
-    case INST_MULTI:   return "multi";
-    case INST_DIVI:    return "divi";
-    case INST_MODI:    return "modi";
-    case INST_MULTU:   return "multu";
-    case INST_DIVU:    return "divu";
-    case INST_MODU:    return "modu";
-    case INST_PLUSF:   return "plusf";
-    case INST_MINUSF:  return "minusf";
-    case INST_MULTF:   return "multf";
-    case INST_DIVF:    return "divf";
-    case INST_JMP:     return "jmp";
-    case INST_JMP_IF:  return "jmp_if";
-    case INST_HALT:    return "halt";
-    case INST_SWAP:    return "swap";
-    case INST_NOT:     return "not";
+    case INST_NOP:
+        return "nop";
+    case INST_PUSH:
+        return "push";
+    case INST_DROP:
+        return "drop";
+    case INST_DUP:
+        return "dup";
+    case INST_PLUSI:
+        return "plusi";
+    case INST_MINUSI:
+        return "minusi";
+    case INST_MULTI:
+        return "multi";
+    case INST_DIVI:
+        return "divi";
+    case INST_MODI:
+        return "modi";
+    case INST_MULTU:
+        return "multu";
+    case INST_DIVU:
+        return "divu";
+    case INST_MODU:
+        return "modu";
+    case INST_PLUSF:
+        return "plusf";
+    case INST_MINUSF:
+        return "minusf";
+    case INST_MULTF:
+        return "multf";
+    case INST_DIVF:
+        return "divf";
+    case INST_JMP:
+        return "jmp";
+    case INST_JMP_IF:
+        return "jmp_if";
+    case INST_HALT:
+        return "halt";
+    case INST_SWAP:
+        return "swap";
+    case INST_NOT:
+        return "not";
 
-    case INST_EQI:     return "eqi";
-    case INST_GEI:     return "gei";
-    case INST_GTI:     return "gti";
-    case INST_LEI:     return "lei";
-    case INST_LTI:     return "lti";
-    case INST_NEI:     return "nei";
+    case INST_EQI:
+        return "eqi";
+    case INST_GEI:
+        return "gei";
+    case INST_GTI:
+        return "gti";
+    case INST_LEI:
+        return "lei";
+    case INST_LTI:
+        return "lti";
+    case INST_NEI:
+        return "nei";
 
-    case INST_EQU:     return "equ";
-    case INST_GEU:     return "geu";
-    case INST_GTU:     return "gtu";
-    case INST_LEU:     return "leu";
-    case INST_LTU:     return "ltu";
-    case INST_NEU:     return "neu";
+    case INST_EQU:
+        return "equ";
+    case INST_GEU:
+        return "geu";
+    case INST_GTU:
+        return "gtu";
+    case INST_LEU:
+        return "leu";
+    case INST_LTU:
+        return "ltu";
+    case INST_NEU:
+        return "neu";
 
-    case INST_EQF:     return "eqf";
-    case INST_GEF:     return "gef";
-    case INST_GTF:     return "gtf";
-    case INST_LEF:     return "lef";
-    case INST_LTF:     return "ltf";
-    case INST_NEF:     return "nef";
-    case INST_RET:     return "ret";
-    case INST_CALL:    return "call";
-    case INST_NATIVE:  return "native";
-    case INST_ANDB:    return "andb";
-    case INST_ORB:     return "orb";
-    case INST_XOR:     return "xor";
-    case INST_SHR:     return "shr";
-    case INST_SHL:     return "shl";
-    case INST_NOTB:    return "notb";
-    case INST_READ8:   return "read8";
-    case INST_READ16:  return "read16";
-    case INST_READ32:  return "read32";
-    case INST_READ64:  return "read64";
-    case INST_WRITE8:  return "write8";
-    case INST_WRITE16: return "write16";
-    case INST_WRITE32: return "write32";
-    case INST_WRITE64: return "write64";
-    case INST_I2F:     return "i2f";
-    case INST_U2F:     return "u2f";
-    case INST_F2I:     return "f2i";
-    case INST_F2U:     return "f2u";
+    case INST_EQF:
+        return "eqf";
+    case INST_GEF:
+        return "gef";
+    case INST_GTF:
+        return "gtf";
+    case INST_LEF:
+        return "lef";
+    case INST_LTF:
+        return "ltf";
+    case INST_NEF:
+        return "nef";
+    case INST_RET:
+        return "ret";
+    case INST_CALL:
+        return "call";
+    case INST_NATIVE:
+        return "native";
+    case INST_ANDB:
+        return "andb";
+    case INST_ORB:
+        return "orb";
+    case INST_XOR:
+        return "xor";
+    case INST_SHR:
+        return "shr";
+    case INST_SHL:
+        return "shl";
+    case INST_NOTB:
+        return "notb";
+    case INST_READ8:
+        return "read8";
+    case INST_READ16:
+        return "read16";
+    case INST_READ32:
+        return "read32";
+    case INST_READ64:
+        return "read64";
+    case INST_WRITE8:
+        return "write8";
+    case INST_WRITE16:
+        return "write16";
+    case INST_WRITE32:
+        return "write32";
+    case INST_WRITE64:
+        return "write64";
+    case INST_I2F:
+        return "i2f";
+    case INST_U2F:
+        return "u2f";
+    case INST_F2I:
+        return "f2i";
+    case INST_F2U:
+        return "f2u";
     case NUMBER_OF_INSTS:
-    default: assert(false && "inst_name: unreachable");
+    default:
+        assert(false && "inst_name: unreachable");
         exit(1);
     }
 }
@@ -701,28 +831,32 @@ Err bm_execute_inst(Bm *bm)
             return ERR_DIV_BY_ZERO;
         }
         BINARY_OP(bm, i64, i64, /);
-    } break;
+    }
+    break;
 
     case INST_DIVU: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
         BINARY_OP(bm, u64, u64, /);
-    } break;
+    }
+    break;
 
     case INST_MODI: {
         if (bm->stack[bm->stack_size - 1].as_i64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
         BINARY_OP(bm, i64, i64, %);
-    } break;
+    }
+    break;
 
     case INST_MODU: {
         if (bm->stack[bm->stack_size - 1].as_u64 == 0) {
             return ERR_DIV_BY_ZERO;
         }
         BINARY_OP(bm, u64, u64, %);
-    } break;
+    }
+    break;
 
     case INST_PLUSF:
         BINARY_OP(bm, f64, f64, +);
@@ -944,7 +1078,8 @@ Err bm_execute_inst(Bm *bm)
         }
         bm->stack[bm->stack_size - 1].as_u64 = bm->memory[addr];
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_READ16: {
         if (bm->stack_size < 1) {
@@ -956,7 +1091,8 @@ Err bm_execute_inst(Bm *bm)
         }
         bm->stack[bm->stack_size - 1].as_u64 = *(uint16_t*)&bm->memory[addr];
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_READ32: {
         if (bm->stack_size < 1) {
@@ -968,7 +1104,8 @@ Err bm_execute_inst(Bm *bm)
         }
         bm->stack[bm->stack_size - 1].as_u64 = *(uint32_t*)&bm->memory[addr];
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_READ64: {
         if (bm->stack_size < 1) {
@@ -980,7 +1117,8 @@ Err bm_execute_inst(Bm *bm)
         }
         bm->stack[bm->stack_size - 1].as_u64 = *(uint64_t*)&bm->memory[addr];
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_WRITE8: {
         if (bm->stack_size < 2) {
@@ -993,7 +1131,8 @@ Err bm_execute_inst(Bm *bm)
         bm->memory[addr] = (uint8_t) bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 2;
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_WRITE16: {
         if (bm->stack_size < 2) {
@@ -1006,7 +1145,8 @@ Err bm_execute_inst(Bm *bm)
         *(uint16_t*)&bm->memory[addr] = (uint16_t) bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 2;
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_WRITE32: {
         if (bm->stack_size < 2) {
@@ -1019,7 +1159,8 @@ Err bm_execute_inst(Bm *bm)
         *(uint32_t*)&bm->memory[addr] = (uint32_t) bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 2;
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_WRITE64: {
         if (bm->stack_size < 2) {
@@ -1032,7 +1173,8 @@ Err bm_execute_inst(Bm *bm)
         *(uint64_t*)&bm->memory[addr] = bm->stack[bm->stack_size - 1].as_u64;
         bm->stack_size -= 2;
         bm->ip += 1;
-    } break;
+    }
+    break;
 
     case INST_I2F:
         CAST_OP(bm, i64, f64, (double));
@@ -1087,7 +1229,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     FILE *f = fopen(file_path, "rb");
     if (f == NULL) {
         fprintf(stderr, "ERROR: Could not open file `%s`: %s\n",
-            file_path, strerror(errno));
+                file_path, strerror(errno));
         exit(1);
     }
 
@@ -1393,20 +1535,20 @@ void *arena_alloc(Arena *arena, size_t size)
         assert(arena->first == NULL);
 
         Region *region = region_create(
-            size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
+                             size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
 
         arena->last = region;
         arena->first = region;
     }
 
     while (arena->last->size + size > arena->last->capacity &&
-           arena->last->next) {
+            arena->last->next) {
         arena->last = arena->last->next;
     }
 
     if (arena->last->size + size > arena->last->capacity) {
         Region *region = region_create(
-            size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
+                             size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
 
         arena->last->next = region;
         arena->last = region;
@@ -1420,9 +1562,8 @@ void *arena_alloc(Arena *arena, size_t size)
 void arena_clean(Arena *arena)
 {
     for (Region *iter = arena->first;
-         iter != NULL;
-         iter = iter->next)
-    {
+            iter != NULL;
+            iter = iter->next) {
         iter->size = 0;
     }
 
@@ -1448,9 +1589,8 @@ void arena_summary(Arena *arena)
     }
 
     for (Region *iter = arena->first;
-         iter != NULL;
-         iter = iter->next)
-    {
+            iter != NULL;
+            iter = iter->next) {
         printf("[%zu/%zu] -> ", iter->size, iter->capacity);
     }
     printf("\n");
@@ -1520,7 +1660,9 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Loca
 {
     assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
     basm->deferred_operands[basm->deferred_operands_size++] =
-        (Deferred_Operand) {.addr = addr, .expr = expr, .location = location};
+    (Deferred_Operand) {
+        .addr = addr, .expr = expr, .location = location
+    };
 }
 
 Word basm_push_string_to_memory(Basm *basm, String_View sv)
@@ -1541,12 +1683,15 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv)
 const char *binding_kind_as_cstr(Binding_Kind kind)
 {
     switch (kind) {
-        case BINDING_CONST: return "const";
-        case BINDING_LABEL: return "label";
-        case BINDING_NATIVE: return "native";
-        default:
-            assert(false && "binding_kind_as_cstr: unreachable");
-            exit(0);
+    case BINDING_CONST:
+        return "const";
+    case BINDING_LABEL:
+        return "label";
+    case BINDING_NATIVE:
+        return "native";
+    default:
+        assert(false && "binding_kind_as_cstr: unreachable");
+        exit(0);
     }
 }
 
@@ -1800,8 +1945,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
         Binding *binding = basm_resolve_binding(
-            basm,
-            basm->deferred_entry_binding_name);
+                               basm,
+                               basm->deferred_entry_binding_name);
         if (binding == NULL) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
                     FL_Arg(basm->entry_location),
@@ -1822,7 +1967,7 @@ Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
 {
     if (binding->status == BINDING_EVALUATING) {
         fprintf(stderr, FL_Fmt": ERROR: cycling binding definition.\n",
-        FL_Arg(binding->location));
+                FL_Arg(binding->location));
         exit(1);
     }
 
@@ -1844,7 +1989,8 @@ static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location 
         Word right = basm_expr_eval(basm, binary_op->right, location);
         // TODO(#183): compile-time sum can only work with integers
         return word_u64(left.as_u64 + right.as_u64);
-    } break;
+    }
+    break;
 
     default: {
         assert(false && "basm_binary_op_eval: unreachable");
@@ -1878,16 +2024,19 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
         }
 
         return basm_binding_eval(basm, binding, location);
-    } break;
+    }
+    break;
 
     case EXPR_KIND_BINARY_OP: {
         return basm_binary_op_eval(basm, expr.value.as_binary_op, location);
-    } break;
+    }
+    break;
 
     default: {
         assert(false && "basm_expr_eval: unreachable");
         exit(1);
-    } break;
+    }
+    break;
     }
 }
 
@@ -2060,12 +2209,18 @@ Err native_write(Bm *bm)
 const char *token_kind_name(Token_Kind kind)
 {
     switch (kind) {
-    case TOKEN_KIND_STR: return "string";
-    case TOKEN_KIND_CHAR: return "character";
-    case TOKEN_KIND_PLUS: return "plus";
-    case TOKEN_KIND_MINUS: return "minus";
-    case TOKEN_KIND_NUMBER: return "number";
-    case TOKEN_KIND_NAME: return "name";
+    case TOKEN_KIND_STR:
+        return "string";
+    case TOKEN_KIND_CHAR:
+        return "character";
+    case TOKEN_KIND_PLUS:
+        return "plus";
+    case TOKEN_KIND_MINUS:
+        return "minus";
+    case TOKEN_KIND_NUMBER:
+        return "number";
+    case TOKEN_KIND_NAME:
+        return "name";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
@@ -2105,17 +2260,19 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
         switch (*source.data) {
         case '+': {
             tokens_push(tokens, (Token) {
-               .kind = TOKEN_KIND_PLUS,
-               .text = sv_chop_left(&source, 1)
+                .kind = TOKEN_KIND_PLUS,
+                .text = sv_chop_left(&source, 1)
             });
-        } break;
+        }
+        break;
 
         case '-': {
             tokens_push(tokens, (Token) {
                 .kind = TOKEN_KIND_MINUS,
                 .text = sv_chop_left(&source, 1)
             });
-        } break;
+        }
+        break;
 
         case '"': {
             sv_chop_left(&source, 1);
@@ -2125,13 +2282,16 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
             if (sv_index_of(source, '"', &index)) {
                 String_View text = sv_chop_left(&source, index);
                 sv_chop_left(&source, 1);
-                tokens_push(tokens, (Token) {.kind = TOKEN_KIND_STR, .text = text});
+                tokens_push(tokens, (Token) {
+                    .kind = TOKEN_KIND_STR, .text = text
+                });
             } else {
                 fprintf(stderr, FL_Fmt": ERROR: Could not find closing \"\n",
                         FL_Arg(location));
                 exit(1);
             }
-        } break;
+        }
+        break;
 
         case '\'': {
             sv_chop_left(&source, 1);
@@ -2141,13 +2301,16 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
             if (sv_index_of(source, '\'', &index)) {
                 String_View text = sv_chop_left(&source, index);
                 sv_chop_left(&source, 1);
-                tokens_push(tokens, (Token) {.kind = TOKEN_KIND_CHAR, .text = text});
+                tokens_push(tokens, (Token) {
+                    .kind = TOKEN_KIND_CHAR, .text = text
+                });
             } else {
                 fprintf(stderr, FL_Fmt": ERROR: Could not find closing \'\n",
                         FL_Arg(location));
                 exit(1);
             }
-        } break;
+        }
+        break;
 
         default: {
             if (isalpha(*source.data)) {
@@ -2266,7 +2429,8 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
         result.kind = EXPR_KIND_LIT_STR;
         result.value.as_lit_str = tokens->elems->text;
         tv_chop_left(tokens, 1);
-    } break;
+    }
+    break;
 
     case TOKEN_KIND_CHAR: {
         if (tokens->elems->text.count != 1) {
@@ -2279,17 +2443,20 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
         result.kind = EXPR_KIND_LIT_CHAR;
         result.value.as_lit_char = tokens->elems->text.data[0];
         tv_chop_left(tokens, 1);
-    } break;
+    }
+    break;
 
     case TOKEN_KIND_NAME: {
         result.value.as_binding = tokens->elems->text;
         result.kind = EXPR_KIND_BINDING;
         tv_chop_left(tokens, 1);
-    } break;
+    }
+    break;
 
     case TOKEN_KIND_NUMBER: {
         return parse_number_from_tokens(arena, tokens, location);
-    } break;
+    }
+    break;
 
     case TOKEN_KIND_MINUS: {
         tv_chop_left(tokens, 1);
@@ -2306,13 +2473,15 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
         }
 
         return expr;
-    } break;
+    }
+    break;
 
     case TOKEN_KIND_PLUS: {
         fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
                 FL_Arg(location), token_kind_name(tokens->elems->kind));
         exit(1);
-    } break;
+    }
+    break;
 
     default: {
         assert(false && "parse_primary_from_tokens: unreachable");

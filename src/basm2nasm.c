@@ -77,20 +77,23 @@ int main(int argc, char *argv[])
 
         fprintf(output, "inst_%zu:\n", i);
         switch (inst.type) {
-        case INST_NOP: assert(false && "NOP is not implemented");
+        case INST_NOP:
+            assert(false && "NOP is not implemented");
         case INST_PUSH: {
             fprintf(output, "    ;; push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
             fprintf(output, "    mov rax, 0x%"PRIX64"\n", inst.operand.as_u64);
             fprintf(output, "    mov QWORD [rsi], rax\n");
             fprintf(output, "    add QWORD [stack_top], BM_WORD_SIZE\n");
-        } break;
+        }
+        break;
         case INST_DROP: {
             fprintf(output, "    ;; drop\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_DUP: {
             fprintf(output, "    ;; dup %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -100,7 +103,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_SWAP: {
             fprintf(output, "    ;; swap %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -111,7 +115,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov rbx, [rdi]\n");
             fprintf(output, "    mov [rdi], rax\n");
             fprintf(output, "    mov [rsi], rbx\n");
-        } break;
+        }
+        break;
         case INST_PLUSI: {
             fprintf(output, "    ;; plusi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -123,7 +128,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_MINUSI: {
             fprintf(output, "    ;; minusi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -135,7 +141,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_MULTI: {
             fprintf(output, "    ;; multi\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -146,8 +153,10 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov rbx, [r11]\n");
             fprintf(output, "    imul rax, rbx\n");
             fprintf(output, "    mov [r11], rax\n");
-        } break;
-        case INST_MULTU: assert(false && "MULTU is not implemented");
+        }
+        break;
+        case INST_MULTU:
+            assert(false && "MULTU is not implemented");
         case INST_DIVI: {
             fprintf(output, "    ;; divi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -160,7 +169,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_DIVU: {
             fprintf(output, "    ;; divu\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -173,7 +183,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_MODI: {
             fprintf(output, "    ;; modi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -186,7 +197,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rdx\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
 
         case INST_MODU: {
             fprintf(output, "    ;; modu\n");
@@ -200,7 +212,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rdx\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_PLUSF: {
             fprintf(output, "    ;; plusf\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -211,7 +224,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    movsd xmm1, [r11]\n");
             fprintf(output, "    addsd xmm1, xmm0\n");
             fprintf(output, "    movsd [r11], xmm1\n");
-        } break;
+        }
+        break;
         case INST_MINUSF: {
             fprintf(output, "    ;; minusf\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -222,7 +236,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    movsd xmm1, [r11]\n");
             fprintf(output, "    subsd xmm1, xmm0\n");
             fprintf(output, "    movsd [r11], xmm1\n");
-        } break;
+        }
+        break;
         case INST_MULTF: {
             fprintf(output, "    ;; multf\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -233,7 +248,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    movsd xmm1, [r11]\n");
             fprintf(output, "    mulsd xmm1, xmm0\n");
             fprintf(output, "    movsd [r11], xmm1\n");
-        } break;
+        }
+        break;
         case INST_DIVF: {
             fprintf(output, "    ;; divf\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -244,13 +260,15 @@ int main(int argc, char *argv[])
             fprintf(output, "    movsd xmm1, [r11]\n");
             fprintf(output, "    divsd xmm1, xmm0\n");
             fprintf(output, "    movsd [r11], xmm1\n");
-        } break;
+        }
+        break;
         case INST_JMP: {
             fprintf(output, "    ;; jmp\n");
             fprintf(output, "    mov rdi, inst_map\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
-        } break;
+        }
+        break;
         case INST_JMP_IF: {
             fprintf(output, "    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -264,7 +282,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    jmp [rdi]\n");
             fprintf(output, "jmp_if_escape_%zu:\n", jmp_if_escape_count);
             jmp_if_escape_count += 1;
-        } break;
+        }
+        break;
         case INST_RET: {
             fprintf(output, "    ;; ret\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -275,7 +294,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    add rax, inst_map\n");
             fprintf(output, "    mov [stack_top], rsi\n");
             fprintf(output, "    jmp [rax]\n");
-        } break;
+        }
+        break;
         case INST_CALL: {
             fprintf(output, "    ;; call\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -285,7 +305,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov rdi, inst_map\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
-        } break;
+        }
+        break;
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 0) {
                 fprintf(output, "    ;; native write\n");
@@ -302,13 +323,15 @@ int main(int argc, char *argv[])
             } else {
                 assert(false && "unsupported native function");
             }
-        } break;
+        }
+        break;
         case INST_HALT: {
             fprintf(output, "    ;; halt\n");
             fprintf(output, "    mov rax, SYS_EXIT\n");
             fprintf(output, "    mov rdi, 0\n");
             fprintf(output, "    syscall\n");
-        } break;
+        }
+        break;
         case INST_NOT: {
             fprintf(output, "    ;; not\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -318,7 +341,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov rax, 0\n");
             fprintf(output, "    setz al\n");
             fprintf(output, "    mov [rsi], rax\n");
-        } break;
+        }
+        break;
         case INST_EQI: {
             fprintf(output, "    ;; eqi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -332,50 +356,74 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], rsi\n");
-        } break;
+        }
+        break;
         case INST_GEI: {
             fprintf(output, "    ;; FIXME: gei\n");
-        } break;
+        }
+        break;
         case INST_GTI: {
             fprintf(output, "    ;; FIXME: gti\n");
-        } break;
+        }
+        break;
         case INST_LEI: {
             fprintf(output, "    ;; FIXME: lei\n");
-        } break;
-        case INST_LTI: assert(false && "LTI is not implemented");
-        case INST_NEI: assert(false && "NEI is not implemented");
+        }
+        break;
+        case INST_LTI:
+            assert(false && "LTI is not implemented");
+        case INST_NEI:
+            assert(false && "NEI is not implemented");
         case INST_EQU: {
             fprintf(output, "    ;; FIXME: equ\n");
-        } break;
-        case INST_GEU: assert(false && "GEU is not implemented");
-        case INST_GTU: assert(false && "GTU is not implemented");
-        case INST_LEU: assert(false && "LEU is not implemented");
-        case INST_LTU: assert(false && "LTU is not implemented");
-        case INST_NEU: assert(false && "NEU is not implemented");
-        case INST_EQF: assert(false && "EQF is not implemented");
+        }
+        break;
+        case INST_GEU:
+            assert(false && "GEU is not implemented");
+        case INST_GTU:
+            assert(false && "GTU is not implemented");
+        case INST_LEU:
+            assert(false && "LEU is not implemented");
+        case INST_LTU:
+            assert(false && "LTU is not implemented");
+        case INST_NEU:
+            assert(false && "NEU is not implemented");
+        case INST_EQF:
+            assert(false && "EQF is not implemented");
         case INST_GEF: {
             fprintf(output, "    ;; FIXME: gef\n");
-        } break;
+        }
+        break;
         case INST_GTF: {
             fprintf(output, "    ;; FIXME: gtf\n");
-        } break;
+        }
+        break;
         case INST_LEF: {
             fprintf(output, "    ;; FIXME: lef\n");
-        } break;
+        }
+        break;
         case INST_LTF: {
             fprintf(output, "    ;; FIXME: ltf\n");
-        } break;
-        case INST_NEF: assert(false && "NEF is not implemented");
+        }
+        break;
+        case INST_NEF:
+            assert(false && "NEF is not implemented");
         case INST_ANDB: {
             fprintf(output, "    ;; FIXME: andb\n");
-        } break;
-        case INST_ORB: assert(false && "ORB is not implemented");
+        }
+        break;
+        case INST_ORB:
+            assert(false && "ORB is not implemented");
         case INST_XOR: {
             fprintf(output, "    ;; FIXME: xor\n");
-        } break;
-        case INST_SHR: assert(false && "SHR is not implemented");
-        case INST_SHL: assert(false && "SHL is not implemented");
-        case INST_NOTB: assert(false && "NOTB is not implemented");
+        }
+        break;
+        case INST_SHR:
+            assert(false && "SHR is not implemented");
+        case INST_SHL:
+            assert(false && "SHL is not implemented");
+        case INST_NOTB:
+            assert(false && "NOTB is not implemented");
         case INST_READ8: {
             fprintf(output, "    ;; read8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -385,10 +433,14 @@ int main(int argc, char *argv[])
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov al, BYTE [rsi]\n");
             fprintf(output, "    mov [r11], rax\n");
-        } break;
-        case INST_READ16: assert(false && "READ16 is not implemented");
-        case INST_READ32: assert(false && "READ32 is not implemented");
-        case INST_READ64: assert(false && "READ64 is not implemented");
+        }
+        break;
+        case INST_READ16:
+            assert(false && "READ16 is not implemented");
+        case INST_READ32:
+            assert(false && "READ32 is not implemented");
+        case INST_READ64:
+            assert(false && "READ64 is not implemented");
         case INST_WRITE8: {
             fprintf(output, "    ;; write8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -399,20 +451,29 @@ int main(int argc, char *argv[])
             fprintf(output, "    add rsi, memory\n");
             fprintf(output, "    mov BYTE [rsi], al\n");
             fprintf(output, "    mov [stack_top], r11\n");
-        } break;
-        case INST_WRITE16: assert(false && "WRITE16 is not implemented");
-        case INST_WRITE32: assert(false && "WRITE32 is not implemented");
-        case INST_WRITE64: assert(false && "WRITE64 is not implemented");
+        }
+        break;
+        case INST_WRITE16:
+            assert(false && "WRITE16 is not implemented");
+        case INST_WRITE32:
+            assert(false && "WRITE32 is not implemented");
+        case INST_WRITE64:
+            assert(false && "WRITE64 is not implemented");
         case INST_I2F: {
             fprintf(output, "    ;; FIXME: i2f\n");
-        } break;
-        case INST_U2F: assert(false && "U2F is not implemented");
+        }
+        break;
+        case INST_U2F:
+            assert(false && "U2F is not implemented");
         case INST_F2I: {
             fprintf(output, "    ;; FIXME: f2i\n");
-        } break;
-        case INST_F2U: assert(false && "F2U is not implemented");
+        }
+        break;
+        case INST_F2U:
+            assert(false && "F2U is not implemented");
         case NUMBER_OF_INSTS:
-        default: assert(false && "unknown instruction");
+        default:
+            assert(false && "unknown instruction");
         }
     }
 
