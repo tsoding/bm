@@ -17,8 +17,7 @@
 
 typedef enum {
    BDB_OK = 0,
-   BDB_FAIL = 1,
-   BDB_EXIT
+   BDB_FAIL = 1
 } Bdb_Err ;
 
 typedef struct Bdb_Breakpoint {
@@ -76,5 +75,6 @@ void bdb_add_breakpoint(Bdb_State *, Inst_Addr, String_View label);
 void bdb_delete_breakpoint(Bdb_State *, Inst_Addr);
 Bdb_Breakpoint *bdb_find_breakpoint_by_addr(Bdb_State *, Inst_Addr);
 Bdb_Err bdb_fault(Bdb_State *, Err);
+void bdb_exit(Bdb_State *);
 
 #endif // BDB_H

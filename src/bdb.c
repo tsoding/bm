@@ -348,6 +348,15 @@ Bdb_Err bdb_reset(Bdb_State *state)
     return BDB_OK;
 }
 
+void bdb_exit(Bdb_State *state)
+{
+    printf("Bye\n");
+    arena_free(&state->sym_arena);
+    arena_free(&state->break_arena);
+    arena_free(&state->tmp_arena);
+    exit(EXIT_SUCCESS);
+}
+
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
 {
     switch (*command_word.data)
@@ -523,7 +532,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                 return BDB_OK;
 
             case EOF:
-                return BDB_EXIT;
+                bdb_exit(state);
             default:
                 goto ask_again;
             }
@@ -537,8 +546,8 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
     }
     case 'q':
     {
-        return BDB_EXIT;
-    }
+        bdb_exit(state);
+    } break;
     case 'h':
     {
         printf("r - run program\n"
@@ -627,18 +636,9 @@ int main(int argc, char **argv)
              */
             memcpy(previous_command, input_buf, sizeof(char) * INPUT_CAPACITY);
         }
-        else if (err == BDB_EXIT)
-        {
-            printf("Bye\n");
-            break;
-        }
 
         arena_clean(&state.tmp_arena);
     }
 
-    arena_free(&state.sym_arena);
-    arena_free(&state.break_arena);
-    arena_free(&state.tmp_arena);
-
-    return EXIT_SUCCESS;
+    bdb_exit(&state);
 }
