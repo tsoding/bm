@@ -10,7 +10,7 @@ Simple Virtual Machine with its own Bytecode and Assembly language.
 
 ```console
 $ cc -o nobuild nobuild.c
-$ ./nobuild
+$ ./nobuild build
 ```
 
 `./nobuild help` for more information.
@@ -21,7 +21,7 @@ Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-c
 
 ```console
 > cl.exe nobuild.c
-> nobuild.exe
+> nobuild.exe build
 ```
 
 `nobuild.exe help` for more information.
@@ -29,6 +29,7 @@ Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-c
 ### Running Examples
 
 ```console
+$ ./nobuild build examples
 $ ./build/bin/bme -i ./build/examples/hello.bm
 $ ./build/bin/bme -i ./build/examples/fib.bm
 $ ./build/bin/bme -i ./build/examples/e.bm

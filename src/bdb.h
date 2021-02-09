@@ -16,8 +16,8 @@
 #define BDB_BREAKPOINTS_CAPACITY 256
 
 typedef enum {
-   BDB_OK = 0,
-   BDB_FAIL = 1
+    BDB_OK = 0,
+    BDB_FAIL = 1
 } Bdb_Err ;
 
 typedef struct Bdb_Breakpoint {

@@ -76,11 +76,10 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
 void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
     (void) state;               // NOTE: don't forget to remove this
-                                // when you start using the state.
+    // when you start using the state.
 
     fprintf(f, "%s ", inst_name(i->type));
-    if (inst_has_operand(i->type))
-    {
+    if (inst_has_operand(i->type)) {
         fprintf(f, "%" PRIu64, i->operand.as_i64);
     }
 }
@@ -109,7 +108,7 @@ void bdb_add_breakpoint(Bdb_State *state, Inst_Addr addr, String_View label)
     state->breakpoints[state->breakpoints_size].is_broken = 0;
     state->breakpoints[state->breakpoints_size].label =
         arena_sv_dup(&state->break_arena, label); // NOTE: moving the label to an arena
-                                                  // with longer lifetime
+    // with longer lifetime
     state->breakpoints[state->breakpoints_size].addr = addr;
     state->breakpoints_size += 1;
 
@@ -146,22 +145,16 @@ Bdb_Err bdb_continue(Bdb_State *state)
 {
     assert(state);
 
-    if (state->bm.halt)
-    {
+    if (state->bm.halt) {
         fprintf(stderr, "ERR : Program is not being run\n");
         return BDB_OK;
     }
 
-    do
-    {
-        if (state->is_in_step_over_mode)
-        {
-            if (state->bm.program[state->bm.ip].type == INST_CALL)
-            {
+    do {
+        if (state->is_in_step_over_mode) {
+            if (state->bm.program[state->bm.ip].type == INST_CALL) {
                 state->step_over_mode_call_depth += 1;
-            }
-            else if (state->bm.program[state->bm.ip].type == INST_RET)
-            {
+            } else if (state->bm.program[state->bm.ip].type == INST_RET) {
                 state->step_over_mode_call_depth -= 1;
             }
         }
@@ -171,8 +164,7 @@ Bdb_Err bdb_continue(Bdb_State *state)
             if (!bp->is_broken) {
                 fprintf(stdout, "Hit breakpoint at %"PRIu64, state->bm.ip);
 
-                if (bp->label.data)
-                {
+                if (bp->label.data) {
                     fprintf(stdout, " label '"SV_Fmt"'", SV_Arg(bp->label));
                 }
 
@@ -183,27 +175,22 @@ Bdb_Err bdb_continue(Bdb_State *state)
                 state->is_in_step_over_mode = 0;
 
                 return BDB_OK;
-            }
-            else
-            {
+            } else {
                 bp->is_broken = 0;
             }
         }
 
         Err err = bm_execute_inst(&state->bm);
-        if (err)
-        {
+        if (err) {
             return bdb_fault(state, err);
         }
 
         if (state->is_in_step_over_mode &&
-            state->step_over_mode_call_depth == 0)
-        {
+                state->step_over_mode_call_depth == 0) {
             return BDB_OK;
         }
 
-    }
-    while (!state->bm.halt);
+    } while (!state->bm.halt);
 
     printf("Program halted.\n");
 
@@ -237,19 +224,15 @@ Bdb_Err bdb_step_instr(Bdb_State *state)
 {
     assert(state);
 
-    if (state->bm.halt)
-    {
+    if (state->bm.halt) {
         fprintf(stderr, "ERR : Program is not being run\n");
         return BDB_OK;
     }
 
     Err err = bm_execute_inst(&state->bm);
-    if (!err)
-    {
+    if (!err) {
         return BDB_OK;
-    }
-    else
-    {
+    } else {
         return bdb_fault(state, err);
     }
 }
@@ -359,87 +342,80 @@ void bdb_exit(Bdb_State *state)
 
 Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View arguments)
 {
-    switch (*command_word.data)
-    {
+    switch (*command_word.data) {
     /*
      * Next instruction
      */
-    case 's':
-    {
+    case 's': {
         Bdb_Err err = bdb_step_instr(state);
-        if (err)
-        {
+        if (err) {
             return err;
         }
 
         printf("-> ");
         bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
         printf("\n");
-    } break;
+    }
+    break;
     /*
      * Step over instruction
      */
-    case 'n':
-    {
+    case 'n': {
         Bdb_Err err = bdb_step_over_instr(state);
-        if (err)
-        {
+        if (err) {
             return err;
         }
 
         printf("-> ");
         bdb_print_instr(state, stdout, &state->bm.program[state->bm.ip]);
         printf("\n");
-    } break;
+    }
+    break;
     /*
      * Inspect the memory
      */
-    case 'x':
-    {
+    case 'x': {
         arguments = sv_trim(arguments);
         String_View where_sv = sv_chop_by_delim(&arguments, ' ');
         String_View count_sv = arguments;
 
         Word where = word_u64(0);
-        if (bdb_parse_binding_or_word(state, where_sv, &where) == BDB_FAIL)
-        {
+        if (bdb_parse_binding_or_word(state, where_sv, &where) == BDB_FAIL) {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(where_sv));
             return BDB_FAIL;
         }
 
         Word count = word_u64(0);
-        if (bdb_parse_binding_or_word(state, count_sv, &count) == BDB_FAIL)
-        {
+        if (bdb_parse_binding_or_word(state, count_sv, &count) == BDB_FAIL) {
             fprintf(stderr, "ERR : Cannot parse address, label or constant `"SV_Fmt"`\n", SV_Arg(count_sv));
             return BDB_FAIL;
         }
 
         for (uint64_t i = 0;
-             i < count.as_u64 && where.as_u64 + i < BM_MEMORY_CAPACITY;
-             ++i)
-        {
+                i < count.as_u64 && where.as_u64 + i < BM_MEMORY_CAPACITY;
+                ++i) {
             printf("%02X ", state->bm.memory[where.as_u64 + i]);
         }
         printf("\n");
 
-    } break;
+    }
+    break;
     /*
      * Dump the stack
      */
-    case 'p':
-    {
+    case 'p': {
         bm_dump_stack(stdout, &state->bm);
-    } break;
+    }
+    break;
     /*
      * Where - print information about the current location in the program
      */
-    case 'w':
-    {
+    case 'w': {
         bdb_print_location(state);
-    } break;
+    }
+    break;
 
-    case 'b':
-    {
+    case 'b': {
         String_View addr = sv_trim(arguments);
         Bdb_Binding *binding = bdb_resolve_binding(state, addr);
         if (binding) {
@@ -459,9 +435,9 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
 
             bdb_add_breakpoint(state, value.as_u64, SV_NULL);
         }
-    } break;
-    case 'd':
-    {
+    }
+    break;
+    case 'd': {
         String_View addr = sv_trim(arguments);
         Bdb_Binding *binding = bdb_resolve_binding(state, addr);
         if (binding) {
@@ -481,18 +457,14 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
 
             bdb_delete_breakpoint(state, value.as_u64);
         }
-    } break;
-    case 'r':
-    {
-        if (!state->bm.halt || (state->bm.halt && state->bm.program[state->bm.ip].type == INST_HALT))
-        {
-            if (state->bm.halt)
-            {
+    }
+    break;
+    case 'r': {
+        if (!state->bm.halt || (state->bm.halt && state->bm.program[state->bm.ip].type == INST_HALT)) {
+            if (state->bm.halt) {
                 fprintf(stderr,
                         "INFO : Program has halted.\n");
-            }
-            else
-            {
+            } else {
                 fprintf(stderr,
                         "INFO : Program is already running.\n");
             }
@@ -508,12 +480,11 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
              * cases. So please don't sue me for using a goto. It is
              * way easier to read this way.
              */
-        ask_again:
+ask_again:
             printf("     : Restart the program? [y|N] ");
             answer = getchar();
 
-            switch (answer)
-            {
+            switch (answer) {
             case 'y':
             case 'Y': {
                 // Consume the '\n'
@@ -523,11 +494,12 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                 if (err != BDB_OK) {
                     return err;
                 }
-            } break;
+            }
+            break;
             case 'n':
             case 'N':
                 getchar(); // See above
-                /* fall through */
+            /* fall through */
             case '\n':
                 return BDB_OK;
 
@@ -539,17 +511,15 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         }
 
         state->bm.halt = 0;
-    } /* fall through */
-    case 'c':
-    {
+        } /* fall through */
+    case 'c': {
         return bdb_continue(state);
     }
-    case 'q':
-    {
+    case 'q': {
         bdb_exit(state);
-    } break;
-    case 'h':
-    {
+    }
+    break;
+    case 'h': {
         printf("r - run program\n"
                "n - step over instruction\n"
                "s - step instruction\n"
@@ -560,11 +530,12 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
                "b - set breakpoint at address or label\n"
                "d - destroy breakpoint at address or label\n"
                "q - quit\n");
-    } break;
-    default:
-    {
+    }
+    break;
+    default: {
         fprintf(stderr, "?\n");
-    } break;
+    }
+    break;
     }
 
     return BDB_OK;
@@ -572,8 +543,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
-    {
+    if (argc < 2) {
         usage();
         return EXIT_FAILURE;
     }
@@ -584,8 +554,7 @@ int main(int argc, char **argv)
 
     printf("BDB - The birtual machine debugger.\n"
            "Type 'h' and enter for a quick help\n");
-    if (bdb_reset(&state) == BDB_FAIL)
-    {
+    if (bdb_reset(&state) == BDB_FAIL) {
         fprintf(stderr,
                 "FATAL : Unable to initialize the debugger: %s\n",
                 strerror(errno));
@@ -601,23 +570,20 @@ int main(int argc, char **argv)
     char previous_command[INPUT_CAPACITY] = {0};
 
     // TODO(#189): ^D prints an error in bdb before exiting
-    while (!feof(stdin))
-    {
+    while (!feof(stdin)) {
         printf("(bdb) ");
         char input_buf[INPUT_CAPACITY] = {0};
         fgets(input_buf, INPUT_CAPACITY, stdin);
 
         String_View
-            input_sv = sv_trim(sv_from_cstr(input_buf)),
-            control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
+        input_sv = sv_trim(sv_from_cstr(input_buf)),
+        control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
 
         /*
          * Check if we need to repeat the previous command
          */
-        if (control_word.count == 0)
-        {
-            if (*previous_command == '\0')
-            {
+        if (control_word.count == 0) {
+            if (*previous_command == '\0') {
                 fprintf(stderr, "ERR : No previous command\n");
                 continue;
             }
@@ -629,8 +595,7 @@ int main(int argc, char **argv)
         Bdb_Err err = bdb_run_command(&state, control_word, input_sv);
 
         if ( (err == BDB_OK)
-             && (*input_buf != '\n') )
-        {
+                && (*input_buf != '\n') ) {
             /*
              * Store the previous command for repeating it.
              */
