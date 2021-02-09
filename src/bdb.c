@@ -622,7 +622,7 @@ int main(int argc, char **argv)
         else if (err == BDB_EXIT)
         {
             printf("Bye\n");
-            return EXIT_SUCCESS;
+            break;
         }
 
         arena_clean(&state.tmp_arena);
