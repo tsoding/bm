@@ -29,6 +29,7 @@
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
+#define BASM_STRING_LENGTHS_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
@@ -269,6 +270,9 @@ typedef enum {
     TOKEN_KIND_MINUS,
     TOKEN_KIND_NUMBER,
     TOKEN_KIND_NAME,
+    TOKEN_KIND_OPEN_PAREN,
+    TOKEN_KIND_CLOSING_PAREN,
+    TOKEN_KIND_COMMA,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
@@ -303,9 +307,14 @@ typedef enum {
     EXPR_KIND_LIT_CHAR,
     EXPR_KIND_LIT_STR,
     EXPR_KIND_BINARY_OP,
+    EXPR_KIND_FUNCALL,
 } Expr_Kind;
 
 typedef struct Binary_Op Binary_Op;
+typedef struct Funcall Funcall;
+typedef struct Funcall_Arg Funcall_Arg;
+
+size_t funcall_args_len(Funcall_Arg *args);
 
 typedef union {
     String_View as_binding;
@@ -314,6 +323,7 @@ typedef union {
     char as_lit_char;
     String_View as_lit_str;
     Binary_Op *as_binary_op;
+    Funcall *as_funcall;
 } Expr_Value;
 
 // TODO(#178): compile time expressions don't support math operations
@@ -332,6 +342,17 @@ struct Binary_Op {
     Expr right;
 };
 
+struct Funcall_Arg {
+    Funcall_Arg *next;
+    Expr value;
+};
+
+struct Funcall {
+    String_View name;
+    Funcall_Arg *args;
+};
+
+Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
@@ -360,6 +381,11 @@ typedef struct {
 } Deferred_Operand;
 
 typedef struct {
+    Inst_Addr addr;
+    uint64_t length;
+} String_Length;
+
+typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
@@ -372,6 +398,9 @@ typedef struct {
     bool has_entry;
     File_Location entry_location;
     String_View deferred_entry_binding_name;
+
+    String_Length string_lengths[BASM_STRING_LENGTHS_CAPACITY];
+    size_t string_lengths_size;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
     size_t memory_size;
@@ -389,6 +418,7 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
+bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path);
 Word basm_expr_eval(Basm *basm, Expr expr, File_Location location);
@@ -1555,6 +1585,7 @@ void *arena_alloc(Arena *arena, size_t size)
     }
 
     void *result = arena->last->buffer + arena->last->size;
+    memset(result, 0, size);
     arena->last->size += size;
     return result;
 }
@@ -1677,7 +1708,26 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv)
         basm->memory_capacity = basm->memory_size;
     }
 
+    basm->string_lengths[basm->string_lengths_size++] = (String_Length) {
+        .addr = result.as_u64,
+        .length = sv.count,
+    };
+
     return result;
+}
+
+bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length)
+{
+    for (size_t i = 0; i < basm->string_lengths_size; ++i) {
+        if (basm->string_lengths[i].addr == addr) {
+            if (length) {
+                *length = word_u64(basm->string_lengths[i].length);
+            }
+            return true;
+        }
+    }
+
+    return false;
 }
 
 const char *binding_kind_as_cstr(Binding_Kind kind)
@@ -2014,6 +2064,32 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
     case EXPR_KIND_LIT_STR:
         return basm_push_string_to_memory(basm, expr.value.as_lit_str);
 
+    case EXPR_KIND_FUNCALL: {
+        if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("len"))) {
+            const size_t actual_arity = funcall_args_len(expr.value.as_funcall->args);
+            if (actual_arity != 1) {
+                fprintf(stderr, FL_Fmt": ERROR: len() expects 1 argument but got %zu\n",
+                        FL_Arg(location), actual_arity);
+                exit(1);
+            }
+
+            Word addr = basm_expr_eval(basm, expr.value.as_funcall->args->value, location);
+            Word length = {0};
+            if (!basm_string_length_by_addr(basm, addr.as_u64, &length)) {
+                fprintf(stderr, FL_Fmt": ERROR: Could not compute the length of string at address %"PRIu64"\n", FL_Arg(location), addr.as_u64);
+                exit(1);
+            }
+
+            return length;
+        } else {
+            fprintf(stderr,
+                    FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
+                    FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
+            exit(1);
+        }
+    }
+    break;
+
     case EXPR_KIND_BINDING: {
         String_View name = expr.value.as_binding;
         Binding *binding = basm_resolve_binding(basm, name);
@@ -2221,6 +2297,12 @@ const char *token_kind_name(Token_Kind kind)
         return "number";
     case TOKEN_KIND_NAME:
         return "name";
+    case TOKEN_KIND_OPEN_PAREN:
+        return "open paren";
+    case TOKEN_KIND_CLOSING_PAREN:
+        return "closing paren";
+    case TOKEN_KIND_COMMA:
+        return "comma";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
@@ -2258,6 +2340,30 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
     source = sv_trim_left(source);
     while (source.count > 0) {
         switch (*source.data) {
+        case '(': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_OPEN_PAREN,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
+        case ')': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_CLOSING_PAREN,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
+        case ',': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_COMMA,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
         case '+': {
             tokens_push(tokens, (Token) {
                 .kind = TOKEN_KIND_PLUS,
@@ -2447,9 +2553,17 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     break;
 
     case TOKEN_KIND_NAME: {
-        result.value.as_binding = tokens->elems->text;
-        result.kind = EXPR_KIND_BINDING;
-        tv_chop_left(tokens, 1);
+        if (tokens->count > 1 && tokens->elems[1].kind == TOKEN_KIND_OPEN_PAREN) {
+            result.kind = EXPR_KIND_FUNCALL;
+            result.value.as_funcall = arena_alloc(arena, sizeof(Funcall));
+            result.value.as_funcall->name = tokens->elems->text;
+            tv_chop_left(tokens, 1);
+            result.value.as_funcall->args = parse_funcall_args(arena, tokens, location);
+        } else {
+            result.value.as_binding = tokens->elems->text;
+            result.kind = EXPR_KIND_BINDING;
+            tv_chop_left(tokens, 1);
+        }
     }
     break;
 
@@ -2476,6 +2590,9 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     }
     break;
 
+    case TOKEN_KIND_OPEN_PAREN:
+    case TOKEN_KIND_COMMA:
+    case TOKEN_KIND_CLOSING_PAREN:
     case TOKEN_KIND_PLUS: {
         fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
                 FL_Arg(location), token_kind_name(tokens->elems->kind));
@@ -2492,19 +2609,73 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     return result;
 }
 
+size_t funcall_args_len(Funcall_Arg *args)
+{
+    size_t result = 0;
+    while (args != NULL) {
+        result += 1;
+        args = args->next;
+    }
+    return result;
+}
+
+Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location)
+{
+    if (tokens->count < 1 || tokens->elems->kind != TOKEN_KIND_OPEN_PAREN) {
+        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
+                FL_Arg(location),
+                token_kind_name(TOKEN_KIND_OPEN_PAREN));
+        exit(1);
+    }
+    tv_chop_left(tokens, 1);
+
+    if (tokens->count > 0 && tokens->elems->kind == TOKEN_KIND_CLOSING_PAREN) {
+        return NULL;
+    }
+
+    Funcall_Arg *first = NULL;
+    Funcall_Arg *last = NULL;
+
+    // , b, c)
+    Token token = {0};
+    do {
+        Funcall_Arg *arg = arena_alloc(arena, sizeof(Funcall_Arg));
+        arg->value = parse_expr_from_tokens(arena, tokens, location);
+
+        if (first == NULL) {
+            first = arg;
+            last = arg;
+        } else {
+            last->next = arg;
+            last = arg;
+        }
+
+        if (tokens->count == 0) {
+            fprintf(stderr, FL_Fmt": ERROR: expected %s or %s\n",
+                    FL_Arg(location),
+                    token_kind_name(TOKEN_KIND_CLOSING_PAREN),
+                    token_kind_name(TOKEN_KIND_COMMA));
+            exit(1);
+        }
+
+        token = tv_chop_left(tokens, 1).elems[0];
+    } while (token.kind == TOKEN_KIND_COMMA);
+
+    if (token.kind != TOKEN_KIND_CLOSING_PAREN) {
+        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
+                FL_Arg(location),
+                token_kind_name(TOKEN_KIND_CLOSING_PAREN));
+        exit(1);
+    }
+
+    return first;
+}
+
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     Expr left = parse_primary_from_tokens(arena, tokens, location);
 
-    if (tokens->count != 0) {
-        if (tokens->elems->kind != TOKEN_KIND_PLUS) {
-            fprintf(stderr, FL_Fmt": ERROR: expected %s but found %s\n",
-                    FL_Arg(location),
-                    token_kind_name(TOKEN_KIND_PLUS),
-                    token_kind_name(tokens->elems->kind));
-            exit(1);
-        }
-
+    if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
         tv_chop_left(tokens, 1);
 
         Expr right = parse_expr_from_tokens(arena, tokens, location);
