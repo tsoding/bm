@@ -273,6 +273,7 @@ typedef enum {
     TOKEN_KIND_OPEN_PAREN,
     TOKEN_KIND_CLOSING_PAREN,
     TOKEN_KIND_COMMA,
+    TOKEN_KIND_GT,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
@@ -332,9 +333,14 @@ typedef struct {
     Expr_Value value;
 } Expr;
 
+void dump_expr(FILE *stream, Expr expr, int level);
+
 typedef enum {
     BINARY_OP_PLUS
 } Binary_Op_Kind;
+
+const char *binary_op_kind_name(Binary_Op_Kind kind);
+void dump_binary_op(FILE *stream, Binary_Op binary_op, int level);
 
 struct Binary_Op {
     Binary_Op_Kind kind;
@@ -352,6 +358,7 @@ struct Funcall {
     Funcall_Arg *args;
 };
 
+void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
@@ -2303,6 +2310,8 @@ const char *token_kind_name(Token_Kind kind)
         return "closing paren";
     case TOKEN_KIND_COMMA:
         return "comma";
+    case TOKEN_KIND_GT:
+        return ">";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
@@ -2359,6 +2368,14 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
         case ',': {
             tokens_push(tokens, (Token) {
                 .kind = TOKEN_KIND_COMMA,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
+        case '>': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_GT,
                 .text = sv_chop_left(&source, 1)
             });
         }
@@ -2590,6 +2607,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     }
     break;
 
+    case TOKEN_KIND_GT:
     case TOKEN_KIND_OPEN_PAREN:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
@@ -2617,6 +2635,69 @@ size_t funcall_args_len(Funcall_Arg *args)
         args = args->next;
     }
     return result;
+}
+
+void dump_expr(FILE *stream, Expr expr, int level)
+{
+    fprintf(stream, "%*s", level * 2, "");
+
+    switch(expr.kind) {
+    case EXPR_KIND_BINDING:
+        fprintf(stream, "Binding: "SV_Fmt"\n",
+                SV_Arg(expr.value.as_binding));
+        break;
+    case EXPR_KIND_LIT_INT:
+        fprintf(stream, "Int Literal: %"PRIu64"\n", expr.value.as_lit_int);
+        break;
+    case EXPR_KIND_LIT_FLOAT:
+        fprintf(stream, "Float Literal: %lf\n", expr.value.as_lit_float);
+        break;
+    case EXPR_KIND_LIT_CHAR:
+        fprintf(stream, "Char Literal: '%c'\n", expr.value.as_lit_char);
+        break;
+    case EXPR_KIND_LIT_STR:
+        fprintf(stream, "String Literal: \""SV_Fmt"\"\n",
+                SV_Arg(expr.value.as_lit_str));
+        break;
+    case EXPR_KIND_BINARY_OP:
+        fprintf(stream, "Binary Op: %s\n",
+                binary_op_kind_name(expr.value.as_binary_op->kind));
+        dump_binary_op(stream, *expr.value.as_binary_op, level + 1);
+        break;
+    case EXPR_KIND_FUNCALL:
+        fprintf(stream, "Funcall: "SV_Fmt"\n",
+                SV_Arg(expr.value.as_funcall->name));
+        dump_funcall_args(stream, expr.value.as_funcall->args, level + 1);
+        break;
+    }
+}
+
+const char *binary_op_kind_name(Binary_Op_Kind kind)
+{
+    switch (kind) {
+    case BINARY_OP_PLUS:
+        return "+";
+    default:
+        assert(false && "binary_op_kind_name: unreachable");
+    }
+}
+
+void dump_binary_op(FILE *stream, Binary_Op binary_op, int level)
+{
+    fprintf(stream, "%*sLeft:\n", level * 2, "");
+    dump_expr(stream, binary_op.left, level + 1);
+
+    fprintf(stream, "%*sRight:\n", level * 2, "");
+    dump_expr(stream, binary_op.right, level + 1);
+}
+
+void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
+{
+    while (args != NULL) {
+        fprintf(stream, "%*sArg:\n", level * 2, "");
+        dump_expr(stream, args->value, level + 1);
+        args = args->next;
+    }
 }
 
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location)
