@@ -38,6 +38,12 @@ TBD
 
 TBD
 
-## Translation Directives
+## Translation-time Expressions
 
 TBD
+
+## Translation Directives
+
+### %assert
+
+TODO: %assert is not documented
