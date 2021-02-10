@@ -1,6 +1,0 @@
-* Hello World
-  :PROPERTIES:
-  :CUSTOM_ID: h:hello-world
-  :END:
-
-  [[#h:hello-world][Hello World]]
