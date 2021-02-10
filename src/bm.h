@@ -334,6 +334,7 @@ typedef struct {
 } Expr;
 
 void dump_expr(FILE *stream, Expr expr, int level);
+void dump_expr_as_dot(FILE *stream, Expr expr);
 
 typedef enum {
     BINARY_OP_PLUS
@@ -2672,11 +2673,77 @@ void dump_expr(FILE *stream, Expr expr, int level)
     }
 }
 
+static int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
+{
+    int id = (*counter)++;
+
+    switch (expr.kind) {
+    case EXPR_KIND_BINDING: {
+        fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_binding));
+    }
+    break;
+    case EXPR_KIND_LIT_INT: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"%"PRIu64"\"]\n",
+                id, expr.value.as_lit_int);
+    }
+    break;
+    case EXPR_KIND_LIT_FLOAT: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"%lf\"]\n",
+                id, expr.value.as_lit_float);
+    }
+    break;
+    case EXPR_KIND_LIT_CHAR: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"'%c'\"]\n",
+                id, expr.value.as_lit_char);
+    }
+    break;
+    case EXPR_KIND_LIT_STR: {
+        fprintf(stream, "Expr_%d [shape=circle label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_lit_str));
+    }
+    break;
+    case EXPR_KIND_BINARY_OP: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%s\"]\n",
+                id, binary_op_kind_name(expr.value.as_binary_op->kind));
+        int left_id = dump_expr_as_dot_edges(stream, expr.value.as_binary_op->left, counter);
+        int right_id = dump_expr_as_dot_edges(stream, expr.value.as_binary_op->right, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, left_id);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, right_id);
+    }
+    break;
+    case EXPR_KIND_FUNCALL: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_funcall->name));
+
+        for (Funcall_Arg *arg = expr.value.as_funcall->args;
+                arg != NULL;
+                arg = arg->next) {
+            int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
+        }
+    }
+    break;
+    }
+
+    return id;
+}
+
+void dump_expr_as_dot(FILE *stream, Expr expr)
+{
+    fprintf(stream, "digraph Expr {\n");
+    int counter = 0;
+    dump_expr_as_dot_edges(stream, expr, &counter);
+    fprintf(stream, "}\n");
+}
+
 const char *binary_op_kind_name(Binary_Op_Kind kind)
 {
     switch (kind) {
     case BINARY_OP_PLUS:
         return "+";
+    case BINARY_OP_GT:
+        return ">";
     default:
         assert(false && "binary_op_kind_name: unreachable");
     }
