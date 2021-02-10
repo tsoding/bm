@@ -36,7 +36,7 @@ The binaries of the toolchain will be placed in `./build/bin/`.
 
 ### Building and Running Examples
 
-To build the examples you need to [build the toolchain](building-the-toolchain) first:
+To build the examples you need to [build the toolchain](#building-the-toolchain) first:
 
 ```console
 $ ./nobuild build examples
