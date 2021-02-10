@@ -16,7 +16,11 @@ void build_c_file(const char *input_path, const char *output_path)
 #ifdef _WIN32
     CMD("cl.exe", CFLAGS, input_path);
 #else
-    CMD("cc", CFLAGS, "-o", output_path, input_path);
+    const char *cc = getenv("CC");
+    if (cc == NULL) {
+        cc = "cc";
+    }
+    CMD(cc, CFLAGS, "-o", output_path, input_path);
 #endif // WIN32
 }
 
