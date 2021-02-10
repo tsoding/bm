@@ -2573,7 +2573,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
     return result;
 }
 
-// TODO: parse_primary_from_tokens does not support parens
+// TODO(#199): parse_primary_from_tokens does not support parens
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
