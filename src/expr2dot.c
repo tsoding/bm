@@ -13,6 +13,7 @@ int main(int argc, char **argv)
     // TODO(#198): expr2dot does not have a proper location reporting on errors
     File_Location location = {0};
 
+    // TODO(#200): expr2dot does not complain if the expression is not fully parsed
     dump_expr_as_dot(
         stdout,
         parse_expr_from_sv(
