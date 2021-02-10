@@ -4,37 +4,59 @@
 
 Simple Virtual Machine with its own Bytecode and Assembly language.
 
-## Quick Start
+## Build
 
-### Build on Linux/MacOS/FreeBSD/literally any OS on the planet Earth except Windows with MSVC
+We are using [nobuild](https://github.com/tsoding/nobuild) build system which requires a bootstrapping step with any relatively standard complaint C compiler.
+
+On Linux/MacOS/FreeBSD/literally any OS on the planet Earth except Windows with MSVC:
 
 ```console
 $ cc -o nobuild nobuild.c
-$ ./nobuild build
+$ ./nobuild help
 ```
 
-`./nobuild help` for more information.
-
-### Build on Windows with MSVC
-
-Run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160).
+If you still want to use MSVC on Windows run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160) and from within the development environment of MSVC:
 
 ```console
 > cl.exe nobuild.c
-> nobuild.exe build
+> nobuild.exe help
 ```
 
-`nobuild.exe help` for more information.
+The `nobuild` executable expects subcommands as the command line arguments, which you can provide several of at the same time like this `$ ./nobuild build examples test`. This will first [build the toolchain](#building-the-toolchain), then [build the examples](#building-and-running-examples), and then [run the tests](running-and-recoding-tests) against examples.
 
-### Running Examples
+### Building the Toolchain
+
+This builds the [toolchain][#toolchain] of the Virtual Machine:
+
+```console
+$ ./nobuild build
+```
+
+The binaries of the toolchain will be placed in `./build/bin/`.
+
+### Building and Running Examples
+
+To build the examples you need to [build the toolchain](building-the-toolchain) first:
 
 ```console
 $ ./nobuild build examples
+```
+
+The examples will be placed in `./build/examples/`.
+
+To run the examples use [basm](#basm) executable from the [toolchain](#toolchain):
+
+```
 $ ./build/bin/bme -i ./build/examples/hello.bm
 $ ./build/bin/bme -i ./build/examples/fib.bm
 $ ./build/bin/bme -i ./build/examples/e.bm
 $ ./build/bin/bme -i ./build/examples/pi.bm
 ```
+
+### Running and Recoding Tests
+
+<!-- TODO: Running and Recoding Tests is not documented -->
+TBD
 
 ## Toolchain
 
