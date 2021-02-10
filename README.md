@@ -4,6 +4,10 @@
 
 Simple Virtual Machine with its own Bytecode and Assembly language.
 
+Originally the project was planned to be a simple VM specifically for [ebisp](https://github.com/tsoding/ebisp) but later grew into something else.
+
+Right now BM is a general purpose Virtual Machine that may serve as a target platform for language compilers. As part of the toolchain it has an Assembly language with very powerful metaprogramming capabilities. (it's not quite there yet, but we are working on it).
+
 ## Quick Start
 
 ### Build on Linux/MacOS/FreeBSD/literally any OS on the planet Earth except Windows with MSVC
