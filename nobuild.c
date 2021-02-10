@@ -76,7 +76,6 @@ void build_x86_64_examples(void)
 void run_tests(void)
 {
     FOREACH_FILE_IN_DIR(example, "examples", {
-        size_t n = strlen(example);
         if (ENDS_WITH(example, ".basm"))
         {
             const char *example_base = NOEXT(example);
@@ -90,7 +89,6 @@ void run_tests(void)
 void record_tests(void)
 {
     FOREACH_FILE_IN_DIR(example, "examples", {
-        size_t n = strlen(example);
         if (ENDS_WITH(example, ".basm"))
         {
             const char *example_base = NOEXT(example);
@@ -175,7 +173,7 @@ void print_help(FILE *stream)
     for (size_t i = 0; i < commands_size; ++i) {
         fprintf(stream, "    ./nobuild %s%*s - %s\n",
                 commands[i].name,
-                longest - strlen(commands[i].name), "",
+                (int) (longest - strlen(commands[i].name)), "",
                 commands[i].description);
     }
 
