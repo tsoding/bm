@@ -29,6 +29,7 @@
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
+#define BASM_DEFERRED_ASSERTS_CAPACITY 1024
 #define BASM_STRING_LENGTHS_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
@@ -396,11 +397,19 @@ typedef struct {
 } String_Length;
 
 typedef struct {
+    Expr expr;
+    File_Location location;
+} Deferred_Assert;
+
+typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+
+    Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
+    size_t deferred_asserts_size;
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
@@ -1857,6 +1866,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     basm_translate_bind_directive(basm, &line, location, BINDING_CONST);
                 } else if (sv_eq(token, sv_from_cstr("native"))) {
                     basm_translate_bind_directive(basm, &line, location, BINDING_NATIVE);
+                } else if (sv_eq(token, sv_from_cstr("assert"))) {
+                    Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(line), location);
+                    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
+                        .expr = expr,
+                        .location = location,
+                    };
                 } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
@@ -2002,6 +2017,19 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
         basm->program[addr].operand = basm_binding_eval(basm, binding, basm->deferred_operands[i].location);
     }
 
+    // Eval deferred asserts
+    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
+        Word value = basm_expr_eval(
+                         basm,
+                         basm->deferred_asserts[i].expr,
+                         basm->deferred_asserts[i].location);
+        if (!value.as_u64) {
+            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                    FL_Arg(basm->deferred_asserts[i].location));
+            exit(1);
+        }
+    }
+
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
         Binding *binding = basm_resolve_binding(
@@ -2043,17 +2071,18 @@ Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
 
 static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
+    Word left = basm_expr_eval(basm, binary_op->left, location);
+    Word right = basm_expr_eval(basm, binary_op->right, location);
+
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
-        Word left = basm_expr_eval(basm, binary_op->left, location);
-        Word right = basm_expr_eval(basm, binary_op->right, location);
         // TODO(#183): compile-time sum can only work with integers
         return word_u64(left.as_u64 + right.as_u64);
     }
     break;
 
     case BINARY_OP_GT: {
-        assert(false && "TODO: BINARY_OP_GT eval is not implemented yet");
+        return word_u64(left.as_u64 > right.as_u64);
     }
     break;
 

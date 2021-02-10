@@ -46,4 +46,9 @@ TBD
 
 ### %assert
 
-TODO: %assert is not documented
+Accepts a [TTE](#translation-time-expressions) and fails the whole translation if it evaluation to fails.
+
+```basm
+%const hello "Hello, World"
+%assert len(hello) > 0        ; fail if hello is an empty string
+```
