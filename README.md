@@ -36,7 +36,7 @@ The binaries of the toolchain will be placed in `./build/bin/`.
 
 ### Building and Running Examples
 
-To build the examples you need to [build the toolchain](building-the-toolchain) first:
+To build the examples you need to [build the toolchain](#building-the-toolchain) first:
 
 ```console
 $ ./nobuild build examples
@@ -52,6 +52,10 @@ $ ./build/bin/bme -i ./build/examples/fib.bm
 $ ./build/bin/bme -i ./build/examples/e.bm
 $ ./build/bin/bme -i ./build/examples/pi.bm
 ```
+
+#### Adding More Examples
+
+`nobuild examples` automatically builds all the `./examples/*.basm` files. So if you want to add a new example to the build just add `*.basm` file to [./examples/](./examples/).
 
 ### Running and Recoding Tests
 

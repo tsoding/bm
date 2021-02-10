@@ -4,7 +4,7 @@
 #ifdef _WIN32
 #define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo", "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
 #else
-#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
+#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
 
 const char *toolchain[] = {
@@ -16,7 +16,11 @@ void build_c_file(const char *input_path, const char *output_path)
 #ifdef _WIN32
     CMD("cl.exe", CFLAGS, input_path);
 #else
-    CMD("cc", CFLAGS, "-o", output_path, input_path);
+    const char *cc = getenv("CC");
+    if (cc == NULL) {
+        cc = "cc";
+    }
+    CMD(cc, CFLAGS, "-o", output_path, input_path);
 #endif // WIN32
 }
 
@@ -139,12 +143,12 @@ Command commands[] = {
     },
     {
         .name = "record",
-        .description = "Capture the current output of examples as the expected on for the tests",
+        .description = "Capture the current output of examples as the expected one for the tests",
         .run = record_tests
     },
     {
         .name = "fmt",
-        .description = "Format the source code using astyle",
+        .description = "Format the source code using astyle: http://astyle.sourceforge.net/",
         .run = fmt
     },
     {
@@ -166,12 +170,18 @@ void print_help(FILE *stream)
         }
     }
 
+    fprintf(stream, "Usage:\n");
+    fprintf(stream, "  Available subcommands:\n");
     for (size_t i = 0; i < commands_size; ++i) {
-        fprintf(stream, "./nobuild %s%*s - %s\n",
+        fprintf(stream, "    ./nobuild %s%*s - %s\n",
                 commands[i].name,
                 longest - strlen(commands[i].name), "",
                 commands[i].description);
     }
+
+    fprintf(stream,
+            "  You can provide several subcommands like this (they will be executed sequentially):\n"
+            "    ./nobuild build examples test\n");
 }
 
 int is_valid_command(const char *command_name)
