@@ -10,7 +10,7 @@ int main(int argc, char **argv)
     }
 
     Arena arena = {0};
-    // TODO: expr2dot does not have a proper location reporting on errors
+    // TODO(#198): expr2dot does not have a proper location reporting on errors
     File_Location location = {0};
 
     dump_expr_as_dot(
