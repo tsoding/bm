@@ -337,7 +337,8 @@ void dump_expr(FILE *stream, Expr expr, int level);
 void dump_expr_as_dot(FILE *stream, Expr expr);
 
 typedef enum {
-    BINARY_OP_PLUS
+    BINARY_OP_PLUS,
+    BINARY_OP_GT
 } Binary_Op_Kind;
 
 const char *binary_op_kind_name(Binary_Op_Kind kind);
@@ -362,6 +363,7 @@ struct Funcall {
 void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
+Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
@@ -2050,6 +2052,11 @@ static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location 
     }
     break;
 
+    case BINARY_OP_GT: {
+        assert(false && "TODO: BINARY_OP_GT eval is not implemented yet");
+    }
+    break;
+
     default: {
         assert(false && "basm_binary_op_eval: unreachable");
         exit(1);
@@ -2537,6 +2544,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
     return result;
 }
 
+// TODO: parse_primary_from_tokens does not support parens
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
@@ -2819,6 +2827,33 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location
     return first;
 }
 
+Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+{
+    Expr left = parse_sum_from_tokens(arena, tokens, location);
+
+    if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_GT) {
+        tv_chop_left(tokens, 1);
+
+        Expr right = parse_gt_from_tokens(arena, tokens, location);
+
+        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
+        binary_op->kind = BINARY_OP_GT;
+        binary_op->left = left;
+        binary_op->right = right;
+
+        Expr result = {
+            .kind = EXPR_KIND_BINARY_OP,
+            .value = {
+                .as_binary_op = binary_op,
+            }
+        };
+
+        return result;
+    } else {
+        return left;
+    }
+}
+
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     Expr left = parse_primary_from_tokens(arena, tokens, location);
@@ -2826,7 +2861,7 @@ Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loca
     if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
         tv_chop_left(tokens, 1);
 
-        Expr right = parse_expr_from_tokens(arena, tokens, location);
+        Expr right = parse_sum_from_tokens(arena, tokens, location);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
         binary_op->kind = BINARY_OP_PLUS;
@@ -2848,7 +2883,7 @@ Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loca
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
-    return parse_sum_from_tokens(arena, tokens, location);
+    return parse_gt_from_tokens(arena, tokens, location);
 }
 
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
