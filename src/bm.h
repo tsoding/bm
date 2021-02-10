@@ -2783,6 +2783,7 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return ">";
     default:
         assert(false && "binary_op_kind_name: unreachable");
+        exit(1);
     }
 }
 
