@@ -139,12 +139,12 @@ Command commands[] = {
     },
     {
         .name = "record",
-        .description = "Capture the current output of examples as the expected on for the tests",
+        .description = "Capture the current output of examples as the expected one for the tests",
         .run = record_tests
     },
     {
         .name = "fmt",
-        .description = "Format the source code using astyle",
+        .description = "Format the source code using astyle: http://astyle.sourceforge.net/",
         .run = fmt
     },
     {
@@ -166,12 +166,18 @@ void print_help(FILE *stream)
         }
     }
 
+    fprintf(stream, "Usage:\n");
+    fprintf(stream, "  Available subcommands:\n");
     for (size_t i = 0; i < commands_size; ++i) {
-        fprintf(stream, "./nobuild %s%*s - %s\n",
+        fprintf(stream, "    ./nobuild %s%*s - %s\n",
                 commands[i].name,
                 longest - strlen(commands[i].name), "",
                 commands[i].description);
     }
+
+    fprintf(stream,
+            "  You can provide several subcommands like this (they will be executed sequentially):\n"
+            "    ./nobuild build examples test\n");
 }
 
 int is_valid_command(const char *command_name)
