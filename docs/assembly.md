@@ -26,10 +26,7 @@ The translation of the program occurs line by line:
 - Everything after symbol `;` up until the end of the line is ignored.
 - Any leading whitespaces in the lines are ignored.
 - The lines that start with `%` are [Translation Directives](#translation-directives).
-- Any other line is interpreted as an instruction. One instruction per line.
-  - `<label>:`
-  - `<label>: <instruction> <operand>`
-  - `<instruction> <operand>`
+- Any other line has the following syntax: `[label:] [<instruction> [operand]]`.
 
 The specific instructions are documented in the [Instructions](#instructions) section. For more information on how labels work read the [Labels](#labels) section.
 
