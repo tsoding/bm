@@ -53,6 +53,10 @@ $ ./build/bin/bme -i ./build/examples/e.bm
 $ ./build/bin/bme -i ./build/examples/pi.bm
 ```
 
+#### Adding More Examples
+
+`nobuild examples` automatically builds all the `./examples/*.basm` files. So if you want to add a new example to the build just add `*.basm` file to [./examples/](./examples/).
+
 ### Running and Recoding Tests
 
 <!-- TODO: Running and Recoding Tests is not documented -->
