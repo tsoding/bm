@@ -8,7 +8,7 @@
 #endif
 
 const char *toolchain[] = {
-    "basm", "bme", "bmr", "debasm", "bdb", "basm2nasm"
+    "basm", "bme", "bmr", "debasm", "bdb", "basm2nasm", "expr2dot"
 };
 
 void build_c_file(const char *input_path, const char *output_path)

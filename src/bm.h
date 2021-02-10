@@ -29,6 +29,7 @@
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
+#define BASM_DEFERRED_ASSERTS_CAPACITY 1024
 #define BASM_STRING_LENGTHS_CAPACITY 1024
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
@@ -273,6 +274,7 @@ typedef enum {
     TOKEN_KIND_OPEN_PAREN,
     TOKEN_KIND_CLOSING_PAREN,
     TOKEN_KIND_COMMA,
+    TOKEN_KIND_GT,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
@@ -332,9 +334,16 @@ typedef struct {
     Expr_Value value;
 } Expr;
 
+void dump_expr(FILE *stream, Expr expr, int level);
+void dump_expr_as_dot(FILE *stream, Expr expr);
+
 typedef enum {
-    BINARY_OP_PLUS
+    BINARY_OP_PLUS,
+    BINARY_OP_GT
 } Binary_Op_Kind;
+
+const char *binary_op_kind_name(Binary_Op_Kind kind);
+void dump_binary_op(FILE *stream, Binary_Op binary_op, int level);
 
 struct Binary_Op {
     Binary_Op_Kind kind;
@@ -352,8 +361,10 @@ struct Funcall {
     Funcall_Arg *args;
 };
 
+void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
+Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
@@ -386,11 +397,19 @@ typedef struct {
 } String_Length;
 
 typedef struct {
+    Expr expr;
+    File_Location location;
+} Deferred_Assert;
+
+typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
+
+    Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
+    size_t deferred_asserts_size;
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
@@ -1847,6 +1866,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                     basm_translate_bind_directive(basm, &line, location, BINDING_CONST);
                 } else if (sv_eq(token, sv_from_cstr("native"))) {
                     basm_translate_bind_directive(basm, &line, location, BINDING_NATIVE);
+                } else if (sv_eq(token, sv_from_cstr("assert"))) {
+                    Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(line), location);
+                    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
+                        .expr = expr,
+                        .location = location,
+                    };
                 } else if (sv_eq(token, sv_from_cstr("include"))) {
                     line = sv_trim(line);
 
@@ -1992,6 +2017,19 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
         basm->program[addr].operand = basm_binding_eval(basm, binding, basm->deferred_operands[i].location);
     }
 
+    // Eval deferred asserts
+    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
+        Word value = basm_expr_eval(
+                         basm,
+                         basm->deferred_asserts[i].expr,
+                         basm->deferred_asserts[i].location);
+        if (!value.as_u64) {
+            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                    FL_Arg(basm->deferred_asserts[i].location));
+            exit(1);
+        }
+    }
+
     // Resolving deferred entry point
     if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
         Binding *binding = basm_resolve_binding(
@@ -2033,12 +2071,18 @@ Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
 
 static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
+    Word left = basm_expr_eval(basm, binary_op->left, location);
+    Word right = basm_expr_eval(basm, binary_op->right, location);
+
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
-        Word left = basm_expr_eval(basm, binary_op->left, location);
-        Word right = basm_expr_eval(basm, binary_op->right, location);
         // TODO(#183): compile-time sum can only work with integers
         return word_u64(left.as_u64 + right.as_u64);
+    }
+    break;
+
+    case BINARY_OP_GT: {
+        return word_u64(left.as_u64 > right.as_u64);
     }
     break;
 
@@ -2303,6 +2347,8 @@ const char *token_kind_name(Token_Kind kind)
         return "closing paren";
     case TOKEN_KIND_COMMA:
         return "comma";
+    case TOKEN_KIND_GT:
+        return ">";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
@@ -2359,6 +2405,14 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
         case ',': {
             tokens_push(tokens, (Token) {
                 .kind = TOKEN_KIND_COMMA,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
+        case '>': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_GT,
                 .text = sv_chop_left(&source, 1)
             });
         }
@@ -2519,6 +2573,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
     return result;
 }
 
+// TODO(#199): parse_primary_from_tokens does not support parens
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
@@ -2590,6 +2645,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     }
     break;
 
+    case TOKEN_KIND_GT:
     case TOKEN_KIND_OPEN_PAREN:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
@@ -2617,6 +2673,136 @@ size_t funcall_args_len(Funcall_Arg *args)
         args = args->next;
     }
     return result;
+}
+
+void dump_expr(FILE *stream, Expr expr, int level)
+{
+    fprintf(stream, "%*s", level * 2, "");
+
+    switch(expr.kind) {
+    case EXPR_KIND_BINDING:
+        fprintf(stream, "Binding: "SV_Fmt"\n",
+                SV_Arg(expr.value.as_binding));
+        break;
+    case EXPR_KIND_LIT_INT:
+        fprintf(stream, "Int Literal: %"PRIu64"\n", expr.value.as_lit_int);
+        break;
+    case EXPR_KIND_LIT_FLOAT:
+        fprintf(stream, "Float Literal: %lf\n", expr.value.as_lit_float);
+        break;
+    case EXPR_KIND_LIT_CHAR:
+        fprintf(stream, "Char Literal: '%c'\n", expr.value.as_lit_char);
+        break;
+    case EXPR_KIND_LIT_STR:
+        fprintf(stream, "String Literal: \""SV_Fmt"\"\n",
+                SV_Arg(expr.value.as_lit_str));
+        break;
+    case EXPR_KIND_BINARY_OP:
+        fprintf(stream, "Binary Op: %s\n",
+                binary_op_kind_name(expr.value.as_binary_op->kind));
+        dump_binary_op(stream, *expr.value.as_binary_op, level + 1);
+        break;
+    case EXPR_KIND_FUNCALL:
+        fprintf(stream, "Funcall: "SV_Fmt"\n",
+                SV_Arg(expr.value.as_funcall->name));
+        dump_funcall_args(stream, expr.value.as_funcall->args, level + 1);
+        break;
+    }
+}
+
+static int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
+{
+    int id = (*counter)++;
+
+    switch (expr.kind) {
+    case EXPR_KIND_BINDING: {
+        fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_binding));
+    }
+    break;
+    case EXPR_KIND_LIT_INT: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"%"PRIu64"\"]\n",
+                id, expr.value.as_lit_int);
+    }
+    break;
+    case EXPR_KIND_LIT_FLOAT: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"%lf\"]\n",
+                id, expr.value.as_lit_float);
+    }
+    break;
+    case EXPR_KIND_LIT_CHAR: {
+        fprintf(stream, "Expr_%d [shape=circle label=\"'%c'\"]\n",
+                id, expr.value.as_lit_char);
+    }
+    break;
+    case EXPR_KIND_LIT_STR: {
+        fprintf(stream, "Expr_%d [shape=circle label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_lit_str));
+    }
+    break;
+    case EXPR_KIND_BINARY_OP: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%s\"]\n",
+                id, binary_op_kind_name(expr.value.as_binary_op->kind));
+        int left_id = dump_expr_as_dot_edges(stream, expr.value.as_binary_op->left, counter);
+        int right_id = dump_expr_as_dot_edges(stream, expr.value.as_binary_op->right, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, left_id);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, right_id);
+    }
+    break;
+    case EXPR_KIND_FUNCALL: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(expr.value.as_funcall->name));
+
+        for (Funcall_Arg *arg = expr.value.as_funcall->args;
+                arg != NULL;
+                arg = arg->next) {
+            int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
+        }
+    }
+    break;
+    }
+
+    return id;
+}
+
+void dump_expr_as_dot(FILE *stream, Expr expr)
+{
+    fprintf(stream, "digraph Expr {\n");
+    int counter = 0;
+    dump_expr_as_dot_edges(stream, expr, &counter);
+    fprintf(stream, "}\n");
+}
+
+const char *binary_op_kind_name(Binary_Op_Kind kind)
+{
+    switch (kind) {
+    case BINARY_OP_PLUS:
+        return "+";
+    case BINARY_OP_GT:
+        return ">";
+    default:
+        assert(false && "binary_op_kind_name: unreachable");
+        exit(1);
+    }
+}
+
+void dump_binary_op(FILE *stream, Binary_Op binary_op, int level)
+{
+    fprintf(stream, "%*sLeft:\n", level * 2, "");
+    dump_expr(stream, binary_op.left, level + 1);
+
+    fprintf(stream, "%*sRight:\n", level * 2, "");
+    dump_expr(stream, binary_op.right, level + 1);
+}
+
+void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
+{
+    while (args != NULL) {
+        fprintf(stream, "%*sArg:\n", level * 2, "");
+        dump_expr(stream, args->value, level + 1);
+        args = args->next;
+    }
 }
 
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location)
@@ -2671,6 +2857,33 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location
     return first;
 }
 
+Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+{
+    Expr left = parse_sum_from_tokens(arena, tokens, location);
+
+    if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_GT) {
+        tv_chop_left(tokens, 1);
+
+        Expr right = parse_gt_from_tokens(arena, tokens, location);
+
+        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
+        binary_op->kind = BINARY_OP_GT;
+        binary_op->left = left;
+        binary_op->right = right;
+
+        Expr result = {
+            .kind = EXPR_KIND_BINARY_OP,
+            .value = {
+                .as_binary_op = binary_op,
+            }
+        };
+
+        return result;
+    } else {
+        return left;
+    }
+}
+
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     Expr left = parse_primary_from_tokens(arena, tokens, location);
@@ -2678,7 +2891,7 @@ Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loca
     if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
         tv_chop_left(tokens, 1);
 
-        Expr right = parse_expr_from_tokens(arena, tokens, location);
+        Expr right = parse_sum_from_tokens(arena, tokens, location);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
         binary_op->kind = BINARY_OP_PLUS;
@@ -2700,7 +2913,7 @@ Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loca
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
-    return parse_sum_from_tokens(arena, tokens, location);
+    return parse_gt_from_tokens(arena, tokens, location);
 }
 
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
