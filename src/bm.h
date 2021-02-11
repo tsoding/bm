@@ -328,7 +328,6 @@ typedef union {
     Funcall *as_funcall;
 } Expr_Value;
 
-// TODO(#178): compile time expressions don't support math operations
 typedef struct {
     Expr_Kind kind;
     Expr_Value value;
