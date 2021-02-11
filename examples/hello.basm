@@ -1,7 +1,6 @@
 %include "./examples/natives.hasm"
 %const hello "Hello, World" ; message
 
-;; TODO(#192): no %assert translation directive
 ;; ---
 %assert len(hello) > 0
 
