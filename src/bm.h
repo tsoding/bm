@@ -375,7 +375,6 @@ typedef enum {
     BINDING_EVALUATED,
 } Binding_Status;
 
-// TODO(#177): bindings don't support expressions
 typedef struct {
     Binding_Kind kind;
     String_View name;
