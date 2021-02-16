@@ -31,7 +31,9 @@ void build_tool(const char *name)
         "/Fe.\\build\\toolchain\\",
         "/Fo.\\build\\toolchain\\",
         "/I", PATH("src", "library"),
-        PATH("src", "toolchain", CONCAT(name, ".c")));
+        CONCAT("/LIBPATH:", PATH("build", "library")),
+        PATH("src", "toolchain", CONCAT(name, ".c")),
+        "bm.lib");
 #else
     const char *cc = getenv("CC");
     if (cc == NULL) {
@@ -166,7 +168,7 @@ void link_lib_objects(void)
 {
 #ifdef _WIN32
     CMD("lib",
-        CONCAT("/out:", PATH("build", "library", "libbm.lib")),
+        CONCAT("/out:", PATH("build", "library", "bm.lib")),
         PATH("build", "library", "arena.obj"), 
         PATH("build", "library", "basm.obj"), 
         PATH("build", "library", "bm.obj"), 
