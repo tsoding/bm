@@ -2,7 +2,7 @@
 #include "./nobuild.h"
 
 #ifdef _WIN32
-#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo", "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
+#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo" //, "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
 #else
 #define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
@@ -24,6 +24,26 @@ void build_c_file(const char *input_path, const char *output_path)
 #endif // WIN32
 }
 
+void build_tool(const char *name)
+{
+#ifdef _WIN32
+    ERRO("TODO: build_tool() is not implemented for Windows");
+    exit(1);
+#else
+    const char *cc = getenv("CC");
+    if (cc == NULL) {
+        cc = "cc";
+    }
+
+    CMD(cc, CFLAGS, 
+        "-o", PATH("build", "toolchain", name),
+        "-I", PATH("src", "library"),
+        "-L", PATH("build", "library"),
+        PATH("src", "toolchain", CONCAT(name, ".c")),
+        "-lbm");
+#endif // _WIN32
+}
+
 void build_toolchain(void)
 {
     RM(PATH("build", "toolchain"));
@@ -31,12 +51,7 @@ void build_toolchain(void)
 
     FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
         if (ENDS_WITH(file, ".c")) {
-            CMD("cc", CFLAGS, 
-                "-o", PATH("build", "toolchain", NOEXT(file)),
-                "-I", PATH("src", "library"),
-                "-L", PATH("build", "library"),
-                PATH("src", "toolchain", file),
-                "-lbm");
+            build_tool(NOEXT(file));
         }
     });
 }
@@ -131,25 +146,51 @@ void help_command(void)
     print_help(stdout);
 }
 
-void lib_command(void)
+void build_lib_object(const char *name)
 {
-    MKDIRS("build", "library");
-    
-    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
-        if (ENDS_WITH(file, ".c")) {
-            CMD("cc", CFLAGS, "-c", 
-                PATH("src", "library", file),
-                "-o", PATH("build", "library", 
-                           CONCAT(NOEXT(file), ".o")));
-        }
-    });
-    
+#ifdef _WIN32
+    CMD("cl.exe", CFLAGS, "/c",
+        PATH("src", "library", CONCAT(name, ".c")),
+        "/Fo.\\build\\library\\")
+#else
+    CMD("cc", CFLAGS, "-c", 
+        PATH("src", "library", CONCAT(name, ".c")),
+        "-o", PATH("build", "library", CONCAT(name, ".o")));
+#endif // _WIN32
+}
+
+void link_lib_objects(void)
+{
+#ifdef _WIN32
+    ERRO("TODO: link_lib_objects() is not implemented for Windows");
+    exit(1);
+#else
     CMD("ar", "-crs", 
         PATH("build", "library", "libbm.a"),
         PATH("build", "library", "arena.o"), 
         PATH("build", "library", "basm.o"), 
         PATH("build", "library", "bm.o"), 
         PATH("build", "library", "sv.o"));
+#endif // _WIN32
+}
+
+void lib_command(void)
+{
+    MKDIRS("build", "library");
+    
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c")) {
+            build_lib_object(NOEXT(file));
+        }
+    });
+    
+    INFO("----------------------------");
+    FOREACH_FILE_IN_DIR(file, PATH("build", "library"), {
+        INFO(file);
+    });
+    INFO("----------------------------");
+    
+    link_lib_objects();
 }
 
 void all_command(void)
