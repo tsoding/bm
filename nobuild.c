@@ -110,7 +110,7 @@ void fmt(void)
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
-            const char *file_path = PATH("src", file);
+            const char *file_path = PATH("src", "library", file);
             CMD("astyle", "--style=kr", file_path);
         }
     });
@@ -118,7 +118,7 @@ void fmt(void)
     FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
-            const char *file_path = PATH("src", file);
+            const char *file_path = PATH("src", "toolchain", file);
             CMD("astyle", "--style=kr", file_path);
         }
     });
