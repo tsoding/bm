@@ -26,12 +26,19 @@ void build_c_file(const char *input_path, const char *output_path)
 
 void build_toolchain(void)
 {
-    RM(PATH("build", "bin"));
-    MKDIRS("build", "bin");
+    RM(PATH("build", "toolchain"));
+    MKDIRS("build", "toolchain");
 
-    FOREACH_ARRAY(const char *, tool, toolchain, {
-        build_c_file(PATH("src", CONCAT(tool, ".c")),
-                     PATH("build", "bin", tool));
+    FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
+        if (ENDS_WITH(file, ".c")) {
+            CMD("cc", CFLAGS, 
+                "-o", PATH("build", "toolchain", NOEXT(file)),
+                "-I", PATH("src", "library"),
+                "-L", PATH("build", "library"),
+                "-static", 
+                PATH("src", "toolchain", file),
+                "-lbm");
+        }
     });
 }
 
@@ -43,7 +50,7 @@ void build_examples(void)
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
         {
-            CMD(PATH("build", "bin", "basm"),
+            CMD(PATH("build", "toolchain", "basm"),
                 "-g",
                 PATH("examples", example),
                 PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
@@ -79,7 +86,7 @@ void run_tests(void)
         if (ENDS_WITH(example, ".basm"))
         {
             const char *example_base = NOEXT(example);
-            CMD(PATH("build", "bin", "bmr"),
+            CMD(PATH("build", "toolchain", "bmr"),
                 "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
                 "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
         }
@@ -117,6 +124,35 @@ void help_command(void)
     print_help(stdout);
 }
 
+void lib_command(void)
+{
+    MKDIRS("build", "library");
+    
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c")) {
+            CMD("cc", CFLAGS, "-c", 
+                PATH("src", "library", file),
+                "-o", PATH("build", "library", 
+                           CONCAT(NOEXT(file), ".o")));
+        }
+    });
+    
+    CMD("ar", "-crs", 
+        PATH("build", "library", "libbm.a"),
+        PATH("build", "library", "arena.o"), 
+        PATH("build", "library", "basm.o"), 
+        PATH("build", "library", "bm.o"), 
+        PATH("build", "library", "sv.o"));
+}
+
+void all_command(void)
+{
+    lib_command();
+    build_toolchain();
+    build_examples();
+    run_tests();
+}
+
 typedef struct {
     const char *name;
     const char *description;
@@ -125,7 +161,12 @@ typedef struct {
 
 Command commands[] = {
     {
-        .name = "build",
+        .name = "all",
+        .description = "Similar to ./nobuild lib tools examples test",
+        .run = all_command,
+    },
+    {
+        .name = "tools",
         .description = "Build toolchain",
         .run = build_toolchain
     },
@@ -153,6 +194,11 @@ Command commands[] = {
         .name = "help",
         .description = "Show this help message",
         .run = help_command
+    },
+    {
+        .name = "lib",
+        .description = "Build the BM library (experimental)",
+        .run = lib_command,
     },
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);

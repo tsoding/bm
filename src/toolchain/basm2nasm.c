@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BM_IMPLEMENTATION
 #include "bm.h"
+#include "basm.h"
 
 static void usage(FILE *stream)
 {

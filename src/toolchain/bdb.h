@@ -11,7 +11,8 @@
 #ifndef BDB_H
 #define BDB_H
 
-#include "bm.h"
+#include "./bm.h"
+#include "./basm.h"
 
 #define BDB_BREAKPOINTS_CAPACITY 256
 
