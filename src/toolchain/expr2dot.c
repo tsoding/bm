@@ -1,5 +1,7 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
+#include "./arena.h"
+#include "./basm.h"
 
 int main(int argc, char **argv)
 {

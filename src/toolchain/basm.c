@@ -1,4 +1,5 @@
 #define BM_IMPLEMENTATION
+#include "./basm.h"
 #include "./bm.h"
 
 static char *shift(int *argc, char ***argv)

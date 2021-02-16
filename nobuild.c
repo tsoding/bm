@@ -2,7 +2,7 @@
 #include "./nobuild.h"
 
 #ifdef _WIN32
-#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo", "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
+#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo" //, "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
 #else
 #define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
@@ -24,14 +24,40 @@ void build_c_file(const char *input_path, const char *output_path)
 #endif // WIN32
 }
 
+void build_tool(const char *name)
+{
+#ifdef _WIN32
+    CMD("cl.exe", CFLAGS,
+        "/Fe.\\build\\toolchain\\",
+        "/Fo.\\build\\toolchain\\",
+        "/I", PATH("src", "library"),
+        PATH("src", "toolchain", CONCAT(name, ".c")),
+        "bm.lib",
+        "/link", CONCAT("/LIBPATH:", PATH("build", "library")));
+#else
+    const char *cc = getenv("CC");
+    if (cc == NULL) {
+        cc = "cc";
+    }
+
+    CMD(cc, CFLAGS, 
+        "-o", PATH("build", "toolchain", name),
+        "-I", PATH("src", "library"),
+        "-L", PATH("build", "library"),
+        PATH("src", "toolchain", CONCAT(name, ".c")),
+        "-lbm");
+#endif // _WIN32
+}
+
 void build_toolchain(void)
 {
-    RM(PATH("build", "bin"));
-    MKDIRS("build", "bin");
+    RM(PATH("build", "toolchain"));
+    MKDIRS("build", "toolchain");
 
-    FOREACH_ARRAY(const char *, tool, toolchain, {
-        build_c_file(PATH("src", CONCAT(tool, ".c")),
-                     PATH("build", "bin", tool));
+    FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
+        if (ENDS_WITH(file, ".c")) {
+            build_tool(NOEXT(file));
+        }
     });
 }
 
@@ -43,7 +69,7 @@ void build_examples(void)
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
         {
-            CMD(PATH("build", "bin", "basm"),
+            CMD(PATH("build", "toolchain", "basm"),
                 "-g",
                 PATH("examples", example),
                 PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
@@ -79,7 +105,7 @@ void run_tests(void)
         if (ENDS_WITH(example, ".basm"))
         {
             const char *example_base = NOEXT(example);
-            CMD(PATH("build", "bin", "bmr"),
+            CMD(PATH("build", "toolchain", "bmr"),
                 "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
                 "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
         }
@@ -101,10 +127,18 @@ void record_tests(void)
 
 void fmt(void)
 {
-    FOREACH_FILE_IN_DIR(file, "src", {
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
-            const char *file_path = PATH("src", file);
+            const char *file_path = PATH("src", "library", file);
+            CMD("astyle", "--style=kr", file_path);
+        }
+    });
+
+    FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
+        if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
+        {
+            const char *file_path = PATH("src", "toolchain", file);
             CMD("astyle", "--style=kr", file_path);
         }
     });
@@ -117,6 +151,59 @@ void help_command(void)
     print_help(stdout);
 }
 
+void build_lib_object(const char *name)
+{
+#ifdef _WIN32
+    CMD("cl.exe", CFLAGS, "/c",
+        PATH("src", "library", CONCAT(name, ".c")),
+        "/Fo.\\build\\library\\");
+#else
+    CMD("cc", CFLAGS, "-c", 
+        PATH("src", "library", CONCAT(name, ".c")),
+        "-o", PATH("build", "library", CONCAT(name, ".o")));
+#endif // _WIN32
+}
+
+void link_lib_objects(void)
+{
+#ifdef _WIN32
+    CMD("lib",
+        CONCAT("/out:", PATH("build", "library", "bm.lib")),
+        PATH("build", "library", "arena.obj"), 
+        PATH("build", "library", "basm.obj"), 
+        PATH("build", "library", "bm.obj"), 
+        PATH("build", "library", "sv.obj"));
+#else
+    CMD("ar", "-crs", 
+        PATH("build", "library", "libbm.a"),
+        PATH("build", "library", "arena.o"), 
+        PATH("build", "library", "basm.o"), 
+        PATH("build", "library", "bm.o"), 
+        PATH("build", "library", "sv.o"));
+#endif // _WIN32
+}
+
+void lib_command(void)
+{
+    MKDIRS("build", "library");
+    
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c")) {
+            build_lib_object(NOEXT(file));
+        }
+    });
+    
+    link_lib_objects();
+}
+
+void all_command(void)
+{
+    lib_command();
+    build_toolchain();
+    build_examples();
+    run_tests();
+}
+
 typedef struct {
     const char *name;
     const char *description;
@@ -125,7 +212,12 @@ typedef struct {
 
 Command commands[] = {
     {
-        .name = "build",
+        .name = "all",
+        .description = "Similar to ./nobuild lib tools examples test",
+        .run = all_command,
+    },
+    {
+        .name = "tools",
         .description = "Build toolchain",
         .run = build_toolchain
     },
@@ -153,6 +245,11 @@ Command commands[] = {
         .name = "help",
         .description = "Show this help message",
         .run = help_command
+    },
+    {
+        .name = "lib",
+        .description = "Build the BM library (experimental)",
+        .run = lib_command,
     },
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
