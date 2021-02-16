@@ -163,7 +163,7 @@ void link_lib_objects(void)
 {
 #ifdef _WIN32
     CMD("lib",
-        "/out", PATH("build", "library", "libbm.lib"),
+        CONCAT("/out:", PATH("build", "library", "libbm.lib")),
         PATH("build", "library", "arena.obj"), 
         PATH("build", "library", "basm.obj"), 
         PATH("build", "library", "bm.obj"), 
