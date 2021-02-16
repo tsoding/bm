@@ -31,9 +31,9 @@ void build_tool(const char *name)
         "/Fe.\\build\\toolchain\\",
         "/Fo.\\build\\toolchain\\",
         "/I", PATH("src", "library"),
-        CONCAT("/LIBPATH:", PATH("build", "library")),
         PATH("src", "toolchain", CONCAT(name, ".c")),
-        "bm.lib");
+        "bm.lib",
+        "/link", CONCAT("/LIBPATH:", PATH("build", "library")));
 #else
     const char *cc = getenv("CC");
     if (cc == NULL) {
