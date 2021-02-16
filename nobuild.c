@@ -167,7 +167,7 @@ void link_lib_objects(void)
         PATH("build", "library", "arena.obj"), 
         PATH("build", "library", "basm.obj"), 
         PATH("build", "library", "bm.obj"), 
-        PATH("build", "library", "sv.obj"))
+        PATH("build", "library", "sv.obj"));
 #else
     CMD("ar", "-crs", 
         PATH("build", "library", "libbm.a"),
