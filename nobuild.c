@@ -151,7 +151,7 @@ void build_lib_object(const char *name)
 #ifdef _WIN32
     CMD("cl.exe", CFLAGS, "/c",
         PATH("src", "library", CONCAT(name, ".c")),
-        "/Fo.\\build\\library\\")
+        "/Fo.\\build\\library\\");
 #else
     CMD("cc", CFLAGS, "-c", 
         PATH("src", "library", CONCAT(name, ".c")),
