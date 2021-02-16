@@ -107,7 +107,15 @@ void record_tests(void)
 
 void fmt(void)
 {
-    FOREACH_FILE_IN_DIR(file, "src", {
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
+        {
+            const char *file_path = PATH("src", file);
+            CMD("astyle", "--style=kr", file_path);
+        }
+    });
+
+    FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
             const char *file_path = PATH("src", file);
