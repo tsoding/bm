@@ -35,7 +35,6 @@ void build_toolchain(void)
                 "-o", PATH("build", "toolchain", NOEXT(file)),
                 "-I", PATH("src", "library"),
                 "-L", PATH("build", "library"),
-                "-static", 
                 PATH("src", "toolchain", file),
                 "-lbm");
         }
