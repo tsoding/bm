@@ -188,13 +188,13 @@ void lib_command(void)
         }
     });
     
+    link_lib_objects();
+    
     INFO("----------------------------");
     FOREACH_FILE_IN_DIR(file, PATH("build", "library"), {
         INFO(file);
     });
     INFO("----------------------------");
-    
-    link_lib_objects();
 }
 
 void all_command(void)
