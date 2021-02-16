@@ -27,8 +27,10 @@ void build_c_file(const char *input_path, const char *output_path)
 void build_tool(const char *name)
 {
 #ifdef _WIN32
-    ERRO("TODO: build_tool() is not implemented for Windows");
-    exit(1);
+    CMD("cl.exe", CFLAGS,
+        "/Fe.\\build\\toolchain\\",
+        "/Fo.\\build\\toolchain\\",
+        PATH("src", "toolchain", CONCAT(name, ".c")));
 #else
     const char *cc = getenv("CC");
     if (cc == NULL) {
@@ -189,12 +191,6 @@ void lib_command(void)
     });
     
     link_lib_objects();
-    
-    INFO("----------------------------");
-    FOREACH_FILE_IN_DIR(file, PATH("build", "library"), {
-        INFO(file);
-    });
-    INFO("----------------------------");
 }
 
 void all_command(void)
