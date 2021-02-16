@@ -30,6 +30,7 @@ void build_tool(const char *name)
     CMD("cl.exe", CFLAGS,
         "/Fe.\\build\\toolchain\\",
         "/Fo.\\build\\toolchain\\",
+        "/I", PATH("src", "library"),
         PATH("src", "toolchain", CONCAT(name, ".c")));
 #else
     const char *cc = getenv("CC");
