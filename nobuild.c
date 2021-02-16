@@ -162,8 +162,12 @@ void build_lib_object(const char *name)
 void link_lib_objects(void)
 {
 #ifdef _WIN32
-    ERRO("TODO: link_lib_objects() is not implemented for Windows");
-    exit(1);
+    CMD("lib",
+        "/out", PATH("build", "library", "libbm.lib"),
+        PATH("build", "library", "arena.obj"), 
+        PATH("build", "library", "basm.obj"), 
+        PATH("build", "library", "bm.obj"), 
+        PATH("build", "library", "sv.obj"))
 #else
     CMD("ar", "-crs", 
         PATH("build", "library", "libbm.a"),
