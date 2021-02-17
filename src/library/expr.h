@@ -33,6 +33,9 @@ typedef struct {
     String_View text;
 } Token;
 
+#define Token_Fmt "%s"
+#define Token_Arg(token) token_kind_name((token).kind)
+
 #define TOKENS_CAPACITY 1024
 
 typedef struct {

@@ -138,7 +138,15 @@ Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location
     tokenize(source, &tokens, location);
 
     Tokens_View tv = tokens_as_view(&tokens);
-    return parse_expr_from_tokens(arena, &tv, location);
+    Expr result = parse_expr_from_tokens(arena, &tv, location);
+
+    if (tv.count > 0) {
+        fprintf(stderr, FL_Fmt": ERROR: unexpected token `"SV_Fmt"`\n",
+                FL_Arg(location), SV_Arg(tv.elems->text));
+        exit(1);
+    }
+
+    return result;
 }
 
 void dump_expr(FILE *stream, Expr expr, int level)
