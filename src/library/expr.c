@@ -311,7 +311,6 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
     return result;
 }
 
-// TODO(#199): parse_primary_from_tokens does not support parens
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     if (tokens->count == 0) {
@@ -383,8 +382,20 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     }
     break;
 
+    case TOKEN_KIND_OPEN_PAREN: {
+        tv_chop_left(tokens, 1);
+        Expr expr = parse_expr_from_tokens(arena, tokens, location);
+        if (tokens->count < 1 || tokens->elems->kind != TOKEN_KIND_CLOSING_PAREN) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%s`\n",
+                    FL_Arg(location), token_kind_name(TOKEN_KIND_CLOSING_PAREN));
+            exit(1);
+        }
+        tv_chop_left(tokens, 1);
+        return expr;
+    }
+    break;
+
     case TOKEN_KIND_GT:
-    case TOKEN_KIND_OPEN_PAREN:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
     case TOKEN_KIND_PLUS: {
