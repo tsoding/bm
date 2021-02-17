@@ -118,7 +118,7 @@ void record_tests(void)
         if (ENDS_WITH(example, ".basm"))
         {
             const char *example_base = NOEXT(example);
-            CMD(PATH("build", "bin", "bmr"),
+            CMD(PATH("build", "toolchain", "bmr"),
                 "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
                 "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
         }
