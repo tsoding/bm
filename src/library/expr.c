@@ -73,58 +73,55 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location
     return first;
 }
 
-Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens,
+                          File_Location location)
 {
     Expr left = parse_sum_from_tokens(arena, tokens, location);
 
-    if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_GT) {
+    while (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_GT) {
         tv_chop_left(tokens, 1);
 
-        Expr right = parse_gt_from_tokens(arena, tokens, location);
+        Expr right = parse_sum_from_tokens(arena, tokens, location);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
         binary_op->kind = BINARY_OP_GT;
         binary_op->left = left;
         binary_op->right = right;
 
-        Expr result = {
+        left = (Expr) {
             .kind = EXPR_KIND_BINARY_OP,
             .value = {
                 .as_binary_op = binary_op,
             }
         };
-
-        return result;
-    } else {
-        return left;
     }
+
+    return left;
 }
 
 Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
     Expr left = parse_primary_from_tokens(arena, tokens, location);
 
-    if (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
+    while (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
         tv_chop_left(tokens, 1);
 
-        Expr right = parse_sum_from_tokens(arena, tokens, location);
+        Expr right = parse_primary_from_tokens(arena, tokens, location);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
         binary_op->kind = BINARY_OP_PLUS;
         binary_op->left = left;
         binary_op->right = right;
 
-        Expr result = {
+        left = (Expr) {
             .kind = EXPR_KIND_BINARY_OP,
             .value = {
                 .as_binary_op = binary_op,
             }
         };
-
-        return result;
-    } else {
-        return left;
     }
+
+    return left;
 }
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
