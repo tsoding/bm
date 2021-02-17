@@ -172,14 +172,16 @@ void link_lib_objects(void)
         PATH("build", "library", "arena.obj"), 
         PATH("build", "library", "basm.obj"), 
         PATH("build", "library", "bm.obj"), 
-        PATH("build", "library", "sv.obj"));
+        PATH("build", "library", "sv.obj"),
+        PATH("build", "library", "expr.obj"));
 #else
     CMD("ar", "-crs", 
         PATH("build", "library", "libbm.a"),
         PATH("build", "library", "arena.o"), 
         PATH("build", "library", "basm.o"), 
         PATH("build", "library", "bm.o"), 
-        PATH("build", "library", "sv.o"));
+        PATH("build", "library", "sv.o"),
+        PATH("build", "library", "expr.o"));
 #endif // _WIN32
 }
 

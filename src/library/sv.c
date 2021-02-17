@@ -131,3 +131,12 @@ uint64_t sv_to_u64(String_View sv)
 
     return result;
 }
+
+String_View sv_chop_left_while(String_View *sv, bool (*predicate)(char x))
+{
+    size_t i = 0;
+    while (i < sv->count && predicate(sv->data[i])) {
+        i += 1;
+    }
+    return sv_chop_left(sv, i);
+}
