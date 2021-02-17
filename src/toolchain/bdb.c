@@ -573,7 +573,9 @@ int main(int argc, char **argv)
     while (!feof(stdin)) {
         printf("(bdb) ");
         char input_buf[INPUT_CAPACITY] = {0};
-        fgets(input_buf, INPUT_CAPACITY, stdin);
+        if (fgets(input_buf, INPUT_CAPACITY, stdin) == NULL) {
+            bdb_exit(&state);
+        }
 
         String_View
         input_sv = sv_trim(sv_from_cstr(input_buf)),
@@ -582,24 +584,20 @@ int main(int argc, char **argv)
         /*
          * Check if we need to repeat the previous command
          */
-        if (control_word.count == 0) {
-            if (*previous_command == '\0') {
-                fprintf(stderr, "ERR : No previous command\n");
-                continue;
-            }
-
+        if (control_word.count == 0 && *previous_command != '\0') {
             input_sv = sv_trim(sv_from_cstr(previous_command));
             control_word = sv_trim(sv_chop_by_delim(&input_sv, ' '));
         }
 
-        Bdb_Err err = bdb_run_command(&state, control_word, input_sv);
+        if (control_word.count > 0) {
+            Bdb_Err err = bdb_run_command(&state, control_word, input_sv);
 
-        if ( (err == BDB_OK)
-                && (*input_buf != '\n') ) {
-            /*
-             * Store the previous command for repeating it.
-             */
-            memcpy(previous_command, input_buf, sizeof(char) * INPUT_CAPACITY);
+            if (err == BDB_OK && *input_buf != '\n') {
+                /*
+                 * Store the previous command for repeating it.
+                 */
+                memcpy(previous_command, input_buf, sizeof(char) * INPUT_CAPACITY);
+            }
         }
 
         arena_clean(&state.tmp_arena);
