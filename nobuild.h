@@ -641,7 +641,7 @@ void nobuild__rm(const char *path)
     } else {
         if (unlink(path) < 0) {
             if (errno == ENOENT) {
-                WARN("file %s does not exist");
+                WARN("file %s does not exist", path);
             } else {
                 ERRO("could not remove file %s: %s", path, strerror(errno));
                 exit(1);
