@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
 ; only this string needs to be changed
 %const secret "Uryyb, jbeyq! Sebz EBG13."

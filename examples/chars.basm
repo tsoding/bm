@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
 main:
     push '0'

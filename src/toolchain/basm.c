@@ -13,35 +13,50 @@ static char *shift(int *argc, char ***argv)
 
 static void usage(FILE *stream, const char *program)
 {
-    fprintf(stream, "Usage: %s [-g] <input.basm> <output.bm>\n", program);
+    fprintf(stream, "Usage: %s [-g] [-I <include-path>...] -i <input.basm> -o <output.bm>\n", program);
+}
+
+static char *get_flag_value(int *argc, char ***argv,
+                            const char *flag,
+                            const char *program)
+{
+    if (*argc == 0) {
+        usage(stderr, program);
+        fprintf(stderr, "ERROR: no value provided for flag `%s`\n", flag);
+        exit(1);
+    }
+
+    return shift(argc, argv);
 }
 
 int main(int argc, char **argv)
 {
-    int have_symbol_table = 0;
-    const char *program = shift(&argc, &argv);
-
-    if (argc == 0) {
-        usage(stderr, program);
-        fprintf(stderr, "ERROR: expected input\n");
-        exit(1);
-    }
-    const char *input_file_path = shift(&argc, &argv);
-
-    if (!strcmp(input_file_path, "-g")) {
-        have_symbol_table = 1;
-        input_file_path = shift(&argc, &argv);
-    }
-
-    if (argc == 0) {
-        usage(stderr, program);
-        fprintf(stderr, "ERROR: expected output\n");
-        exit(1);
-    }
-    const char *output_file_path = shift(&argc, &argv);
-
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Basm basm = {0};
+
+    bool have_symbol_table = false;
+    const char *program = shift(&argc, &argv);
+    const char *input_file_path = NULL;
+    const char *output_file_path = NULL;
+
+    while (argc > 0) {
+        const char *flag = shift(&argc, &argv);
+
+        if (strcmp(flag, "-i") == 0) {
+            input_file_path = get_flag_value(&argc, &argv, flag, program);
+        } else if (strcmp(flag, "-o") == 0) {
+            output_file_path = get_flag_value(&argc, &argv, flag, program);
+        } else if (strcmp(flag, "-g") == 0) {
+            have_symbol_table = true;
+        } else if (strcmp(flag, "-I") == 0) {
+            basm_push_include_path(&basm, sv_from_cstr(get_flag_value(&argc, &argv, flag, program)));
+        } else {
+            usage(stderr, program);
+            fprintf(stderr, "ERROR: unknown flag `%s`\n", flag);
+            exit(1);
+        }
+    }
+
     basm_translate_source(&basm, sv_from_cstr(input_file_path));
 
     if (!basm.has_entry) {

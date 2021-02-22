@@ -1,3 +1,14 @@
+#ifndef _WIN32
+#    define _DEFAULT_SOURCE
+#    define _POSIX_C_SOURCE 200112L
+#    include <sys/types.h>
+#    include <sys/stat.h>
+#    include <unistd.h>
+#else
+#    define  WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+#endif // _WIN32
+
 #include <stdio.h>
 
 #include "./basm.h"
@@ -165,17 +176,24 @@ static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Lo
     }
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path)
+void basm_translate_source(Basm *basm, String_View input_file_path_)
 {
+    {
+        String_View resolved_path = SV_NULL;
+        if (basm_resolve_include_file_path(basm, input_file_path_, &resolved_path)) {
+            input_file_path_ = resolved_path;
+        }
+    }
+
     String_View original_source = {0};
-    if (arena_slurp_file(&basm->arena, input_file_path, &original_source) < 0) {
+    if (arena_slurp_file(&basm->arena, input_file_path_, &original_source) < 0) {
         if (basm->include_level > 0) {
             fprintf(stderr, FL_Fmt": ERROR: could not read file `"SV_Fmt"`: %s\n",
                     FL_Arg(basm->include_location),
-                    SV_Arg(input_file_path), strerror(errno));
+                    SV_Arg(input_file_path_), strerror(errno));
         } else {
             fprintf(stderr, "ERROR: could not read file `"SV_Fmt"`: %s\n",
-                    SV_Arg(input_file_path), strerror(errno));
+                    SV_Arg(input_file_path_), strerror(errno));
         }
         exit(1);
     }
@@ -183,7 +201,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
     String_View source = original_source;
 
     File_Location location = {
-        .file_path = input_file_path,
+        .file_path = input_file_path_,
     };
 
     // First pass
@@ -512,4 +530,72 @@ const char *binding_kind_as_cstr(Binding_Kind kind)
         assert(false && "binding_kind_as_cstr: unreachable");
         exit(0);
     }
+}
+
+void basm_push_include_path(Basm *basm, String_View path)
+{
+    assert(basm->include_paths_size < BASM_INCLUDE_PATHS_CAPACITY);
+    basm->include_paths[basm->include_paths_size++] = path;
+}
+
+static bool path_file_exist(const char *file_path)
+{
+#ifndef _WIN32
+    struct stat statbuf = {0};
+    return stat(file_path, &statbuf) == 0 &&
+           ((statbuf.st_mode & S_IFMT) == S_IFREG);
+#else
+    // https://stackoverflow.com/a/6218957
+    DWORD dwAttrib = GetFileAttributes(file_path);
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#endif
+}
+
+static String_View path_join(Arena *arena, String_View base, String_View file_path)
+{
+#ifndef _WIN32
+    const String_View sep = sv_from_cstr("/");
+#else
+    const String_View sep = sv_from_cstr("\\");
+#endif // _WIN32
+    const size_t result_size = base.count + sep.count + file_path.count;
+    char *result = arena_alloc(arena, result_size);
+    assert(result);
+
+    {
+        char *append = result;
+
+        memcpy(append, base.data, base.count);
+        append += base.count;
+
+        memcpy(append, sep.data, sep.count);
+        append += sep.count;
+
+        memcpy(append, file_path.data, file_path.count);
+        append += file_path.count;
+    }
+
+    return (String_View) {
+        .count = result_size,
+        .data = result,
+    };
+}
+
+bool basm_resolve_include_file_path(Basm *basm,
+                                    String_View file_path,
+                                    String_View *resolved_path)
+{
+    for (size_t i = 0; i < basm->include_paths_size; ++i) {
+        String_View path = path_join(&basm->arena, basm->include_paths[i],
+                                     file_path);
+        if (path_file_exist(arena_sv_to_cstr(&basm->arena, path))) {
+            if (resolved_path) {
+                *resolved_path = path;
+            }
+            return true;
+        }
+    }
+
+    return false;
 }

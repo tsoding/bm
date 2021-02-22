@@ -116,9 +116,10 @@ void examples_command(void)
         if (ENDS_WITH(example, ".basm"))
         {
             CMD(PATH("build", "toolchain", "basm"),
+                "-I", "./examples/stdlib/",
                 "-g",
-                PATH("examples", example),
-                PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
+                "-i", PATH("examples", example),
+                "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
         }
     });
 }

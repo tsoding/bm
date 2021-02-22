@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 %const hello "Hello, World" ; message
 
 ;; ---
