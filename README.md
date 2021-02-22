@@ -12,42 +12,34 @@ On Linux/MacOS/FreeBSD/literally any OS on the planet Earth except Windows with 
 
 ```console
 $ cc -o nobuild nobuild.c
-$ ./nobuild all
+$ ./nobuild help
 ```
 
 If you still want to use MSVC on Windows run [vcvarsall.bat](https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line?view=msvc-160) and from within the development environment of MSVC:
 
 ```console
 > cl.exe nobuild.c
-> nobuild.exe all
+> nobuild.exe help
 ```
-
-The `nobuild` executable expects subcommands as the command line arguments, which you can provide several of at the same time like this `$ ./nobuild lib tools examples test`. This will first [build the toolchain](#building-the-toolchain), then [build the examples](#building-and-running-examples), and then [run the tests](running-and-recoding-tests) against examples.
-
-Run `nobuild help` for more information
-
 ### Building the libbm Library
 
 ```console
 $ ./nobuild lib
 ```
+The static library will be put into `./build/library/`
 
 ### Building the Toolchain
 
-This builds the [toolchain](#toolchain) of the Virtual Machine you need to build the static library first:
-
 ```console
-$ ./nobuild lib tools
+$ ./nobuild tools
 ```
 
-The binaries of the toolchain will be placed in `./build/tools/`.
+The binaries of the toolchain will be placed in `./build/toolchain/`.
 
 ### Building and Running Examples
 
-To build the examples you need to [build the toolchain](#building-the-toolchain) first:
-
 ```console
-$ ./nobuild lib tools examples
+$ ./nobuild examples
 ```
 
 The examples will be placed in `./build/examples/`.

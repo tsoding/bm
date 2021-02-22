@@ -7,22 +7,64 @@
 #define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
 
+typedef struct {
+    const char *name;
+    const char *description;
+    void (*run)(void);
+} Command;
+
+void all_command(void);
+void tools_command(void);
+void examples_command(void);
+void test_command(void);
+void record_command(void);
+void fmt_command(void);
+void help_command(void);
+void lib_command(void);
+
+Command commands[] = {
+    {
+        .name = "tools",
+        .description = "Build toolchain",
+        .run = tools_command
+    },
+    {
+        .name = "examples",
+        .description = "Build examples",
+        .run = examples_command
+    },
+    {
+        .name = "test",
+        .description = "Run the tests",
+        .run = test_command
+    },
+    {
+        .name = "record",
+        .description = "Capture the current output of examples as the expected one for the tests",
+        .run = record_command
+    },
+    {
+        .name = "fmt",
+        .description = "Format the source code using astyle: http://astyle.sourceforge.net/",
+        .run = fmt_command
+    },
+    {
+        .name = "help",
+        .description = "Show this help message",
+        .run = help_command
+    },
+    {
+        .name = "lib",
+        .description = "Build the BM library (experimental)",
+        .run = lib_command,
+    },
+};
+size_t commands_size = sizeof(commands) / sizeof(commands[0]);
+
+
 const char *toolchain[] = {
     "basm", "bme", "bmr", "debasm", "bdb", "basm2nasm", "expr2dot"
 };
-
-void build_c_file(const char *input_path, const char *output_path)
-{
-#ifdef _WIN32
-    CMD("cl.exe", CFLAGS, input_path);
-#else
-    const char *cc = getenv("CC");
-    if (cc == NULL) {
-        cc = "cc";
-    }
-    CMD(cc, CFLAGS, "-o", output_path, input_path);
-#endif // WIN32
-}
 
 void build_tool(const char *name)
 {
@@ -40,7 +82,7 @@ void build_tool(const char *name)
         cc = "cc";
     }
 
-    CMD(cc, CFLAGS, 
+    CMD(cc, CFLAGS,
         "-o", PATH("build", "toolchain", name),
         "-I", PATH("src", "library"),
         "-L", PATH("build", "library"),
@@ -49,8 +91,10 @@ void build_tool(const char *name)
 #endif // _WIN32
 }
 
-void build_toolchain(void)
+void tools_command(void)
 {
+    lib_command();
+
     RM(PATH("build", "toolchain"));
     MKDIRS("build", "toolchain");
 
@@ -61,8 +105,10 @@ void build_toolchain(void)
     });
 }
 
-void build_examples(void)
+void examples_command(void)
 {
+    tools_command();
+
     RM(PATH("build", "examples"));
     MKDIRS("build", "examples");
 
@@ -93,14 +139,10 @@ void build_x86_64_example(const char *example)
         PATH("build", "examples", CONCAT(example, ".o")));
 }
 
-void build_x86_64_examples(void)
+void test_command(void)
 {
-    build_x86_64_example("123i");
-    build_x86_64_example("fib");
-}
+    examples_command();
 
-void run_tests(void)
-{
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
         {
@@ -112,8 +154,10 @@ void run_tests(void)
     });
 }
 
-void record_tests(void)
+void record_command(void)
 {
+    tools_command();
+
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
         {
@@ -125,7 +169,7 @@ void record_tests(void)
     });
 }
 
-void fmt(void)
+void fmt_command(void)
 {
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
@@ -158,7 +202,7 @@ void build_lib_object(const char *name)
         PATH("src", "library", CONCAT(name, ".c")),
         "/Fo.\\build\\library\\");
 #else
-    CMD("cc", CFLAGS, "-c", 
+    CMD("cc", CFLAGS, "-c",
         PATH("src", "library", CONCAT(name, ".c")),
         "-o", PATH("build", "library", CONCAT(name, ".o")));
 #endif // _WIN32
@@ -169,17 +213,17 @@ void link_lib_objects(void)
 #ifdef _WIN32
     CMD("lib",
         CONCAT("/out:", PATH("build", "library", "bm.lib")),
-        PATH("build", "library", "arena.obj"), 
-        PATH("build", "library", "basm.obj"), 
-        PATH("build", "library", "bm.obj"), 
+        PATH("build", "library", "arena.obj"),
+        PATH("build", "library", "basm.obj"),
+        PATH("build", "library", "bm.obj"),
         PATH("build", "library", "sv.obj"),
         PATH("build", "library", "expr.obj"));
 #else
-    CMD("ar", "-crs", 
+    CMD("ar", "-crs",
         PATH("build", "library", "libbm.a"),
-        PATH("build", "library", "arena.o"), 
-        PATH("build", "library", "basm.o"), 
-        PATH("build", "library", "bm.o"), 
+        PATH("build", "library", "arena.o"),
+        PATH("build", "library", "basm.o"),
+        PATH("build", "library", "bm.o"),
         PATH("build", "library", "sv.o"),
         PATH("build", "library", "expr.o"));
 #endif // _WIN32
@@ -188,73 +232,15 @@ void link_lib_objects(void)
 void lib_command(void)
 {
     MKDIRS("build", "library");
-    
+
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c")) {
             build_lib_object(NOEXT(file));
         }
     });
-    
+
     link_lib_objects();
 }
-
-void all_command(void)
-{
-    lib_command();
-    build_toolchain();
-    build_examples();
-    run_tests();
-}
-
-typedef struct {
-    const char *name;
-    const char *description;
-    void (*run)(void);
-} Command;
-
-Command commands[] = {
-    {
-        .name = "all",
-        .description = "Similar to ./nobuild lib tools examples test",
-        .run = all_command,
-    },
-    {
-        .name = "tools",
-        .description = "Build toolchain",
-        .run = build_toolchain
-    },
-    {
-        .name = "examples",
-        .description = "Build examples",
-        .run = build_examples
-    },
-    {
-        .name = "test",
-        .description = "Run the tests",
-        .run = run_tests
-    },
-    {
-        .name = "record",
-        .description = "Capture the current output of examples as the expected one for the tests",
-        .run = record_tests
-    },
-    {
-        .name = "fmt",
-        .description = "Format the source code using astyle: http://astyle.sourceforge.net/",
-        .run = fmt
-    },
-    {
-        .name = "help",
-        .description = "Show this help message",
-        .run = help_command
-    },
-    {
-        .name = "lib",
-        .description = "Build the BM library (experimental)",
-        .run = lib_command,
-    },
-};
-size_t commands_size = sizeof(commands) / sizeof(commands[0]);
 
 void print_help(FILE *stream)
 {
