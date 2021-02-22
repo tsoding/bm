@@ -13,7 +13,7 @@ jobs:
       - name: build all and examples
         run: |
           $CC -o nobuild nobuild.c
-          ./nobuild all
+          ./nobuild test
         env:
           CC: gcc
           CXX: g++
@@ -28,7 +28,7 @@ jobs:
       - name: build all and examples
         run: |
           $CC -o nobuild nobuild.c
-          ./nobuild all
+          ./nobuild test
         env:
           CC: clang
           CXX: clang++
@@ -39,7 +39,7 @@ jobs:
       - name: build all and examples
         run: |
           $CC -o nobuild nobuild.c
-          ./nobuild all
+          ./nobuild test
         env:
           CC: clang
           CXX: clang++
@@ -54,7 +54,7 @@ jobs:
         # this replaces default PowerShell, which can't fail the build
         run: |
           cl.exe nobuild.c
-          .\nobuild.exe all
+          .\nobuild.exe test
 # TODO(#21): there is no CI build for FreeBSD
 # TODO(#113): the x86_64 examples do not work on Windows
 # TODO(#114): the x86_64 examples do not work on MacOS
