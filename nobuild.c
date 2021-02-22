@@ -2,7 +2,7 @@
 #include "./nobuild.h"
 
 #ifdef _WIN32
-#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/nologo" //, "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
+#define CFLAGS "/std:c11", "/O2", "/FC", "/W4", "/WX", "/wd4996", "/wd4200", "/wd5105", "/nologo" //, "/Fe.\\build\\bin\\", "/Fo.\\build\\bin\\"
 #else
 #define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
