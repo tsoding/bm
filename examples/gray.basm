@@ -1,6 +1,6 @@
 ;; Generate N Gray Code numbers https://en.wikipedia.org/wiki/Gray_code
 
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
     jmp main
 

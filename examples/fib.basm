@@ -1,5 +1,5 @@
 ;; TODO(#50): basm include directive has no support for include paths
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 %const N 30
 
 ; N-1

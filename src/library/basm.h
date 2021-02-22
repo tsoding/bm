@@ -13,6 +13,7 @@
 #define BASM_COMMENT_SYMBOL ';'
 #define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
+#define BASM_INCLUDE_PATHS_CAPACITY 1024
 
 typedef enum {
     BINDING_CONST = 0,
@@ -81,6 +82,9 @@ typedef struct {
 
     size_t include_level;
     File_Location include_location;
+
+    String_View include_paths[BASM_INCLUDE_PATHS_CAPACITY];
+    size_t include_paths_size;
 } Basm;
 
 Binding *basm_resolve_binding(Basm *basm, String_View name);
@@ -94,7 +98,9 @@ void basm_translate_source(Basm *basm,
                            String_View input_file_path);
 Word basm_expr_eval(Basm *basm, Expr expr, File_Location location);
 Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location);
-
-void bm_load_standard_natives(Bm *bm);
+void basm_push_include_path(Basm *basm, String_View path);
+bool basm_resolve_include_file_path(Basm *basm,
+                                    String_View file_path,
+                                    String_View *resolved_path);
 
 #endif // BASM_H_
