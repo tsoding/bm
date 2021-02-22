@@ -438,6 +438,12 @@ static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location 
     }
     break;
 
+    case BINARY_OP_MULT: {
+        // TODO(#183): compile-time mult can only work with integers
+        return word_u64(left.as_u64 * right.as_u64);
+    }
+    break;
+
     case BINARY_OP_GT: {
         return word_u64(left.as_u64 > right.as_u64);
     }

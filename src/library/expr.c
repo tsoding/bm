@@ -73,43 +73,45 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location
     return first;
 }
 
-Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens,
-                          File_Location location)
+bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_op_kind)
 {
-    Expr left = parse_sum_from_tokens(arena, tokens, location);
-
-    while (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_GT) {
-        tv_chop_left(tokens, 1);
-
-        Expr right = parse_sum_from_tokens(arena, tokens, location);
-
-        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
-        binary_op->kind = BINARY_OP_GT;
-        binary_op->left = left;
-        binary_op->right = right;
-
-        left = (Expr) {
-            .kind = EXPR_KIND_BINARY_OP,
-            .value = {
-                .as_binary_op = binary_op,
-            }
-        };
+    if (token_kind == TOKEN_KIND_PLUS) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_PLUS;
+        return true;
     }
 
-    return left;
+    if (token_kind == TOKEN_KIND_MULT) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_MULT;
+        return true;
+    }
+
+    if (token_kind == TOKEN_KIND_GT) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_GT;
+        return true;
+    }
+
+    return false;
 }
 
-Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+Expr parse_binary_op_from_tokens(Arena *arena, Tokens_View *tokens,
+                                 File_Location location, size_t precedence)
 {
-    Expr left = parse_primary_from_tokens(arena, tokens, location);
+    if (precedence > MAX_PRECEDENCE) {
+        return parse_primary_from_tokens(arena, tokens, location);
+    }
 
-    while (tokens->count != 0 && tokens->elems->kind == TOKEN_KIND_PLUS) {
+    Expr left = parse_binary_op_from_tokens(arena, tokens, location, precedence + 1);
+
+    Binary_Op_Kind binary_op_kind;
+    while (tokens->count != 0 &&
+            token_kind_as_binary_op_kind(tokens->elems->kind, &binary_op_kind) &&
+            binary_op_kind_precedence(binary_op_kind) == precedence) {
         tv_chop_left(tokens, 1);
 
-        Expr right = parse_primary_from_tokens(arena, tokens, location);
+        Expr right = parse_binary_op_from_tokens(arena, tokens, location, precedence + 1);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
-        binary_op->kind = BINARY_OP_PLUS;
+        binary_op->kind = binary_op_kind;
         binary_op->left = left;
         binary_op->right = right;
 
@@ -126,7 +128,7 @@ Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location loca
 
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
 {
-    return parse_gt_from_tokens(arena, tokens, location);
+    return parse_binary_op_from_tokens(arena, tokens, location, 0);
 }
 
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
@@ -392,6 +394,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     }
     break;
 
+    case TOKEN_KIND_MULT:
     case TOKEN_KIND_GT:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
@@ -411,6 +414,21 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     return result;
 }
 
+size_t binary_op_kind_precedence(Binary_Op_Kind kind)
+{
+    switch (kind) {
+    case BINARY_OP_GT:
+        return 0;
+    case BINARY_OP_PLUS:
+        return 1;
+    case BINARY_OP_MULT:
+        return 2;
+    default:
+        assert(false && "binary_op_kind_precedence: unreachable");
+        exit(1);
+    }
+}
+
 const char *binary_op_kind_name(Binary_Op_Kind kind)
 {
     switch (kind) {
@@ -418,6 +436,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return "+";
     case BINARY_OP_GT:
         return ">";
+    case BINARY_OP_MULT:
+        return "*";
     default:
         assert(false && "binary_op_kind_name: unreachable");
         exit(1);
@@ -445,6 +465,8 @@ const char *token_kind_name(Token_Kind kind)
         return "plus";
     case TOKEN_KIND_MINUS:
         return "minus";
+    case TOKEN_KIND_MULT:
+        return "multiply";
     case TOKEN_KIND_NUMBER:
         return "number";
     case TOKEN_KIND_NAME:
@@ -502,6 +524,14 @@ void tokenize(String_View source, Tokens *tokens, File_Location location)
         case '>': {
             tokens_push(tokens, (Token) {
                 .kind = TOKEN_KIND_GT,
+                .text = sv_chop_left(&source, 1)
+            });
+        }
+        break;
+
+        case '*': {
+            tokens_push(tokens, (Token) {
+                .kind = TOKEN_KIND_MULT,
                 .text = sv_chop_left(&source, 1)
             });
         }
