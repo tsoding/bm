@@ -18,6 +18,7 @@ typedef enum {
     TOKEN_KIND_CHAR,
     TOKEN_KIND_PLUS,
     TOKEN_KIND_MINUS,
+    TOKEN_KIND_MULT,
     TOKEN_KIND_NUMBER,
     TOKEN_KIND_NAME,
     TOKEN_KIND_OPEN_PAREN,
@@ -90,9 +91,14 @@ void dump_expr_as_dot(FILE *stream, Expr expr);
 
 typedef enum {
     BINARY_OP_PLUS,
+    BINARY_OP_MULT,
     BINARY_OP_GT
 } Binary_Op_Kind;
 
+#define MAX_PRECEDENCE 2
+
+size_t binary_op_kind_precedence(Binary_Op_Kind kind);
+bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_op_kind);
 const char *binary_op_kind_name(Binary_Op_Kind kind);
 void dump_binary_op(FILE *stream, Binary_Op binary_op, int level);
 
@@ -114,8 +120,7 @@ struct Funcall {
 
 void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
-Expr parse_sum_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
-Expr parse_gt_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
+Expr parse_binary_op_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location, size_t precedence);
 Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
