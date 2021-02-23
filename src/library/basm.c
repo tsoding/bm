@@ -313,7 +313,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
                     String_View label = expr.value.as_binding;
 
                     if (add_label) {
-                        sv_chop_right(&label, 1);
                         basm_bind_value(basm, label, word_u64(basm->program_size),
                                         BINDING_LABEL, location);
                     }
