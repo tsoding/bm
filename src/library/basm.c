@@ -313,7 +313,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
                     String_View label = expr.value.as_binding;
 
                     if (inline_entry) {
-                        // TODO: inline %entry does not support instruction after the label on the same line
+                        // TODO(#219): inline %entry does not support instruction after the label on the same line
                         // ```nasm
                         // %entry main: push 69
                         // ```
