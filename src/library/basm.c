@@ -295,11 +295,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
                     }
 
                     line = sv_trim(line);
-                    bool add_label = false;
+                    bool inline_entry = false;
 
                     if (sv_ends_with(line, sv_from_cstr(":"))) {
                         sv_chop_right(&line, 1);
-                        add_label = true;
+                        inline_entry = true;
                     }
 
                     Expr expr = parse_expr_from_sv(&basm->arena, line, location);
@@ -312,7 +312,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
 
                     String_View label = expr.value.as_binding;
 
-                    if (add_label) {
+                    if (inline_entry) {
+                        // TODO: inline %entry does not support instruction after the label on the same line
+                        // ```nasm
+                        // %entry main: push 69
+                        // ```
                         basm_bind_value(basm, label, word_u64(basm->program_size),
                                         BINDING_LABEL, location);
                     }
