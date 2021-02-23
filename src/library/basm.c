@@ -366,9 +366,25 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
         }
     }
 
-    // TODO: bindings should be probably force evaluated before the second pass
+    // Force Evaluating the Bindings
+    for (size_t i = 0; i < basm->bindings_size; ++i) {
+        basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location);
+    }
 
-    // Second pass
+    // Eval deferred asserts
+    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
+        Word value = basm_expr_eval(
+                         basm,
+                         basm->deferred_asserts[i].expr,
+                         basm->deferred_asserts[i].location);
+        if (!value.as_u64) {
+            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                    FL_Arg(basm->deferred_asserts[i].location));
+            exit(1);
+        }
+    }
+
+    // Eval deferred operands
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         Expr expr = basm->deferred_operands[i].expr;
         assert(expr.kind == EXPR_KIND_BINDING);
@@ -394,19 +410,6 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
         }
 
         basm->program[addr].operand = basm_binding_eval(basm, binding, basm->deferred_operands[i].location);
-    }
-
-    // Eval deferred asserts
-    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-        Word value = basm_expr_eval(
-                         basm,
-                         basm->deferred_asserts[i].expr,
-                         basm->deferred_asserts[i].location);
-        if (!value.as_u64) {
-            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                    FL_Arg(basm->deferred_asserts[i].location));
-            exit(1);
-        }
     }
 
     // Resolving deferred entry point
