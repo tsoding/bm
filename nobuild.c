@@ -157,7 +157,7 @@ void test_command(void)
 
 void record_command(void)
 {
-    tools_command();
+    examples_command();
 
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
