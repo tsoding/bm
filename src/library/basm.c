@@ -82,6 +82,26 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Loca
     };
 }
 
+Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value)
+{
+    assert(basm->memory_size + size <= BM_MEMORY_CAPACITY);
+
+    Word result = word_u64(basm->memory_size);
+    memset(basm->memory + basm->memory_size, value, size);
+    basm->memory_size += size;
+
+    if (basm->memory_size > basm->memory_capacity) {
+        basm->memory_capacity = basm->memory_size;
+    }
+
+    basm->string_lengths[basm->string_lengths_size++] = (String_Length) {
+        .addr = result.as_u64,
+        .length = size,
+    };
+
+    return result;
+}
+
 Word basm_push_string_to_memory(Basm *basm, String_View sv)
 {
     assert(basm->memory_size + sv.count <= BM_MEMORY_CAPACITY);
@@ -346,6 +366,8 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
         }
     }
 
+    // TODO: bindings should be probably force evaluated before the second pass
+
     // Second pass
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         Expr expr = basm->deferred_operands[i].expr;
@@ -488,6 +510,22 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
             }
 
             return length;
+        } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
+            Funcall_Arg *args = expr.value.as_funcall->args;
+
+            const size_t actual_arity = funcall_args_len(args);
+            if (actual_arity != 2) {
+                fprintf(stderr, FL_Fmt": ERROR: byte_array() expects 2 argument but got %zu\n",
+                        FL_Arg(location), actual_arity);
+                exit(1);
+            }
+
+            Word size = basm_expr_eval(basm, args->value, location);
+            args = args->next;
+
+            Word value = basm_expr_eval(basm, args->value, location);
+
+            return basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",

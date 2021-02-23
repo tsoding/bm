@@ -93,6 +93,7 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
+Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
 void basm_translate_source(Basm *basm,
                            String_View input_file_path);
