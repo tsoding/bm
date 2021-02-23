@@ -1,0 +1,11 @@
+%native write 0
+%const N 69
+%const xs byte_array(N, 'e')
+
+main:
+    push 0
+    push N
+    native write
+    halt
+
+%entry main
