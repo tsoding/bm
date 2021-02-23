@@ -178,7 +178,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
-static void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind)
+void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind)
 {
     *line = sv_trim(*line);
     String_View name = sv_chop_by_delim(line, ' ');
