@@ -1,0 +1,12 @@
+%include "natives.hasm"
+
+main:
+    push 69
+    call dump_u64
+
+    push 420
+    call dump_u64
+
+    halt
+
+%entry main
