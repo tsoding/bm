@@ -59,6 +59,22 @@ String_View sv_chop_left(String_View *sv, size_t n)
     return result;
 }
 
+String_View sv_chop_right(String_View *sv, size_t n)
+{
+    if (n > sv->count) {
+        n = sv->count;
+    }
+
+    String_View result = {
+        .data = sv->data + sv->count - n,
+        .count = n
+    };
+
+    sv->count -= n;
+
+    return result;
+}
+
 bool sv_index_of(String_View sv, char c, size_t *index)
 {
     size_t i = 0;
@@ -97,19 +113,32 @@ String_View sv_chop_by_delim(String_View *sv, char delim)
     return result;
 }
 
-bool sv_has_prefix(String_View sv, String_View prefix)
+bool sv_starts_with(String_View sv, String_View expected_prefix)
 {
-    if (prefix.count <= sv.count) {
-        for (size_t i = 0; i < prefix.count; ++i) {
-            if (prefix.data[i] != sv.data[i]) {
-                return false;
-            }
-        }
+    if (expected_prefix.count <= sv.count) {
+        String_View actual_prefix = {
+            .data = sv.data,
+            .count = expected_prefix.count,
+        };
 
-        return true;
-    } else {
-        return false;
+        return sv_eq(expected_prefix, actual_prefix);
     }
+
+    return false;
+}
+
+bool sv_ends_with(String_View sv, String_View expected_suffix)
+{
+    if (expected_suffix.count <= sv.count) {
+        String_View actual_suffix = {
+            .data = sv.data + sv.count - expected_suffix.count,
+            .count = expected_suffix.count
+        };
+
+        return sv_eq(expected_suffix, actual_suffix);
+    }
+
+    return false;
 }
 
 bool sv_eq(String_View a, String_View b)
