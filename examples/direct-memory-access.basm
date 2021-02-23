@@ -2,10 +2,9 @@
 %const N 69
 %const xs byte_array(N, 'e')
 
-main:
+%entry main:
     push 0
     push N
     native write
     halt
 
-%entry main

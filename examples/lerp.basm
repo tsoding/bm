@@ -24,7 +24,7 @@ lerpf:
     drop
     ret
 
-main:
+%entry main:
     push 69.0                   ; a
     push 420.0                  ; b
     push 0.0                    ; t
@@ -51,4 +51,3 @@ loop:
     jmp_if loop
     halt
 
-%entry main

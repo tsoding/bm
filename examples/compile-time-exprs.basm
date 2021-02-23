@@ -5,7 +5,7 @@
 %const C B + 1
 %const D C + 1
 
-main:
+%entry main:
     push A
     call dump_u64
 
@@ -26,4 +26,3 @@ main:
 
     halt
 
-%entry main
