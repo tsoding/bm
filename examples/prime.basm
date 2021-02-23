@@ -38,7 +38,7 @@ is_prime:
     swap 1
     ret
 
-main:
+%entry main:
     push 2
     main_loop:            
         dup 0
@@ -59,4 +59,3 @@ main:
     
     halt
 
-%entry main

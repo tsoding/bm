@@ -1,6 +1,6 @@
 %include "natives.hasm"
 
-main:
+%entry main:
     push 1
     push 2
     push 3
@@ -9,4 +9,3 @@ main:
     call dump_u64
     halt
 
-%entry main

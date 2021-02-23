@@ -295,6 +295,12 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
                     }
 
                     line = sv_trim(line);
+                    bool inline_entry = false;
+
+                    if (sv_ends_with(line, sv_from_cstr(":"))) {
+                        sv_chop_right(&line, 1);
+                        inline_entry = true;
+                    }
 
                     Expr expr = parse_expr_from_sv(&basm->arena, line, location);
 
@@ -304,7 +310,18 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
                         exit(1);
                     }
 
-                    basm->deferred_entry_binding_name = expr.value.as_binding;
+                    String_View label = expr.value.as_binding;
+
+                    if (inline_entry) {
+                        // TODO(#219): inline %entry does not support instruction after the label on the same line
+                        // ```nasm
+                        // %entry main: push 69
+                        // ```
+                        basm_bind_value(basm, label, word_u64(basm->program_size),
+                                        BINDING_LABEL, location);
+                    }
+
+                    basm->deferred_entry_binding_name = label;
                     basm->has_entry = true;
                     basm->entry_location = location;
                 } else {

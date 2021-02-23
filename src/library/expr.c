@@ -273,7 +273,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
         const char *cstr = arena_sv_to_cstr(arena, text);
         char *endptr = 0;
 
-        if (sv_has_prefix(text, sv_from_cstr("0x"))) {
+        if (sv_starts_with(text, sv_from_cstr("0x"))) {
             result.value.as_lit_int = strtoull(cstr, &endptr, 16);
             if ((size_t) (endptr - cstr) != text.count) {
                 fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",

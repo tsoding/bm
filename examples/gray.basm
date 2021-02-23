@@ -8,7 +8,7 @@
 
 ; i + 1
 
-main:
+%entry main:
     push 0     ; i
 loop:
     dup 0
@@ -30,4 +30,3 @@ loop:
     
     halt
 
-%entry main

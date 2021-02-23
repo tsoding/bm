@@ -10,7 +10,7 @@
 
 %const N 750000
 
-main:
+%entry main:
     push 4.0        ; acc (result of first division 4/1)
     push 3.0        ; denominator
     push N     ; counter
@@ -58,4 +58,3 @@ call dump_f64                      ; print the value
 
 halt
 
-%entry main
