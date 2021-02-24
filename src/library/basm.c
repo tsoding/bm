@@ -179,14 +179,15 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
-// TODO: basm_translate_bind_directive does not need line to be accepted by pointer anymore
-void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind)
+void basm_translate_bind_directive(Basm *basm, String_View line,
+                                   File_Location location,
+                                   Binding_Kind binding_kind)
 {
-    *line = sv_trim(*line);
-    String_View name = sv_chop_by_delim(line, ' ');
+    line = sv_trim(line);
+    String_View name = sv_chop_by_delim(&line, ' ');
     if (name.count > 0) {
-        *line = sv_trim(*line);
-        Expr expr = parse_expr_from_sv(&basm->arena, *line, location);
+        line = sv_trim(line);
+        Expr expr = parse_expr_from_sv(&basm->arena, line, location);
 
         basm_bind_expr(basm, name, expr, binding_kind, location);
 
@@ -230,9 +231,9 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
             String_View body = line.value.as_directive.body;
 
             if (sv_eq(line.value.as_directive.name, sv_from_cstr("const"))) {
-                basm_translate_bind_directive(basm, &body, location, BINDING_CONST);
+                basm_translate_bind_directive(basm, body, location, BINDING_CONST);
             } else if (sv_eq(name, sv_from_cstr("native"))) {
-                basm_translate_bind_directive(basm, &body, location, BINDING_NATIVE);
+                basm_translate_bind_directive(basm, body, location, BINDING_NATIVE);
             } else if (sv_eq(name, sv_from_cstr("assert"))) {
                 Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(body), location);
                 basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {

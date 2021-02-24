@@ -103,6 +103,6 @@ void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
-void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind);
+void basm_translate_bind_directive(Basm *basm, String_View line, File_Location location, Binding_Kind binding_kind);
 
 #endif // BASM_H_
