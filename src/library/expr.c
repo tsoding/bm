@@ -21,28 +21,28 @@ void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
     }
 }
 
-Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location)
+Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    if (tokens->count < 1 || tokens->elems->kind != TOKEN_KIND_OPEN_PAREN) {
+    Token token = {0};
+
+    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_OPEN_PAREN) {
         fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
                 FL_Arg(location),
                 token_kind_name(TOKEN_KIND_OPEN_PAREN));
         exit(1);
     }
-    tv_chop_left(tokens, 1);
 
-    if (tokens->count > 0 && tokens->elems->kind == TOKEN_KIND_CLOSING_PAREN) {
+    if (tokenizer_peek(tokenizer, &token, location) && token.kind == TOKEN_KIND_CLOSING_PAREN) {
+        tokenizer_next(tokenizer, NULL, location);
         return NULL;
     }
 
     Funcall_Arg *first = NULL;
     Funcall_Arg *last = NULL;
 
-    // , b, c)
-    Token token = {0};
     do {
         Funcall_Arg *arg = arena_alloc(arena, sizeof(Funcall_Arg));
-        arg->value = parse_expr_from_tokens(arena, tokens, location);
+        arg->value = parse_expr_from_tokens(arena, tokenizer, location);
 
         if (first == NULL) {
             first = arg;
@@ -52,15 +52,13 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location
             last = arg;
         }
 
-        if (tokens->count == 0) {
+        if (!tokenizer_next(tokenizer, &token, location)) {
             fprintf(stderr, FL_Fmt": ERROR: expected %s or %s\n",
                     FL_Arg(location),
                     token_kind_name(TOKEN_KIND_CLOSING_PAREN),
                     token_kind_name(TOKEN_KIND_COMMA));
             exit(1);
         }
-
-        token = tv_chop_left(tokens, 1).elems[0];
     } while (token.kind == TOKEN_KIND_COMMA);
 
     if (token.kind != TOKEN_KIND_CLOSING_PAREN) {
@@ -93,22 +91,23 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
     return false;
 }
 
-Expr parse_binary_op_from_tokens(Arena *arena, Tokens_View *tokens,
+Expr parse_binary_op_from_tokens(Arena *arena, Tokenizer *tokenizer,
                                  File_Location location, size_t precedence)
 {
     if (precedence > MAX_PRECEDENCE) {
-        return parse_primary_from_tokens(arena, tokens, location);
+        return parse_primary_from_tokens(arena, tokenizer, location);
     }
 
-    Expr left = parse_binary_op_from_tokens(arena, tokens, location, precedence + 1);
+    Expr left = parse_binary_op_from_tokens(arena, tokenizer, location, precedence + 1);
 
     Binary_Op_Kind binary_op_kind;
-    while (tokens->count != 0 &&
-            token_kind_as_binary_op_kind(tokens->elems->kind, &binary_op_kind) &&
+    Token token = {0};
+    while (tokenizer_peek(tokenizer, &token, location) &&
+            token_kind_as_binary_op_kind(token.kind, &binary_op_kind) &&
             binary_op_kind_precedence(binary_op_kind) == precedence) {
-        tv_chop_left(tokens, 1);
+        tokenizer_next(tokenizer, NULL, location);
 
-        Expr right = parse_binary_op_from_tokens(arena, tokens, location, precedence + 1);
+        Expr right = parse_binary_op_from_tokens(arena, tokenizer, location, precedence + 1);
 
         Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
         binary_op->kind = binary_op_kind;
@@ -126,22 +125,21 @@ Expr parse_binary_op_from_tokens(Arena *arena, Tokens_View *tokens,
     return left;
 }
 
-Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+Expr parse_expr_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    return parse_binary_op_from_tokens(arena, tokens, location, 0);
+    return parse_binary_op_from_tokens(arena, tokenizer, location, 0);
 }
 
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
 {
-    Tokens tokens = {0};
-    tokenize(source, &tokens, location);
+    Tokenizer tokenizer = tokenizer_from_sv(source);
 
-    Tokens_View tv = tokens_as_view(&tokens);
-    Expr result = parse_expr_from_tokens(arena, &tv, location);
+    Expr result = parse_expr_from_tokens(arena, &tokenizer, location);
 
-    if (tv.count > 0) {
+    Token token = {0};
+    if (tokenizer_next(&tokenizer, &token, location)) {
         fprintf(stderr, FL_Fmt": ERROR: unexpected token `"SV_Fmt"`\n",
-                FL_Arg(location), SV_Arg(tv.elems->text));
+                FL_Arg(location), SV_Arg(token.text));
         exit(1);
     }
 
@@ -257,9 +255,11 @@ size_t funcall_args_len(Funcall_Arg *args)
     return result;
 }
 
-static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    if (tokens->count == 0) {
+    Token token = {0};
+
+    if (!tokenizer_next(tokenizer, &token, location)) {
         fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
                 FL_Arg(location));
         exit(1);
@@ -267,8 +267,8 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
 
     Expr result = {0};
 
-    if (tokens->elems->kind == TOKEN_KIND_NUMBER) {
-        String_View text = tokens->elems->text;
+    if (token.kind == TOKEN_KIND_NUMBER) {
+        String_View text = token.text;
 
         const char *cstr = arena_sv_to_cstr(arena, text);
         char *endptr = 0;
@@ -282,7 +282,6 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
             }
 
             result.kind = EXPR_KIND_LIT_INT;
-            tv_chop_left(tokens, 1);
         } else {
             result.value.as_lit_int = strtoull(cstr, &endptr, 10);
             if ((size_t) (endptr - cstr) != text.count) {
@@ -296,23 +295,23 @@ static Expr parse_number_from_tokens(Arena *arena, Tokens_View *tokens, File_Loc
             } else {
                 result.kind = EXPR_KIND_LIT_INT;
             }
-
-            tv_chop_left(tokens, 1);
         }
     } else {
         fprintf(stderr, FL_Fmt": ERROR: expected %s but got %s",
                 FL_Arg(location),
                 token_kind_name(TOKEN_KIND_NUMBER),
-                token_kind_name(tokens->elems->kind));
+                token_kind_name(token.kind));
         exit(1);
     }
 
     return result;
 }
 
-Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location)
+Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    if (tokens->count == 0) {
+    Token token = {0};
+
+    if (!tokenizer_peek(tokenizer, &token, location)) {
         fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
                 FL_Arg(location));
         exit(1);
@@ -320,17 +319,20 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
 
     Expr result = {0};
 
-    switch (tokens->elems->kind) {
+    switch (token.kind) {
     case TOKEN_KIND_STR: {
+        tokenizer_next(tokenizer, NULL, location);
+
         // TODO(#66): string literals don't support escaped characters
         result.kind = EXPR_KIND_LIT_STR;
-        result.value.as_lit_str = tokens->elems->text;
-        tv_chop_left(tokens, 1);
+        result.value.as_lit_str = token.text;
     }
     break;
 
     case TOKEN_KIND_CHAR: {
-        if (tokens->elems->text.count != 1) {
+        tokenizer_next(tokenizer, NULL, location);
+
+        if (token.text.count != 1) {
             // TODO(#179): char literals don't support escaped characters
             fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
                     FL_Arg(location));
@@ -338,34 +340,34 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
         }
 
         result.kind = EXPR_KIND_LIT_CHAR;
-        result.value.as_lit_char = tokens->elems->text.data[0];
-        tv_chop_left(tokens, 1);
+        result.value.as_lit_char = token.text.data[0];
     }
     break;
 
     case TOKEN_KIND_NAME: {
-        if (tokens->count > 1 && tokens->elems[1].kind == TOKEN_KIND_OPEN_PAREN) {
+        tokenizer_next(tokenizer, NULL, location);
+
+        Token next = {0};
+        if (tokenizer_peek(tokenizer, &next, location) && next.kind == TOKEN_KIND_OPEN_PAREN) {
             result.kind = EXPR_KIND_FUNCALL;
             result.value.as_funcall = arena_alloc(arena, sizeof(Funcall));
-            result.value.as_funcall->name = tokens->elems->text;
-            tv_chop_left(tokens, 1);
-            result.value.as_funcall->args = parse_funcall_args(arena, tokens, location);
+            result.value.as_funcall->name = token.text;
+            result.value.as_funcall->args = parse_funcall_args(arena, tokenizer, location);
         } else {
-            result.value.as_binding = tokens->elems->text;
+            result.value.as_binding = token.text;
             result.kind = EXPR_KIND_BINDING;
-            tv_chop_left(tokens, 1);
         }
     }
     break;
 
     case TOKEN_KIND_NUMBER: {
-        return parse_number_from_tokens(arena, tokens, location);
+        return parse_number_from_tokens(arena, tokenizer, location);
     }
     break;
 
     case TOKEN_KIND_MINUS: {
-        tv_chop_left(tokens, 1);
-        Expr expr = parse_number_from_tokens(arena, tokens, location);
+        tokenizer_next(tokenizer, NULL, location);
+        Expr expr = parse_number_from_tokens(arena, tokenizer, location);
 
         if (expr.kind == EXPR_KIND_LIT_INT) {
             // TODO(#184): more cross-platform way to negate integer literals
@@ -382,14 +384,14 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     break;
 
     case TOKEN_KIND_OPEN_PAREN: {
-        tv_chop_left(tokens, 1);
-        Expr expr = parse_expr_from_tokens(arena, tokens, location);
-        if (tokens->count < 1 || tokens->elems->kind != TOKEN_KIND_CLOSING_PAREN) {
+        tokenizer_next(tokenizer, NULL, location);
+        Expr expr = parse_expr_from_tokens(arena, tokenizer, location);
+
+        if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_CLOSING_PAREN) {
             fprintf(stderr, FL_Fmt": ERROR: expected `%s`\n",
                     FL_Arg(location), token_kind_name(TOKEN_KIND_CLOSING_PAREN));
             exit(1);
         }
-        tv_chop_left(tokens, 1);
         return expr;
     }
     break;
@@ -400,7 +402,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location 
     case TOKEN_KIND_CLOSING_PAREN:
     case TOKEN_KIND_PLUS: {
         fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
-                FL_Arg(location), token_kind_name(tokens->elems->kind));
+                FL_Arg(location), token_kind_name(token.kind));
         exit(1);
     }
     break;
@@ -444,16 +446,6 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
     }
 }
 
-static bool is_name(char x)
-{
-    return isalnum(x) || x == '_';
-}
-
-static bool is_number(char x)
-{
-    return isalnum(x) || x == '.';
-}
-
 const char *token_kind_name(Token_Kind kind)
 {
     switch (kind) {
@@ -486,155 +478,3 @@ const char *token_kind_name(Token_Kind kind)
     }
 }
 
-void tokens_push(Tokens *tokens, Token token)
-{
-    assert(tokens->count < TOKENS_CAPACITY);
-    tokens->elems[tokens->count++] = token;
-}
-
-void tokenize(String_View source, Tokens *tokens, File_Location location)
-{
-    source = sv_trim_left(source);
-    while (source.count > 0) {
-        switch (*source.data) {
-        case '(': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_OPEN_PAREN,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case ')': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_CLOSING_PAREN,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case ',': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_COMMA,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case '>': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_GT,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case '*': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_MULT,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case '+': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_PLUS,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case '-': {
-            tokens_push(tokens, (Token) {
-                .kind = TOKEN_KIND_MINUS,
-                .text = sv_chop_left(&source, 1)
-            });
-        }
-        break;
-
-        case '"': {
-            sv_chop_left(&source, 1);
-
-            size_t index = 0;
-
-            if (sv_index_of(source, '"', &index)) {
-                String_View text = sv_chop_left(&source, index);
-                sv_chop_left(&source, 1);
-                tokens_push(tokens, (Token) {
-                    .kind = TOKEN_KIND_STR, .text = text
-                });
-            } else {
-                fprintf(stderr, FL_Fmt": ERROR: Could not find closing \"\n",
-                        FL_Arg(location));
-                exit(1);
-            }
-        }
-        break;
-
-        case '\'': {
-            sv_chop_left(&source, 1);
-
-            size_t index = 0;
-
-            if (sv_index_of(source, '\'', &index)) {
-                String_View text = sv_chop_left(&source, index);
-                sv_chop_left(&source, 1);
-                tokens_push(tokens, (Token) {
-                    .kind = TOKEN_KIND_CHAR, .text = text
-                });
-            } else {
-                fprintf(stderr, FL_Fmt": ERROR: Could not find closing \'\n",
-                        FL_Arg(location));
-                exit(1);
-            }
-        }
-        break;
-
-        default: {
-            if (isalpha(*source.data)) {
-                tokens_push(tokens, (Token) {
-                    .kind = TOKEN_KIND_NAME,
-                    .text = sv_chop_left_while(&source, is_name)
-                });
-            } else if (isdigit(*source.data)) {
-                tokens_push(tokens, (Token) {
-                    .kind = TOKEN_KIND_NUMBER,
-                    .text = sv_chop_left_while(&source, is_number)
-                });
-            } else {
-                fprintf(stderr, FL_Fmt": ERROR: Unknown token starts with %c\n",
-                        FL_Arg(location), *source.data);
-                exit(1);
-            }
-        }
-        }
-
-        source = sv_trim_left(source);
-    }
-}
-
-Tokens_View tokens_as_view(const Tokens *tokens)
-{
-    return (Tokens_View) {
-        .elems = tokens->elems,
-        .count = tokens->count,
-    };
-}
-
-Tokens_View tv_chop_left(Tokens_View *tv, size_t n)
-{
-    if (n > tv->count) {
-        n = tv->count;
-    }
-
-    Tokens_View result = {
-        .elems = tv->elems,
-        .count = n,
-    };
-
-    tv->elems += n;
-    tv->count -= n;
-
-    return result;
-}

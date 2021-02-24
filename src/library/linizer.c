@@ -41,7 +41,9 @@ bool linizer_peek(Linizer *linizer, Line *output)
     // We already have something cached in the peek buffer.
     // Let's just return it.
     if (linizer->peek_buffer_full) {
-        *output = linizer->peek_buffer;
+        if (output) {
+            *output = linizer->peek_buffer;
+        }
         return true;
     }
 

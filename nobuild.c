@@ -220,7 +220,8 @@ void link_lib_objects(void)
         PATH("build", "library", "bm.obj"),
         PATH("build", "library", "sv.obj"),
         PATH("build", "library", "expr.obj"),
-        PATH("build", "library", "linizer.obj"));
+        PATH("build", "library", "linizer.obj"),
+        PATH("build", "library", "tokenizer.obj"));
 #else
     CMD("ar", "-crs",
         PATH("build", "library", "libbm.a"),
@@ -229,7 +230,8 @@ void link_lib_objects(void)
         PATH("build", "library", "bm.o"),
         PATH("build", "library", "sv.o"),
         PATH("build", "library", "expr.o"),
-        PATH("build", "library", "linizer.o"));
+        PATH("build", "library", "linizer.o"),
+        PATH("build", "library", "tokenizer.o"));
 #endif // _WIN32
 }
 

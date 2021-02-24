@@ -4,56 +4,7 @@
 #include <stdio.h>
 #include "sv.h"
 #include "arena.h"
-
-typedef struct {
-    String_View file_path;
-    int line_number;
-} File_Location;
-
-#define FL_Fmt SV_Fmt":%d"
-#define FL_Arg(location) SV_Arg(location.file_path), location.line_number
-
-typedef enum {
-    TOKEN_KIND_STR,
-    TOKEN_KIND_CHAR,
-    TOKEN_KIND_PLUS,
-    TOKEN_KIND_MINUS,
-    TOKEN_KIND_MULT,
-    TOKEN_KIND_NUMBER,
-    TOKEN_KIND_NAME,
-    TOKEN_KIND_OPEN_PAREN,
-    TOKEN_KIND_CLOSING_PAREN,
-    TOKEN_KIND_COMMA,
-    TOKEN_KIND_GT,
-} Token_Kind;
-
-const char *token_kind_name(Token_Kind kind);
-
-typedef struct {
-    Token_Kind kind;
-    String_View text;
-} Token;
-
-#define Token_Fmt "%s"
-#define Token_Arg(token) token_kind_name((token).kind)
-
-#define TOKENS_CAPACITY 1024
-
-typedef struct {
-    Token elems[TOKENS_CAPACITY];
-    size_t count;
-} Tokens;
-
-void tokens_push(Tokens *tokens, Token token);
-void tokenize(String_View source, Tokens *tokens, File_Location location);
-
-typedef struct {
-    const Token *elems;
-    size_t count;
-} Tokens_View;
-
-Tokens_View tokens_as_view(const Tokens *tokens);
-Tokens_View tv_chop_left(Tokens_View *tv, size_t n);
+#include "tokenizer.h"
 
 typedef enum {
     EXPR_KIND_BINDING,
@@ -119,10 +70,10 @@ struct Funcall {
 };
 
 void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
-Funcall_Arg *parse_funcall_args(Arena *arena, Tokens_View *tokens, File_Location location);
-Expr parse_binary_op_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location, size_t precedence);
-Expr parse_primary_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
-Expr parse_expr_from_tokens(Arena *arena, Tokens_View *tokens, File_Location location);
+Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location);
+Expr parse_binary_op_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location, size_t precedence);
+Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location);
+Expr parse_expr_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location);
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location);
 
 #endif // EXPR_H_
