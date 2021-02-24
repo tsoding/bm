@@ -95,33 +95,3 @@ bool linizer_next(Linizer *linizer, Line *output)
 
     return false;
 }
-
-size_t linize_source(String_View source, Line *lines, size_t lines_capacity, File_Location location)
-{
-    size_t lines_size = 0;
-    while (source.count > 0 && lines_size < lines_capacity) {
-        String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
-        line = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-        location.line_number += 1;
-
-        if (line.count > 0) {
-            lines[lines_size].location = location;
-            if (sv_starts_with(line, sv_from_cstr("%"))) {
-                sv_chop_left(&line, 1);
-                lines[lines_size].kind = LINE_KIND_DIRECTIVE;
-                lines[lines_size].value.as_directive.name = sv_trim(sv_chop_by_delim(&line, ' '));
-                lines[lines_size].value.as_directive.body = sv_trim(line);
-            } else if (sv_ends_with(line, sv_from_cstr(":"))) {
-                lines[lines_size].kind = LINE_KIND_LABEL;
-                lines[lines_size].value.as_label.name = sv_trim(sv_chop_by_delim(&line, ':'));
-            } else {
-                lines[lines_size].kind = LINE_KIND_INSTRUCTION;
-                lines[lines_size].value.as_instruction.name = sv_trim(sv_chop_by_delim(&line, ' '));
-                lines[lines_size].value.as_instruction.operand = sv_trim(line);
-            }
-            lines_size += 1;
-        }
-    }
-
-    return lines_size;
-}

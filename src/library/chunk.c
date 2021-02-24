@@ -34,14 +34,15 @@ void chunk_dump(FILE *stream, const Chunk *chunk, int level)
     }
 }
 
-Chunk *chunk_translate_lines(Basm *basm, const Line *lines, size_t lines_size)
+Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
 {
-    for (size_t i = 0; i < lines_size; ++i) {
-        File_Location location = lines[i].location;
-        switch (lines[i].kind) {
+    Line line = {0};
+    while (linizer_next(linizer, &line)) {
+        File_Location location = line.location;
+        switch (line.kind) {
         case LINE_KIND_DIRECTIVE: {
-            String_View name = lines[i].value.as_directive.name;
-            String_View body = lines[i].value.as_directive.body;
+            String_View name = line.value.as_directive.name;
+            String_View body = line.value.as_directive.body;
             if (sv_eq(name, sv_from_cstr("const"))) {
                 basm_translate_bind_directive(basm, &body, location, BINDING_CONST);
             } else if (sv_eq(name, sv_from_cstr("native"))) {
@@ -78,7 +79,7 @@ Chunk *chunk_translate_lines(Basm *basm, const Line *lines, size_t lines_size)
         }
         break;
         case LINE_KIND_LABEL: {
-            String_View label = lines[i].value.as_label.name;
+            String_View label = line.value.as_label.name;
             basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location);
         }
         break;
@@ -98,8 +99,8 @@ Chunk *chunk_translate_file(Basm *basm, String_View input_file_path_)
         }
     }
 
-    String_View original_source = {0};
-    if (arena_slurp_file(&basm->arena, input_file_path_, &original_source) < 0) {
+    Linizer linizer = {0};
+    if (!linizer_from_file(&linizer, &basm->arena, input_file_path_)) {
         if (basm->include_level > 0) {
             fprintf(stderr, FL_Fmt": ERROR: could not read file `"SV_Fmt"`: %s\n",
                     FL_Arg(basm->include_location),
@@ -109,17 +110,8 @@ Chunk *chunk_translate_file(Basm *basm, String_View input_file_path_)
                     SV_Arg(input_file_path_), strerror(errno));
         }
         exit(1);
-    }
 
-    String_View source = original_source;
+    } 
 
-    File_Location location = {
-        .file_path = input_file_path_,
-    };
-
-#define LINES_CAPACITY 1024
-
-    Line *lines = arena_alloc(&basm->arena, sizeof(Line) * LINES_CAPACITY);
-    size_t lines_size = linize_source(source, lines, LINES_CAPACITY, location);
-    return chunk_translate_lines(basm, lines, lines_size);
+    return chunk_translate_lines(basm, &linizer);
 }

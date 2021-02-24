@@ -50,9 +50,4 @@ bool linizer_next(Linizer *linizer, Line *output);
 
 void line_dump(FILE *stream, const Line *line);
 
-size_t linize_source(String_View source,
-                     Line *lines,
-                     size_t lines_capacity,
-                     File_Location location);
-
 #endif // LINIZER_H_

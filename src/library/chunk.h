@@ -38,7 +38,7 @@ struct Chunk {
 
 void chunk_dump(FILE *stream, const Chunk *chunk, int level);
 
-Chunk *chunk_translate_lines(Basm *basm, const Line *lines, size_t lines_size);
+Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer);
 Chunk *chunk_translate_file(Basm *basm, String_View input_file_path);
 
 #endif // CHUNK_H_
