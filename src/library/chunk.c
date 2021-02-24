@@ -51,10 +51,47 @@ void chunk_dump(FILE *stream, const Chunk *chunk, int level)
     }
 }
 
-Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
+void chunk_list_push_inst(Arena *arena, Chunk_List *a, Deferred_Inst inst)
 {
-    Chunk *chunk = arena_alloc(&basm->arena, sizeof(Chunk));
-    Chunk *result = chunk;
+    assert(a);
+    if (a->end == NULL) {
+        assert(a->begin == NULL);
+        Chunk *chunk = arena_alloc(arena, sizeof(Chunk));
+        chunk->kind = CHUNK_KIND_REGULAR;
+        a->begin = chunk;
+        a->end = chunk;
+    }
+
+    assert(a->end->next == NULL);
+    if (a->end->kind != CHUNK_KIND_REGULAR
+            || regular_chunk_full(&a->end->value.as_regular)) {
+        Chunk *chunk = arena_alloc(arena, sizeof(Chunk));
+        chunk->kind = CHUNK_KIND_REGULAR;
+        a->end->next = chunk;
+        a->end = chunk;
+    }
+
+    regular_chunk_append(&a->end->value.as_regular, inst);
+}
+
+void chunk_list_append(Chunk_List *a, Chunk_List b)
+{
+    assert(a);
+
+    if (a->end == NULL) {
+        assert(a->begin == NULL);
+        a->begin = b.begin;
+        a->end = b.end;
+    } else {
+        assert(a->end->next == NULL);
+        a->end->next = b.begin;
+        a->end = b.end;
+    }
+}
+
+Chunk_List chunk_translate_lines(Basm *basm, Linizer *linizer)
+{
+    Chunk_List result = {0};
 
     Line line = {0};
     while (linizer_next(linizer, &line)) {
@@ -91,7 +128,8 @@ Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
                     File_Location prev_include_location = basm->include_location;
                     basm->include_level += 1;
                     basm->include_location = location;
-                    chunk_translate_file(basm, expr.value.as_lit_str);
+                    Chunk_List include = chunk_translate_file(basm, expr.value.as_lit_str);
+                    chunk_list_append(&result, include);
                     basm->include_location = prev_include_location;
                     basm->include_level -= 1;
                 }
@@ -133,12 +171,7 @@ Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
                 }
             }
 
-            if (regular_chunk_full(&chunk->value.as_regular)) {
-                chunk->next = arena_alloc(&basm->arena, sizeof(Chunk));
-                chunk = chunk->next;
-            }
-
-            regular_chunk_append(&chunk->value.as_regular, inst);
+            chunk_list_push_inst(&basm->arena, &result, inst);
         }
         break;
         }
@@ -146,7 +179,7 @@ Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
     return result;
 }
 
-Chunk *chunk_translate_file(Basm *basm, String_View input_file_path_)
+Chunk_List chunk_translate_file(Basm *basm, String_View input_file_path_)
 {
     {
         String_View resolved_path = SV_NULL;

@@ -44,11 +44,17 @@ struct Chunk {
     Chunk *next;
 };
 
-Chunk *chunk_append_regular(Chunk *chunk, Regular_Chunk *regular_chunk);
+typedef struct {
+    Chunk *begin;
+    Chunk *end;
+} Chunk_List;
+
+void chunk_list_push_inst(Arena *arena, Chunk_List *a, Deferred_Inst inst);
+void chunk_list_append(Chunk_List *a, Chunk_List b);
 
 void chunk_dump(FILE *stream, const Chunk *chunk, int level);
 
-Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer);
-Chunk *chunk_translate_file(Basm *basm, String_View input_file_path);
+Chunk_List chunk_translate_lines(Basm *basm, Linizer *linizer);
+Chunk_List chunk_translate_file(Basm *basm, String_View input_file_path);
 
 #endif // CHUNK_H_

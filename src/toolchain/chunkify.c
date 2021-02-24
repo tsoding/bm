@@ -13,8 +13,8 @@ int main(int argc, char **argv)
     static Basm basm = {0};
     basm_push_include_path(&basm, sv_from_cstr("./examples/stdlib/"));
 
-    Chunk *chunk = chunk_translate_file(&basm, sv_from_cstr(input_file_path));
-    chunk_dump(stdout, chunk, 0);
+    Chunk_List chunk = chunk_translate_file(&basm, sv_from_cstr(input_file_path));
+    chunk_dump(stdout, chunk.begin, 0);
     arena_free(&basm.arena);
 
     return 0;
