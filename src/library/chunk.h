@@ -4,42 +4,7 @@
 #include "./bm.h"
 #include "./expr.h"
 #include "./basm.h"
-
-typedef enum {
-    LINE_KIND_INSTRUCTION = 0,
-    LINE_KIND_LABEL,
-    LINE_KIND_DIRECTIVE,
-} Line_Kind;
-
-typedef struct {
-    String_View name;
-    String_View operand;
-} Line_Instruction;
-
-typedef struct {
-    String_View name;
-} Line_Label;
-
-typedef struct {
-    String_View name;
-    String_View body;
-} Line_Directive;
-
-typedef union {
-    Line_Instruction as_instruction;
-    Line_Label as_label;
-    Line_Directive as_directive;
-} Line_Value;
-
-typedef struct {
-    Line_Kind kind;
-    Line_Value value;
-    File_Location location;
-} Line;
-
-void line_dump(FILE *stream, const Line *line);
-
-size_t linize_source(String_View source, Line *lines, size_t lines_capacity, File_Location location);
+#include "./linizer.h"
 
 typedef struct Chunk Chunk;
 

@@ -99,7 +99,8 @@ void tools_command(void)
     MKDIRS("build", "toolchain");
 
     FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
-        if (ENDS_WITH(file, ".c")) {
+        if (ENDS_WITH(file, ".c"))
+        {
             build_tool(NOEXT(file));
         }
     });
@@ -219,6 +220,7 @@ void link_lib_objects(void)
         PATH("build", "library", "bm.obj"),
         PATH("build", "library", "sv.obj"),
         PATH("build", "library", "expr.obj"),
+        PATH("build", "library", "linizer.obj"),
         PATH("build", "library", "chunk.obj"));
 #else
     CMD("ar", "-crs",
@@ -228,6 +230,7 @@ void link_lib_objects(void)
         PATH("build", "library", "bm.o"),
         PATH("build", "library", "sv.o"),
         PATH("build", "library", "expr.o"),
+        PATH("build", "library", "linizer.o"),
         PATH("build", "library", "chunk.o"));
 #endif // _WIN32
 }
@@ -237,7 +240,8 @@ void lib_command(void)
     MKDIRS("build", "library");
 
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
-        if (ENDS_WITH(file, ".c")) {
+        if (ENDS_WITH(file, ".c"))
+        {
             build_lib_object(NOEXT(file));
         }
     });

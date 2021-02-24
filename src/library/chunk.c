@@ -1,58 +1,5 @@
 #include "./chunk.h"
 
-void line_dump(FILE *stream, const Line *line)
-{
-    switch (line->kind) {
-    case LINE_KIND_INSTRUCTION:
-        fprintf(stream, FL_Fmt": INSTRUCTION: name: "SV_Fmt", operand: "SV_Fmt"\n",
-                FL_Arg(line->location),
-                SV_Arg(line->value.as_instruction.name),
-                SV_Arg(line->value.as_instruction.operand));
-        break;
-    case LINE_KIND_LABEL:
-        fprintf(stream, FL_Fmt": LABEL: name: "SV_Fmt"\n",
-                FL_Arg(line->location),
-                SV_Arg(line->value.as_label.name));
-        break;
-    case LINE_KIND_DIRECTIVE:
-        fprintf(stream, FL_Fmt": DIRECTIVE: name: "SV_Fmt", body: "SV_Fmt"\n",
-                FL_Arg(line->location),
-                SV_Arg(line->value.as_directive.name),
-                SV_Arg(line->value.as_directive.body));
-        break;
-    }
-}
-
-size_t linize_source(String_View source, Line *lines, size_t lines_capacity, File_Location location)
-{
-    size_t lines_size = 0;
-    while (source.count > 0 && lines_size < lines_capacity) {
-        String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
-        line = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-        location.line_number += 1;
-
-        if (line.count > 0) {
-            lines[lines_size].location = location;
-            if (sv_starts_with(line, sv_from_cstr("%"))) {
-                sv_chop_left(&line, 1);
-                lines[lines_size].kind = LINE_KIND_DIRECTIVE;
-                lines[lines_size].value.as_directive.name = sv_trim(sv_chop_by_delim(&line, ' '));
-                lines[lines_size].value.as_directive.body = sv_trim(line);
-            } else if (sv_ends_with(line, sv_from_cstr(":"))) {
-                lines[lines_size].kind = LINE_KIND_LABEL;
-                lines[lines_size].value.as_label.name = sv_trim(sv_chop_by_delim(&line, ':'));
-            } else {
-                lines[lines_size].kind = LINE_KIND_INSTRUCTION;
-                lines[lines_size].value.as_instruction.name = sv_trim(sv_chop_by_delim(&line, ' '));
-                lines[lines_size].value.as_instruction.operand = sv_trim(line);
-            }
-            lines_size += 1;
-        }
-    }
-
-    return lines_size;
-}
-
 static void regular_chunk_dump(FILE *stream,
                                const Regular_Chunk *chunk,
                                int level)
