@@ -25,4 +25,3 @@
     call dump_u64
 
     halt
-

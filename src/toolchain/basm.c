@@ -1,4 +1,3 @@
-#define BM_IMPLEMENTATION
 #include "./basm.h"
 #include "./bm.h"
 
