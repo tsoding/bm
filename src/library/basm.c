@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #include "./basm.h"
+#include "./linizer.h"
 
 Binding *basm_resolve_binding(Basm *basm, String_View name)
 {
@@ -178,6 +179,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
+// TODO: basm_translate_bind_directive does not need line to be accepted by pointer anymore
 void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location location, Binding_Kind binding_kind)
 {
     *line = sv_trim(*line);
@@ -196,190 +198,148 @@ void basm_translate_bind_directive(Basm *basm, String_View *line, File_Location 
     }
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path_)
+void basm_translate_source(Basm *basm, String_View input_file_path)
 {
     {
         String_View resolved_path = SV_NULL;
-        if (basm_resolve_include_file_path(basm, input_file_path_, &resolved_path)) {
-            input_file_path_ = resolved_path;
+        if (basm_resolve_include_file_path(basm, input_file_path, &resolved_path)) {
+            input_file_path = resolved_path;
         }
     }
 
-    String_View original_source = {0};
-    if (arena_slurp_file(&basm->arena, input_file_path_, &original_source) < 0) {
+    Linizer linizer = {0};
+    if (!linizer_from_file(&linizer, &basm->arena, input_file_path)) {
         if (basm->include_level > 0) {
             fprintf(stderr, FL_Fmt": ERROR: could not read file `"SV_Fmt"`: %s\n",
                     FL_Arg(basm->include_location),
-                    SV_Arg(input_file_path_), strerror(errno));
+                    SV_Arg(input_file_path), strerror(errno));
         } else {
             fprintf(stderr, "ERROR: could not read file `"SV_Fmt"`: %s\n",
-                    SV_Arg(input_file_path_), strerror(errno));
+                    SV_Arg(input_file_path), strerror(errno));
         }
         exit(1);
     }
 
-    String_View source = original_source;
-
-    File_Location location = {
-        .file_path = input_file_path_,
-    };
-
     // First pass
-    while (source.count > 0) {
-        String_View line = sv_trim(sv_chop_by_delim(&source, '\n'));
-        line = sv_trim(sv_chop_by_delim(&line, BASM_COMMENT_SYMBOL));
-        location.line_number += 1;
-        if (line.count > 0) {
-            String_View token = sv_trim(sv_chop_by_delim(&line, ' '));
+    Line line = {0};
+    while (linizer_next(&linizer, &line)) {
+        const File_Location location = line.location;
+        switch (line.kind) {
+        case LINE_KIND_DIRECTIVE: {
+            String_View name = line.value.as_directive.name;
+            String_View body = line.value.as_directive.body;
 
-            // Pre-processor
-            if (token.count > 0 && *token.data == BASM_PP_SYMBOL) {
-                token.count -= 1;
-                token.data  += 1;
-                if (sv_eq(token, sv_from_cstr("bind"))) {
-                    fprintf(stderr, FL_Fmt": ERROR: %%bind directive has been removed! Use %%const directive to define consts. Use %%native directive to define native functions.\n", FL_Arg(location));
+            if (sv_eq(line.value.as_directive.name, sv_from_cstr("const"))) {
+                basm_translate_bind_directive(basm, &body, location, BINDING_CONST);
+            } else if (sv_eq(name, sv_from_cstr("native"))) {
+                basm_translate_bind_directive(basm, &body, location, BINDING_NATIVE);
+            } else if (sv_eq(name, sv_from_cstr("assert"))) {
+                Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(body), location);
+                basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
+                    .expr = expr,
+                    .location = location,
+                };
+            } else if (sv_eq(name, sv_from_cstr("include"))) {
+                Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(body), location);
+                if (expr.kind != EXPR_KIND_LIT_STR) {
+                    fprintf(stderr, FL_Fmt": ERROR: %%include directive only support string literals as file paths\n",
+                            FL_Arg(location));
                     exit(1);
-                } else if (sv_eq(token, sv_from_cstr("const"))) {
-                    basm_translate_bind_directive(basm, &line, location, BINDING_CONST);
-                } else if (sv_eq(token, sv_from_cstr("native"))) {
-                    basm_translate_bind_directive(basm, &line, location, BINDING_NATIVE);
-                } else if (sv_eq(token, sv_from_cstr("assert"))) {
-                    Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(line), location);
-                    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
-                        .expr = expr,
-                        .location = location,
-                    };
-                } else if (sv_eq(token, sv_from_cstr("include"))) {
-                    line = sv_trim(line);
+                }
 
-
-                    if (line.count > 0) {
-                        if (*line.data == '"' && line.data[line.count - 1] == '"') {
-                            line.data  += 1;
-                            line.count -= 2;
-
-                            if (basm->include_level + 1 >= BASM_MAX_INCLUDE_LEVEL) {
-                                fprintf(stderr,
-                                        FL_Fmt": ERROR: exceeded maximum include level\n",
-                                        FL_Arg(location));
-                                exit(1);
-                            }
-
-                            {
-                                File_Location prev_include_location = basm->include_location;
-                                basm->include_level += 1;
-                                basm->include_location = location;
-                                basm_translate_source(basm, line);
-                                basm->include_location = prev_include_location;
-                                basm->include_level -= 1;
-                            }
-                        } else {
-                            fprintf(stderr,
-                                    FL_Fmt": ERROR: include file path has to be surrounded with quotation marks\n",
-                                    FL_Arg(location));
-                            exit(1);
-                        }
-                    } else {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: include file path is not provided\n",
-                                FL_Arg(location));
-                        exit(1);
-                    }
-                } else if (sv_eq(token, sv_from_cstr("entry"))) {
-                    if (basm->has_entry) {
-                        fprintf(stderr,
-                                FL_Fmt": ERROR: entry point has been already set!\n",
-                                FL_Arg(location));
-                        fprintf(stderr, FL_Fmt": NOTE: the first entry point\n", FL_Arg(basm->entry_location));
-                        exit(1);
-                    }
-
-                    line = sv_trim(line);
-                    bool inline_entry = false;
-
-                    if (sv_ends_with(line, sv_from_cstr(":"))) {
-                        sv_chop_right(&line, 1);
-                        inline_entry = true;
-                    }
-
-                    Expr expr = parse_expr_from_sv(&basm->arena, line, location);
-
-                    if (expr.kind != EXPR_KIND_BINDING) {
-                        fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
-                                FL_Arg(location));
-                        exit(1);
-                    }
-
-                    String_View label = expr.value.as_binding;
-
-                    if (inline_entry) {
-                        // TODO(#219): inline %entry does not support instruction after the label on the same line
-                        // ```nasm
-                        // %entry main: push 69
-                        // ```
-                        basm_bind_value(basm, label, word_u64(basm->program_size),
-                                        BINDING_LABEL, location);
-                    }
-
-                    basm->deferred_entry_binding_name = label;
-                    basm->has_entry = true;
-                    basm->entry_location = location;
-                } else {
+                File_Location prev_include_location = basm->include_location;
+                basm->include_level += 1;
+                basm->include_location = location;
+                basm_translate_source(basm, expr.value.as_lit_str);
+                basm->include_location = prev_include_location;
+                basm->include_level -= 1;
+            } else if (sv_eq(name, sv_from_cstr("entry"))) {
+                if (basm->has_entry) {
                     fprintf(stderr,
-                            FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
-                            FL_Arg(location),
-                            SV_Arg(token));
+                            FL_Fmt": ERROR: entry point has been already set!\n",
+                            FL_Arg(location));
+                    fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
+                            FL_Arg(basm->entry_location));
                     exit(1);
-
                 }
+
+                body = sv_trim(body);
+                bool inline_entry = false;
+
+                if (sv_ends_with(body, sv_from_cstr(":"))) {
+                    sv_chop_right(&body, 1);
+                    inline_entry = true;
+                }
+
+                Expr expr = parse_expr_from_sv(&basm->arena, body, location);
+
+                if (expr.kind != EXPR_KIND_BINDING) {
+                    fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
+                            FL_Arg(location));
+                    exit(1);
+                }
+
+                String_View label = expr.value.as_binding;
+
+                if (inline_entry) {
+                    basm_bind_value(basm, label, word_u64(basm->program_size),
+                                    BINDING_LABEL, location);
+                }
+
+                basm->deferred_entry_binding_name = label;
+                basm->has_entry = true;
+                basm->entry_location = location;
             } else {
-                // Label binding
-                if (token.count > 0 && token.data[token.count - 1] == ':') {
-                    String_View label = {
-                        .count = token.count - 1,
-                        .data = token.data
-                    };
+                fprintf(stderr,
+                        FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
+                        FL_Arg(location),
+                        SV_Arg(name));
+                exit(1);
 
-                    basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location);
-                    token = sv_trim(sv_chop_by_delim(&line, ' '));
-                }
+            }
+        }
+        break;
+        case LINE_KIND_LABEL: {
+            String_View name = line.value.as_label.name;
+            basm_bind_value(basm, name, word_u64(basm->program_size),
+                            BINDING_LABEL, location);
+        }
+        break;
 
-                // Instruction
-                if (token.count > 0) {
-                    String_View operand = line;
-                    Inst_Type inst_type = INST_NOP;
-                    if (inst_by_name(token, &inst_type)) {
-                        assert(basm->program_size < BM_PROGRAM_CAPACITY);
-                        basm->program[basm->program_size].type = inst_type;
+        case LINE_KIND_INSTRUCTION: {
+            String_View name = line.value.as_instruction.name;
+            String_View operand = line.value.as_instruction.operand;
+            Inst_Type inst_type = INST_NOP;
+            if (inst_by_name(name, &inst_type)) {
+                assert(basm->program_size < BM_PROGRAM_CAPACITY);
+                basm->program[basm->program_size].type = inst_type;
 
-                        if (inst_has_operand(inst_type)) {
-                            if (operand.count == 0) {
-                                fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` requires an operand\n",
-                                        FL_Arg(location),
-                                        SV_Arg(token));
-                                exit(1);
-                            }
-
-                            Expr expr = parse_expr_from_sv(&basm->arena, operand, location);
-
-                            if (expr.kind == EXPR_KIND_BINDING) {
-                                basm_push_deferred_operand(basm, basm->program_size, expr, location);
-                            } else {
-                                assert(expr.kind != EXPR_KIND_BINDING);
-                                basm->program[basm->program_size].operand =
-                                    basm_expr_eval(basm, expr, location);
-                            }
-                        }
-
-                        basm->program_size += 1;
-                    } else {
-                        fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
+                if (inst_has_operand(inst_type)) {
+                    if (operand.count == 0) {
+                        fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` requires an operand\n",
                                 FL_Arg(location),
-                                SV_Arg(token));
+                                SV_Arg(name));
                         exit(1);
                     }
+
+                    Expr expr = parse_expr_from_sv(&basm->arena, operand, location);
+                    basm_push_deferred_operand(basm, basm->program_size, expr, location);
                 }
+
+                basm->program_size += 1;
+            } else {
+                fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
+                        FL_Arg(location),
+                        SV_Arg(name));
+                exit(1);
             }
+        }
+        break;
+
+        default: {
+            assert(false && "basm_translate_source: unreachable");
+            exit(1);
+        }
         }
     }
 
@@ -403,30 +363,33 @@ void basm_translate_source(Basm *basm, String_View input_file_path_)
 
     // Eval deferred operands
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        Expr expr = basm->deferred_operands[i].expr;
-        assert(expr.kind == EXPR_KIND_BINDING);
-        String_View name = expr.value.as_binding;
-
         Inst_Addr addr = basm->deferred_operands[i].addr;
-        Binding *binding = basm_resolve_binding(basm, name);
-        if (binding == NULL) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->deferred_operands[i].location),
-                    SV_Arg(name));
-            exit(1);
+        Expr expr = basm->deferred_operands[i].expr;
+        File_Location location = basm->deferred_operands[i].location;
+
+        if (expr.kind == EXPR_KIND_BINDING) {
+            String_View name = expr.value.as_binding;
+
+            Binding *binding = basm_resolve_binding(basm, name);
+            if (binding == NULL) {
+                fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                        FL_Arg(basm->deferred_operands[i].location),
+                        SV_Arg(name));
+                exit(1);
+            }
+
+            if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                exit(1);
+            }
+
+            if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                exit(1);
+            }
         }
 
-        if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
-            exit(1);
-        }
-
-        if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
-            exit(1);
-        }
-
-        basm->program[addr].operand = basm_binding_eval(basm, binding, basm->deferred_operands[i].location);
+        basm->program[addr].operand = basm_expr_eval(basm, expr, location);
     }
 
     // Resolving deferred entry point
