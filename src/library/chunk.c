@@ -1,11 +1,26 @@
 #include "./chunk.h"
 
+void regular_chunk_append(Regular_Chunk *chunk, Deferred_Inst inst)
+{
+    if (!regular_chunk_full(chunk)) {
+        chunk->insts[chunk->insts_size++] = inst;
+    }
+}
+
+bool regular_chunk_full(const Regular_Chunk *chunk)
+{
+    return chunk->insts_size >= CHUNK_CAPACITY;
+}
+
 static void regular_chunk_dump(FILE *stream,
                                const Regular_Chunk *chunk,
                                int level)
 {
     for (size_t i = 0; i < chunk->insts_size; ++i) {
         fprintf(stream, "%*s%s\n", level * 2, "", inst_name(chunk->insts[i].type));
+        if (inst_has_operand(chunk->insts[i].type)) {
+            dump_expr(stream, chunk->insts[i].operand, level + 1);
+        }
     }
 }
 
@@ -30,12 +45,17 @@ void chunk_dump(FILE *stream, const Chunk *chunk, int level)
             break;
         }
 
+        fprintf(stream, "==============================\n");
+
         chunk = chunk->next;
     }
 }
 
 Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
 {
+    Chunk *chunk = arena_alloc(&basm->arena, sizeof(Chunk));
+    Chunk *result = chunk;
+
     Line line = {0};
     while (linizer_next(linizer, &line)) {
         File_Location location = line.location;
@@ -83,11 +103,47 @@ Chunk *chunk_translate_lines(Basm *basm, Linizer *linizer)
             basm_bind_value(basm, label, word_u64(basm->program_size), BINDING_LABEL, location);
         }
         break;
-        case LINE_KIND_INSTRUCTION:
-            break;
+        case LINE_KIND_INSTRUCTION: {
+            String_View name = line.value.as_instruction.name;
+            String_View operand = line.value.as_instruction.operand;
+            Deferred_Inst inst = {0};
+
+            if (!inst_by_name(name, &inst.type)) {
+                fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
+                        FL_Arg(location),
+                        SV_Arg(name));
+                exit(1);
+            }
+
+            if (inst_has_operand(inst.type)) {
+                if (operand.count == 0) {
+                    fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` requires an operand\n",
+                            FL_Arg(location),
+                            SV_Arg(name));
+                    exit(1);
+                }
+
+                inst.operand = parse_expr_from_sv(&basm->arena, operand, location);
+            } else {
+                if (operand.count > 0) {
+                    fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` does not accept an operand\n",
+                            FL_Arg(location),
+                            SV_Arg(name));
+                    exit(1);
+                }
+            }
+
+            if (regular_chunk_full(&chunk->value.as_regular)) {
+                chunk->next = arena_alloc(&basm->arena, sizeof(Chunk));
+                chunk = chunk->next;
+            }
+
+            regular_chunk_append(&chunk->value.as_regular, inst);
+        }
+        break;
         }
     }
-    return NULL;
+    return result;
 }
 
 Chunk *chunk_translate_file(Basm *basm, String_View input_file_path_)
@@ -111,7 +167,7 @@ Chunk *chunk_translate_file(Basm *basm, String_View input_file_path_)
         }
         exit(1);
 
-    } 
+    }
 
     return chunk_translate_lines(basm, &linizer);
 }

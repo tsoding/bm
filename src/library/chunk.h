@@ -16,9 +16,17 @@ typedef enum {
 #define CHUNK_CAPACITY 256
 
 typedef struct {
-    Inst insts[CHUNK_CAPACITY];
+    Inst_Type type;
+    Expr operand;
+} Deferred_Inst;
+
+typedef struct {
+    Deferred_Inst insts[CHUNK_CAPACITY];
     size_t insts_size;
 } Regular_Chunk;
+
+void regular_chunk_append(Regular_Chunk *chunk, Deferred_Inst inst);
+bool regular_chunk_full(const Regular_Chunk *chunk);
 
 typedef struct {
     Expr condition;
@@ -35,6 +43,8 @@ struct Chunk {
     Chunk_Value value;
     Chunk *next;
 };
+
+Chunk *chunk_append_regular(Chunk *chunk, Regular_Chunk *regular_chunk);
 
 void chunk_dump(FILE *stream, const Chunk *chunk, int level);
 
