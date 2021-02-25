@@ -43,6 +43,8 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement);
 
 void dump_block(FILE *stream, Block *block, int level);
 void dump_statement(FILE *stream, Statement statement, int level);
+int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
+void dump_statement_as_dot(FILE *stream, Statement statement);
 
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer);
 

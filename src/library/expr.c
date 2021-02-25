@@ -181,7 +181,7 @@ void dump_expr(FILE *stream, Expr expr, int level)
     }
 }
 
-static int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
+int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
 {
     int id = (*counter)++;
 

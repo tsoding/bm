@@ -31,6 +31,55 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
 }
 
+int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
+{
+    int id = (*counter)++;
+
+    switch (statement.kind) {
+    case STATEMENT_KIND_EMIT_INST: {
+        Inst_Type type = statement.value.as_emit_inst.type;
+        Expr operand = statement.value.as_emit_inst.operand;
+
+        fprintf(stream, "Expr_%d [shape=box label=\"%s\"]\n",
+                id, inst_name(type));
+
+        if (inst_has_operand(type)) {
+            int child_id = dump_expr_as_dot_edges(stream, operand, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        }
+    }
+    break;
+
+    case STATEMENT_KIND_BLOCK: {
+        fprintf(stream, "Expr_%d [shape=box label=\"Block\"]\n", id);
+
+        int block_id = id;
+
+        Block *block = statement.value.as_block;
+        while (block) {
+            int next_id = dump_statement_as_dot_edges(stream, block->statement, counter);
+            if (block_id >= 0) {
+                fprintf(stream, "Expr_%d -> Expr_%d\n", block_id, next_id);
+            }
+
+            block_id = next_id;
+            block = block->next;
+        }
+    }
+    break;
+    }
+
+    return id;
+}
+
+void dump_statement_as_dot(FILE *stream, Statement statement)
+{
+    fprintf(stream, "digraph AST {\n");
+    int counter = 0;
+    dump_statement_as_dot_edges(stream, statement, &counter);
+    fprintf(stream, "}\n");
+}
+
 void block_list_push(Arena *arena, Block_List *list, Statement statement)
 {
     assert(list);

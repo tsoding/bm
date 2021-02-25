@@ -28,8 +28,11 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    Block *block = parse_block_from_lines(&arena, &linizer);
-    dump_block(stdout, block, 0);
+    Statement statement = {0};
+    statement.kind = STATEMENT_KIND_BLOCK;
+    statement.value.as_block = parse_block_from_lines(&arena, &linizer);
+
+    dump_statement_as_dot(stdout, statement);
 
     return 0;
 }
