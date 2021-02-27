@@ -1,0 +1,61 @@
+%include "natives.hasm"
+
+%const true 1
+%const false 0
+%const N 100
+%assert N > 1
+
+is_prime:
+    swap 1
+    push 2
+    
+    is_prime_loop:
+        dup 1
+        dup 1
+        leu
+        jmp_if is_prime_loop_end
+    
+        dup 1
+        dup 1
+        modu
+        jmp_if is_prime_skip_bail_out
+            drop
+            drop
+            push false
+            swap 1
+            ret
+        is_prime_skip_bail_out:
+        
+        push 1
+        plusi
+        
+        jmp is_prime_loop
+    is_prime_loop_end:
+    
+    drop
+    drop
+    push true
+    swap 1
+    ret
+
+%entry main:
+    push 2
+    main_loop:            
+        dup 0
+        call is_prime
+        not
+        jmp_if main_skip_print
+            dup 0
+            call dump_u64
+        main_skip_print:
+        
+        push 1
+        plusi
+    
+        dup 0
+        push N
+        leu
+    jmp_if main_loop
+    
+    halt
+

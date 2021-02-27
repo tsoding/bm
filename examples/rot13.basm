@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
 ; only this string needs to be changed
 %const secret "Uryyb, jbeyq! Sebz EBG13."
@@ -36,7 +36,7 @@ rot13:
     swap 1
     ret
 
-main:
+%entry main:
     push secret
 
 loop:
@@ -106,4 +106,3 @@ print:
 
     halt
 
-%entry main

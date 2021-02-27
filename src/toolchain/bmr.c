@@ -1,5 +1,5 @@
-#define BM_IMPLEMENTATION
 #include "./bm.h"
+#include "./basm.h"
 
 #include <stdarg.h>
 

@@ -1,4 +1,4 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
 ; n+1.0
 ; n!*(n+1.0)
@@ -6,7 +6,7 @@
 
 ; sum(1/n!)
 ; 1/1 + 1/1 + 1/(1 * 2) + 1/(1 * 2 * 3) + ...
-main:
+%entry main:
    push 1.0       ; n
    push 1.0       ; n!
    push 1.0       ; sum
@@ -42,4 +42,3 @@ loop:
    
    halt
 
-%entry main

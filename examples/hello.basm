@@ -1,17 +1,21 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 %const hello "Hello, World" ; message
 
-main:
+;; ---
+%assert len(hello) > 0
+
+%entry main:
     push hello
-    push 12
-    plusi
+    push len(hello)
+    native write
+
+    push hello
     push 10
     write8
-    
+
     push hello
-    push 13
+    push 1
     native write
     
     halt
 
-%entry main

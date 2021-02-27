@@ -1,9 +1,8 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
-main:
+%entry main:
     push '0'
     push '1'
     push '2'
     halt
 
-%entry main

@@ -1,6 +1,6 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
-main:
+%entry main:
    push 1.0
    push 2.0
    push 3.0
@@ -8,4 +8,3 @@ main:
    plusf
    call dump_f64
    halt
-%entry main

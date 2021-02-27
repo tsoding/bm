@@ -1,6 +1,6 @@
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
-main:
+%entry main:
   push 3.1415
   f2i
   call dump_i64
@@ -31,4 +31,3 @@ main:
   
   halt
 
-%entry main

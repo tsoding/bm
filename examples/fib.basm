@@ -1,11 +1,11 @@
 ;; TODO(#50): basm include directive has no support for include paths
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 %const N 30
 
 ; N-1
 ; F_1+F_0
 ; F_1
-main:
+%entry main:
    push 0                       ; F_0
    push 1                       ; F_1
    push N                       ; N - the amount of iterations
@@ -29,4 +29,3 @@ loop:
    jmp_if loop
    halt
 
-%entry main

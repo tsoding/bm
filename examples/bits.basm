@@ -1,11 +1,11 @@
 ;; Print bits of number N
-%include "./examples/natives.hasm"
+%include "natives.hasm"
 
 %const N 69420
 
 ;; N >> 1
 
-main:
+%entry main:
     push N
 loop:
     dup 0
@@ -25,4 +25,3 @@ loop:
 
     halt
 
-%entry main
