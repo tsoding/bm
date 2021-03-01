@@ -149,3 +149,13 @@ Tokenizer tokenizer_from_sv(String_View source)
         .source = source
     };
 }
+
+void expect_no_tokens(Tokenizer *tokenizer, File_Location location)
+{
+    Token token = {0};
+    if (tokenizer_next(tokenizer, &token, location)) {
+        fprintf(stderr, FL_Fmt": ERROR: unexpected token `"SV_Fmt"`\n",
+                FL_Arg(location), SV_Arg(token.text));
+        exit(1);
+    }
+}

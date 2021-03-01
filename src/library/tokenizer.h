@@ -41,6 +41,8 @@ typedef struct {
     bool peek_buffer_full;
 } Tokenizer;
 
+void expect_no_tokens(Tokenizer *tokenizer, File_Location location);
+
 bool tokenizer_next(Tokenizer *tokenizer, Token *token, File_Location location);
 bool tokenizer_peek(Tokenizer *tokenizer, Token *token, File_Location location);
 Tokenizer tokenizer_from_sv(String_View source);
