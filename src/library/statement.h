@@ -11,6 +11,7 @@ typedef struct Block Block;
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
     STATEMENT_KIND_BIND_LABEL,
+    STATEMENT_KIND_INCLUDE,
     STATEMENT_KIND_BLOCK,
 } Statement_Kind;
 
@@ -23,9 +24,14 @@ typedef struct {
     String_View name;
 } Bind_Label;
 
+typedef struct {
+    String_View path;
+} Include;
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
+    Include as_include;
     Block *as_block;
 } Statement_Value;
 
@@ -52,6 +58,7 @@ void dump_statement(FILE *stream, Statement statement, int level);
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
 void dump_statement_as_dot(FILE *stream, Statement statement);
 
+Statement parse_directive_from_line(Arena *arena, Linizer *linizer);
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer);
 
 #endif // STATEMENT_H_
