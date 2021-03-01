@@ -10,6 +10,7 @@ typedef struct Block Block;
 
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
+    STATEMENT_KIND_BIND_LABEL,
     STATEMENT_KIND_BLOCK,
 } Statement_Kind;
 
@@ -18,8 +19,13 @@ typedef struct {
     Expr operand;
 } Emit_Inst;
 
+typedef struct {
+    String_View name;
+} Bind_Label;
+
 typedef union {
     Emit_Inst as_emit_inst;
+    Bind_Label as_bind_label;
     Block *as_block;
 } Statement_Value;
 

@@ -24,6 +24,14 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_BIND_LABEL: {
+        String_View name = statement.value.as_bind_label.name;
+
+        fprintf(stream, "%*sLabel:\n", level * 2, "");
+        fprintf(stream, "%*s"SV_Fmt"\n", (level + 1) * 2, "", SV_Arg(name));
+    }
+    break;
+
     case STATEMENT_KIND_BLOCK: {
         dump_block(stream, statement.value.as_block, level);
     }
@@ -47,6 +55,13 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
             int child_id = dump_expr_as_dot_edges(stream, operand, counter);
             fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
         }
+    }
+    break;
+
+    case STATEMENT_KIND_BIND_LABEL: {
+        String_View name = statement.value.as_bind_label.name;
+        fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
+                id, SV_Arg(name));
     }
     break;
 
@@ -129,9 +144,23 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
             linizer_next(linizer, NULL);
         }
         break;
-        case LINE_KIND_LABEL:
-            assert(false && "TODO: parse_block_from_lines: label parsing is not implemented");
-            break;
+        case LINE_KIND_LABEL: {
+            Expr label = parse_expr_from_sv(arena, line.value.as_label.name, location);
+
+            if (label.kind != EXPR_KIND_BINDING) {
+                fprintf(stderr, FL_Fmt": ERROR: expected binding name for a label\n",
+                        FL_Arg(location));
+                exit(1);
+            }
+
+            Statement statement = {0};
+            statement.kind = STATEMENT_KIND_BIND_LABEL;
+            statement.value.as_bind_label.name = label.value.as_binding;
+            block_list_push(arena, &result, statement);
+
+            linizer_next(linizer, NULL);
+        }
+        break;
         case LINE_KIND_DIRECTIVE:
             assert(false && "TODO: parse_block_from_lines: directive parsing is not implemented");
             break;
