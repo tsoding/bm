@@ -236,7 +236,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("const"))) {
-        // TODO: %const and %native directive should have = in it
+        // TODO(#227): %const and %native directive should have = in it
         // Like so
         // ```basm
         // %const N = 69
