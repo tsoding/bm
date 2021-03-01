@@ -246,13 +246,13 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.kind = STATEMENT_KIND_BIND_CONST;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
-        Expr name = parse_expr_from_tokens(arena, &tokenizer, location);
-        if (name.kind != EXPR_KIND_BINDING) {
+        Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
+        if (binding_name.kind != EXPR_KIND_BINDING) {
             fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%const binding\n",
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_const.name = name.value.as_binding;
+        statement.value.as_bind_const.name = binding_name.value.as_binding;
 
         statement.value.as_bind_const.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
@@ -264,13 +264,13 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.kind = STATEMENT_KIND_BIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
-        Expr name = parse_expr_from_tokens(arena, &tokenizer, location);
-        if (name.kind != EXPR_KIND_BINDING) {
+        Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
+        if (binding_name.kind != EXPR_KIND_BINDING) {
             fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%native binding\n",
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_native.name = name.value.as_binding;
+        statement.value.as_bind_native.name = binding_name.value.as_binding;
 
         statement.value.as_bind_native.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
