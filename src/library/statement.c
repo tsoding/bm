@@ -32,6 +32,17 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_BIND_CONST: {
+        String_View name = statement.value.as_bind_const.name;
+        Expr value = statement.value.as_bind_const.value;
+
+        fprintf(stream, "%*sBind Const:\n", level * 2, "");
+        fprintf(stream, "%*sName: "SV_Fmt"\n", (level + 1) * 2, "", SV_Arg(name));
+        fprintf(stream, "%*sValue:\n", (level + 1) * 2, "");
+        dump_expr(stream, value, level + 2);
+    }
+    break;
+
     case STATEMENT_KIND_INCLUDE: {
         String_View path = statement.value.as_include.path;
 
@@ -73,11 +84,22 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
+    case STATEMENT_KIND_BIND_CONST: {
+        String_View name = statement.value.as_bind_const.name;
+        Expr value = statement.value.as_bind_const.value;
+
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%const "SV_Fmt"\"]\n",
+                id, SV_Arg(name));
+        int child_id = dump_expr_as_dot_edges(stream, value, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+    }
+    break;
+
     case STATEMENT_KIND_INCLUDE: {
         int child_id = (*counter)++;
 
         String_View path = statement.value.as_include.path;
-        fprintf(stream, "Expr_%d [shape=diamond label=\"include\"]\n",
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%include\"]\n",
                 id);
         fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
                 child_id, SV_Arg(path));
@@ -161,6 +183,27 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         }
 
         statement.value.as_include.path = path.value.as_lit_str;
+    } else if (sv_eq(name, sv_from_cstr("const"))) {
+        // TODO: %const and %native directive should have = in it
+        // Like so
+        // ```basm
+        // %const N = 69
+        // %const M = 420
+        // ```
+        statement.kind = STATEMENT_KIND_BIND_CONST;
+
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Expr name = parse_expr_from_tokens(arena, &tokenizer, location);
+        if (name.kind != EXPR_KIND_BINDING) {
+            fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%const binding\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+        statement.value.as_bind_const.name = name.value.as_binding;
+
+        statement.value.as_bind_const.value =
+            parse_expr_from_tokens(arena, &tokenizer, location);
+        expect_no_tokens(&tokenizer, location);
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));

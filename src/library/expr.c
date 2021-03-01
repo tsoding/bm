@@ -133,15 +133,8 @@ Expr parse_expr_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location lo
 Expr parse_expr_from_sv(Arena *arena, String_View source, File_Location location)
 {
     Tokenizer tokenizer = tokenizer_from_sv(source);
-
     Expr result = parse_expr_from_tokens(arena, &tokenizer, location);
-
-    Token token = {0};
-    if (tokenizer_next(&tokenizer, &token, location)) {
-        fprintf(stderr, FL_Fmt": ERROR: unexpected token `"SV_Fmt"`\n",
-                FL_Arg(location), SV_Arg(token.text));
-        exit(1);
-    }
+    expect_no_tokens(&tokenizer, location);
 
     return result;
 }
