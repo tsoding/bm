@@ -62,6 +62,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_ASSERT: {
+        fprintf(stream, "%*sAssert:\n", level * 2, "");
+        dump_expr(stream, statement.value.as_assert.condition, level + 1);
+    }
+    break;
+
     case STATEMENT_KIND_BLOCK: {
         dump_block(stream, statement.value.as_block, level);
     }
@@ -125,6 +131,14 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                 id);
         fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
                 child_id, SV_Arg(path));
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+    }
+    break;
+
+    case STATEMENT_KIND_ASSERT: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%assert\"]\n",
+                id);
+        int child_id = dump_expr_as_dot_edges(stream, statement.value.as_assert.condition, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
     }
     break;
@@ -241,6 +255,10 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         statement.value.as_bind_native.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
+    } else if (sv_eq(name, sv_from_cstr("assert"))) {
+        statement.kind = STATEMENT_KIND_ASSERT;
+        statement.value.as_assert.condition =
+            parse_expr_from_sv(arena, body, line.location);
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));

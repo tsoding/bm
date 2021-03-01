@@ -14,6 +14,7 @@ typedef enum {
     STATEMENT_KIND_BIND_CONST,
     STATEMENT_KIND_BIND_NATIVE,
     STATEMENT_KIND_INCLUDE,
+    STATEMENT_KIND_ASSERT,
     STATEMENT_KIND_BLOCK,
 } Statement_Kind;
 
@@ -40,12 +41,17 @@ typedef struct {
     String_View path;
 } Include;
 
+typedef struct {
+    Expr condition;
+} Assert;
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
     Bind_Const as_bind_const;
     Bind_Native as_bind_native;
     Include as_include;
+    Assert as_assert;
     Block *as_block;
 } Statement_Value;
 
