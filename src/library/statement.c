@@ -356,7 +356,7 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
         break;
 
         case LINE_KIND_LABEL: {
-            // TODO: it is a bit of an overhead to call the whole parser to just parse the name of the label
+            // TODO(#228): it is a bit of an overhead to call the whole parser to just parse the name of the label
             // It would be better to extract specifically binding parsing into a separate function and call it directly.
             Expr label = parse_expr_from_sv(arena, line.value.as_label.name, location);
 
