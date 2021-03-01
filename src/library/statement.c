@@ -223,7 +223,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     if (sv_eq(name, sv_from_cstr("include"))) {
         Statement statement = {0};
         statement.kind = STATEMENT_KIND_INCLUDE;
-        // TODO: it is a bit of an overhead to call the whole parser to just parse the path of the include
+        // TODO(#226): it is a bit of an overhead to call the whole parser to just parse the path of the include
         // It would be better to extract specifically string parsing into a separate function and call it directly.
         Expr path = parse_expr_from_sv(arena, body, line.location);
         if (path.kind != EXPR_KIND_LIT_STR) {
