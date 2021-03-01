@@ -188,12 +188,16 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
                 exit(1);
             }
 
-            Expr operand = parse_expr_from_sv(arena, operand_sv, location);
 
             Statement statement = {0};
             statement.kind = STATEMENT_KIND_EMIT_INST;
             statement.value.as_emit_inst.type = type;
-            statement.value.as_emit_inst.operand = operand;
+
+            if (inst_has_operand(type)) {
+                Expr operand = parse_expr_from_sv(arena, operand_sv, location);
+                statement.value.as_emit_inst.operand = operand;
+            }
+
             block_list_push(arena, &result, statement);
 
             linizer_next(linizer, NULL);
