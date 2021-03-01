@@ -68,6 +68,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_ENTRY: {
+        fprintf(stream, "%*sEntry:\n", level * 2, "");
+        dump_expr(stream, statement.value.as_entry.value, level + 1);
+    }
+    break;
+
     case STATEMENT_KIND_BLOCK: {
         dump_block(stream, statement.value.as_block, level);
     }
@@ -143,6 +149,14 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
+    case STATEMENT_KIND_ENTRY: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%entry\"]\n",
+                id);
+        int child_id = dump_expr_as_dot_edges(stream, statement.value.as_entry.value, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+    }
+    break;
+
     case STATEMENT_KIND_BLOCK: {
         fprintf(stream, "Expr_%d [shape=box label=\"Block\"]\n", id);
 
@@ -192,7 +206,7 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement)
     }
 }
 
-Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
+void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *output)
 {
     Line line = {0};
 
@@ -206,8 +220,8 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
     String_View name = line.value.as_directive.name;
     String_View body = line.value.as_directive.body;
 
-    Statement statement = {0};
     if (sv_eq(name, sv_from_cstr("include"))) {
+        Statement statement = {0};
         statement.kind = STATEMENT_KIND_INCLUDE;
         // TODO: it is a bit of an overhead to call the whole parser to just parse the path of the include
         // It would be better to extract specifically string parsing into a separate function and call it directly.
@@ -219,6 +233,8 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         }
 
         statement.value.as_include.path = path.value.as_lit_str;
+
+        block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("const"))) {
         // TODO: %const and %native directive should have = in it
         // Like so
@@ -226,6 +242,7 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         // %const N = 69
         // %const M = 420
         // ```
+        Statement statement = {0};
         statement.kind = STATEMENT_KIND_BIND_CONST;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
@@ -240,7 +257,10 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         statement.value.as_bind_const.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
+
+        block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("native"))) {
+        Statement statement = {0};
         statement.kind = STATEMENT_KIND_BIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
@@ -255,16 +275,49 @@ Statement parse_directive_from_line(Arena *arena, Linizer *linizer)
         statement.value.as_bind_native.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
+        block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("assert"))) {
+        Statement statement = {0};
         statement.kind = STATEMENT_KIND_ASSERT;
         statement.value.as_assert.condition =
             parse_expr_from_sv(arena, body, line.location);
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, sv_from_cstr("entry"))) {
+        body = sv_trim(body);
+        bool inline_entry = false;
+
+        if (sv_ends_with(body, sv_from_cstr(":"))) {
+            sv_chop_right(&body, 1);
+            inline_entry = true;
+        }
+
+        Expr expr = parse_expr_from_sv(arena, body, line.location);
+
+        {
+            Statement statement = {0};
+            statement.kind = STATEMENT_KIND_ENTRY;
+            statement.value.as_entry.value = expr;
+            block_list_push(arena, output, statement);
+        }
+
+        if (inline_entry) {
+            Statement statement = {0};
+            statement.kind = STATEMENT_KIND_BIND_LABEL;
+
+            if (expr.kind != EXPR_KIND_BINDING) {
+                fprintf(stderr, FL_Fmt": ERROR: expected binding name for a label\n",
+                        FL_Arg(location));
+                exit(1);
+            }
+
+            statement.value.as_bind_label.name = expr.value.as_binding;
+            block_list_push(arena, output, statement);
+        }
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));
         exit(1);
     }
-    return statement;
 }
 
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
@@ -323,8 +376,7 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
         break;
 
         case LINE_KIND_DIRECTIVE: {
-            Statement statement = parse_directive_from_line(arena, linizer);
-            block_list_push(arena, &result, statement);
+            parse_directive_from_line(arena, linizer, &result);
         }
         break;
         }
