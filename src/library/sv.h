@@ -10,6 +10,12 @@ typedef struct {
     const char *data;
 } String_View;
 
+#define SV(cstr_lit) \
+    ((String_View) { \
+        .count = sizeof(cstr_lit) - 1, \
+        .data = (cstr_lit) \
+    })
+
 #define SV_NULL (String_View) {0}
 
 // printf macros for String_View

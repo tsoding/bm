@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
         if (i == bm.ip) {
-            printf("entry:\n");
+            printf("%%entry main:\n");
         }
 
         printf("    %s", inst_name(bm.program[i].type));

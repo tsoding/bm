@@ -119,7 +119,7 @@ void examples_command(void)
             CMD(PATH("build", "toolchain", "basm"),
                 "-I", "./examples/stdlib/",
                 "-g",
-                "-i", PATH("examples", example),
+                PATH("examples", example),
                 "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
         }
     });
@@ -221,6 +221,7 @@ void link_lib_objects(void)
         PATH("build", "library", "sv.obj"),
         PATH("build", "library", "expr.obj"),
         PATH("build", "library", "linizer.obj"),
+        PATH("build", "library", "path.obj"),
         PATH("build", "library", "tokenizer.obj"),
         PATH("build", "library", "statement.obj"));
 #else
@@ -232,6 +233,7 @@ void link_lib_objects(void)
         PATH("build", "library", "sv.o"),
         PATH("build", "library", "expr.o"),
         PATH("build", "library", "linizer.o"),
+        PATH("build", "library", "path.o"),
         PATH("build", "library", "tokenizer.o"),
         PATH("build", "library", "statement.o"));
 #endif // _WIN32

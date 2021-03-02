@@ -199,7 +199,91 @@ void basm_translate_bind_directive(Basm *basm, String_View line,
     }
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path)
+void basm_translate_block(Basm *basm, Block *block)
+{
+    while (block != NULL) {
+        basm_translate_statement(basm, block->statement);
+        block = block->next;
+    }
+
+    basm_translate_second_pass(basm);
+}
+
+void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
+{
+    assert(basm->program_size < BM_PROGRAM_CAPACITY);
+    basm->program[basm->program_size].type = emit_inst.type;
+
+    if (inst_has_operand(emit_inst.type)) {
+        basm_push_deferred_operand(basm, basm->program_size, emit_inst.operand, location);
+    }
+
+    basm->program_size += 1;
+}
+
+void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
+{
+    if (basm->has_entry) {
+        fprintf(stderr,
+                FL_Fmt": ERROR: entry point has been already set!\n",
+                FL_Arg(location));
+        fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
+                FL_Arg(basm->entry_location));
+        exit(1);
+    }
+
+    if (entry.value.kind != EXPR_KIND_BINDING) {
+        fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
+                FL_Arg(location));
+        exit(1);
+    }
+
+    String_View label = entry.value.value.as_binding;
+    basm->deferred_entry_binding_name = label;
+    basm->has_entry = true;
+    basm->entry_location = location;
+}
+
+void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)
+{
+    basm_bind_value(basm,
+                    bind_label.name,
+                    word_u64(basm->program_size),
+                    BINDING_LABEL,
+                    location);
+}
+
+void basm_translate_statement(Basm *basm, Statement statement)
+{
+    switch (statement.kind) {
+    case STATEMENT_KIND_EMIT_INST:
+        basm_translate_emit_inst(basm, statement.value.as_emit_inst, statement.location);
+        break;
+    case STATEMENT_KIND_BIND_LABEL:
+        basm_translate_bind_label(basm, statement.value.as_bind_label, statement.location);
+        break;
+    case STATEMENT_KIND_BIND_CONST:
+        assert(false && "TODO(#231): translating BIND_CONST is not implemented");
+        break;
+    case STATEMENT_KIND_BIND_NATIVE:
+        assert(false && "TODO(#232): translating BIND_NATIVE is not implemented");
+        break;
+    case STATEMENT_KIND_INCLUDE:
+        assert(false && "TODO(#233): translating INCLUDE is not implemented");
+        break;
+    case STATEMENT_KIND_ASSERT:
+        assert(false && "TODO(#234): translating ASSERT is not implemented");
+        break;
+    case STATEMENT_KIND_ENTRY:
+        basm_translate_entry(basm, statement.value.as_entry, statement.location);
+        break;
+    case STATEMENT_KIND_BLOCK:
+        basm_translate_block(basm, statement.value.as_block);
+        break;
+    }
+}
+
+void basm_translate_source_file(Basm *basm, String_View input_file_path)
 {
     {
         String_View resolved_path = SV_NULL;
@@ -251,7 +335,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 File_Location prev_include_location = basm->include_location;
                 basm->include_level += 1;
                 basm->include_location = location;
-                basm_translate_source(basm, expr.value.as_lit_str);
+                basm_translate_source_file(basm, expr.value.as_lit_str);
                 basm->include_location = prev_include_location;
                 basm->include_level -= 1;
             } else if (sv_eq(name, sv_from_cstr("entry"))) {
@@ -344,6 +428,11 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
         }
     }
 
+    basm_translate_second_pass(basm);
+}
+
+void basm_translate_second_pass(Basm *basm)
+{
     // Force Evaluating the Bindings
     for (size_t i = 0; i < basm->bindings_size; ++i) {
         basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location);
