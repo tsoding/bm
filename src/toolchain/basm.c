@@ -18,6 +18,7 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream, "    -g                    Generate symbol table\n");
     fprintf(stream, "    -I <include/path/>    Add include path\n");
     fprintf(stream, "    -o <output.bm>        Provide output path\n");
+    fprintf(stream, "    -h                    Print this help to stdout\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -54,6 +55,9 @@ int main(int argc, char **argv)
             have_symbol_table = true;
         } else if (strcmp(flag, "-I") == 0) {
             basm_push_include_path(&basm, sv_from_cstr(get_flag_value(&argc, &argv, flag, program)));
+        } else if (strcmp(flag, "-h") == 0) {
+            usage(stdout, program);
+            exit(0);
         } else {
             if (input_file_path != NULL) {
                 usage(stderr, program);
