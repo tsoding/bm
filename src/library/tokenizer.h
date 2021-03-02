@@ -2,14 +2,7 @@
 #define TOKENIZER_H_
 
 #include "sv.h"
-
-typedef struct {
-    String_View file_path;
-    int line_number;
-} File_Location;
-
-#define FL_Fmt SV_Fmt":%d"
-#define FL_Arg(location) SV_Arg(location.file_path), location.line_number
+#include "fl.h"
 
 typedef enum {
     TOKEN_KIND_STR,

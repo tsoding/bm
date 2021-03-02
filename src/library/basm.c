@@ -199,6 +199,48 @@ void basm_translate_bind_directive(Basm *basm, String_View line,
     }
 }
 
+void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
+{
+    assert(basm->program_size < BM_PROGRAM_CAPACITY);
+    basm->program[basm->program_size].type = emit_inst.type;
+
+    if (inst_has_operand(emit_inst.type)) {
+        basm_push_deferred_operand(basm, basm->program_size, emit_inst.operand, location);
+    }
+
+    basm->program_size += 1;
+}
+
+void basm_translate_statement(Basm *basm, Statement statement)
+{
+    switch (statement.kind) {
+    case STATEMENT_KIND_EMIT_INST:
+        basm_translate_emit_inst(basm, statement.value.as_emit_inst, statement.location);
+        break;
+    case STATEMENT_KIND_BIND_LABEL:
+        assert(false && "TODO: translating BIND_LABEL is not implemented");
+        break;
+    case STATEMENT_KIND_BIND_CONST:
+        assert(false && "TODO: translating BIND_CONST is not implemented");
+        break;
+    case STATEMENT_KIND_BIND_NATIVE:
+        assert(false && "TODO: translating BIND_NATIVE is not implemented");
+        break;
+    case STATEMENT_KIND_INCLUDE:
+        assert(false && "TODO: translating INCLUDE is not implemented");
+        break;
+    case STATEMENT_KIND_ASSERT:
+        assert(false && "TODO: translating ASSERT is not implemented");
+        break;
+    case STATEMENT_KIND_ENTRY:
+        assert(false && "TODO: translating ENTRY is not implemented");
+        break;
+    case STATEMENT_KIND_BLOCK:
+        assert(false && "TODO: translating BLOCK is not implemented");
+        break;
+    }
+}
+
 void basm_translate_source_file(Basm *basm, String_View input_file_path)
 {
     {

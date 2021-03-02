@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "./linizer.h"
 
 void line_dump(FILE *stream, const Line *line)

@@ -1,8 +1,14 @@
 #ifndef LINIZER_H_
 #define LINIZER_H_
 
+#include <stdio.h>
+
 #include "./sv.h"
-#include "./basm.h"
+#include "./fl.h"
+#include "./arena.h"
+
+#define BASM_COMMENT_SYMBOL ';'
+#define BASM_PP_SYMBOL '%'
 
 typedef enum {
     LINE_KIND_INSTRUCTION = 0,

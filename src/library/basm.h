@@ -5,13 +5,12 @@
 #include "./arena.h"
 #include "./bm.h"
 #include "./expr.h"
+#include "./statement.h"
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_DEFERRED_OPERANDS_CAPACITY 1024
 #define BASM_DEFERRED_ASSERTS_CAPACITY 1024
 #define BASM_STRING_LENGTHS_CAPACITY 1024
-#define BASM_COMMENT_SYMBOL ';'
-#define BASM_PP_SYMBOL '%'
 #define BASM_MAX_INCLUDE_LEVEL 69
 #define BASM_INCLUDE_PATHS_CAPACITY 1024
 
@@ -101,6 +100,8 @@ void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
+void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location);
+void basm_translate_statement(Basm *basm, Statement statement);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_bind_directive(Basm *basm, String_View line, File_Location location, Binding_Kind binding_kind);
 
