@@ -253,6 +253,15 @@ void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location 
                    location);
 }
 
+void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
+{
+    basm_bind_expr(basm,
+                   bind_native.name,
+                   bind_native.value,
+                   BINDING_NATIVE,
+                   location);
+}
+
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)
 {
     basm_bind_value(basm,
@@ -275,7 +284,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
         break;
     case STATEMENT_KIND_BIND_NATIVE:
-        assert(false && "TODO(#232): translating BIND_NATIVE is not implemented");
+        basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
         break;
     case STATEMENT_KIND_INCLUDE:
         assert(false && "TODO(#233): translating INCLUDE is not implemented");
