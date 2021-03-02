@@ -12,7 +12,11 @@ static char *shift(int *argc, char ***argv)
 
 static void usage(FILE *stream, const char *program)
 {
-    fprintf(stream, "Usage: %s -i <input.bm> [-l <limit>] [-h]\n", program);
+    fprintf(stream, "Usage: %s [OPTIONS] <input.bm>\n", program);
+    fprintf(stream, "OPTIONS:\n");
+    fprintf(stream, "    -l <limit>      Limit the amount of steps of the emulation.\n");
+    fprintf(stream, "                    -1 means not limitation\n");
+    fprintf(stream, "    -h              Print this help to stdout\n");
 }
 
 int main(int argc, char **argv)
@@ -27,15 +31,7 @@ int main(int argc, char **argv)
     while (argc > 0) {
         const char *flag = shift(&argc, &argv);
 
-        if (strcmp(flag, "-i") == 0) {
-            if (argc == 0) {
-                usage(stderr, program);
-                fprintf(stderr, "ERROR: No argument is provided for flag `%s`\n", flag);
-                exit(1);
-            }
-
-            input_file_path = shift(&argc, &argv);
-        } else if (strcmp(flag, "-l") == 0) {
+        if (strcmp(flag, "-l") == 0) {
             if (argc == 0) {
                 usage(stderr, program);
                 fprintf(stderr, "ERROR: No argument is provided for flag `%s`\n", flag);
@@ -47,9 +43,13 @@ int main(int argc, char **argv)
             usage(stdout, program);
             exit(0);
         } else {
-            usage(stderr, program);
-            fprintf(stderr, "ERROR: Unknown flag `%s`\n", flag);
-            exit(1);
+            if (input_file_path != NULL) {
+                usage(stderr, program);
+                fprintf(stderr, "ERROR: input file is already provided as `%s`. Only a single input file is not supported\n", input_file_path);
+                exit(1);
+            }
+
+            input_file_path = flag;
         }
     }
 
