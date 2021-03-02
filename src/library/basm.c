@@ -263,7 +263,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         basm_translate_bind_label(basm, statement.value.as_bind_label, statement.location);
         break;
     case STATEMENT_KIND_BIND_CONST:
-        assert(false && "TODO: translating BIND_CONST is not implemented");
+        assert(false && "TODO(#231): translating BIND_CONST is not implemented");
         break;
     case STATEMENT_KIND_BIND_NATIVE:
         assert(false && "TODO: translating BIND_NATIVE is not implemented");
