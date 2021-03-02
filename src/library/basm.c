@@ -266,7 +266,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         assert(false && "TODO(#231): translating BIND_CONST is not implemented");
         break;
     case STATEMENT_KIND_BIND_NATIVE:
-        assert(false && "TODO: translating BIND_NATIVE is not implemented");
+        assert(false && "TODO(#232): translating BIND_NATIVE is not implemented");
         break;
     case STATEMENT_KIND_INCLUDE:
         assert(false && "TODO: translating INCLUDE is not implemented");
