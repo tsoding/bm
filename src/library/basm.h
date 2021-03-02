@@ -95,14 +95,13 @@ void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
-void basm_translate_source(Basm *basm,
-                           String_View input_file_path);
 Word basm_expr_eval(Basm *basm, Expr expr, File_Location location);
 Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location);
 void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
+void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_bind_directive(Basm *basm, String_View line, File_Location location, Binding_Kind binding_kind);
 
 #endif // BASM_H_

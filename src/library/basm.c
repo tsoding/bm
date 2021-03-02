@@ -199,7 +199,7 @@ void basm_translate_bind_directive(Basm *basm, String_View line,
     }
 }
 
-void basm_translate_source(Basm *basm, String_View input_file_path)
+void basm_translate_source_file(Basm *basm, String_View input_file_path)
 {
     {
         String_View resolved_path = SV_NULL;
@@ -251,7 +251,7 @@ void basm_translate_source(Basm *basm, String_View input_file_path)
                 File_Location prev_include_location = basm->include_location;
                 basm->include_level += 1;
                 basm->include_location = location;
-                basm_translate_source(basm, expr.value.as_lit_str);
+                basm_translate_source_file(basm, expr.value.as_lit_str);
                 basm->include_location = prev_include_location;
                 basm->include_level -= 1;
             } else if (sv_eq(name, sv_from_cstr("entry"))) {

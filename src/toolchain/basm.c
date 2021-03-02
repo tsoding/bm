@@ -56,7 +56,7 @@ int main(int argc, char **argv)
         }
     }
 
-    basm_translate_source(&basm, sv_from_cstr(input_file_path));
+    basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
 
     if (!basm.has_entry) {
         fprintf(stderr, "%s: ERROR: entry point for a BM program is not provided. Use translation directive %%entry to provide the entry point.\n", input_file_path);
