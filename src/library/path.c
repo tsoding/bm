@@ -1,3 +1,14 @@
+#ifndef _WIN32
+#    define _DEFAULT_SOURCE
+#    define _POSIX_C_SOURCE 200112L
+#    include <sys/types.h>
+#    include <sys/stat.h>
+#    include <unistd.h>
+#else
+#    define  WIN32_LEAN_AND_MEAN
+#    include "windows.h"
+#endif // _WIN32
+
 #include <assert.h>
 #include <string.h>
 #include "./path.h"
@@ -59,3 +70,46 @@ String_View file_name_of_path(const char *begin)
     });
 }
 
+String_View path_join(Arena *arena, String_View base, String_View file_path)
+{
+#ifndef _WIN32
+    const String_View sep = sv_from_cstr("/");
+#else
+    const String_View sep = sv_from_cstr("\\");
+#endif // _WIN32
+    const size_t result_size = base.count + sep.count + file_path.count;
+    char *result = arena_alloc(arena, result_size);
+    assert(result);
+
+    {
+        char *append = result;
+
+        memcpy(append, base.data, base.count);
+        append += base.count;
+
+        memcpy(append, sep.data, sep.count);
+        append += sep.count;
+
+        memcpy(append, file_path.data, file_path.count);
+        append += file_path.count;
+    }
+
+    return (String_View) {
+        .count = result_size,
+        .data = result,
+    };
+}
+
+bool path_file_exist(const char *file_path)
+{
+#ifndef _WIN32
+    struct stat statbuf = {0};
+    return stat(file_path, &statbuf) == 0 &&
+           ((statbuf.st_mode & S_IFMT) == S_IFREG);
+#else
+    // https://stackoverflow.com/a/6218957
+    DWORD dwAttrib = GetFileAttributes(file_path);
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#endif
+}
