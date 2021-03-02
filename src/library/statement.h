@@ -64,7 +64,7 @@ typedef union {
 struct Statement {
     Statement_Kind kind;
     Statement_Value value;
-    // TODO: Statement.location is not set up during the parsing
+    // TODO(#235): Statement.location is not set up during the parsing
     File_Location location;
 };
 
