@@ -272,7 +272,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         assert(false && "TODO(#233): translating INCLUDE is not implemented");
         break;
     case STATEMENT_KIND_ASSERT:
-        assert(false && "TODO: translating ASSERT is not implemented");
+        assert(false && "TODO(#234): translating ASSERT is not implemented");
         break;
     case STATEMENT_KIND_ENTRY:
         basm_translate_entry(basm, statement.value.as_entry, statement.location);
