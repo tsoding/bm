@@ -161,6 +161,7 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         int child_id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=box label=\"\\\""SV_Fmt"\\\"\"]\n",
                 child_id, SV_Arg(statement.value.as_error.message));
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
     }
     break;
 
