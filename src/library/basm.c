@@ -293,6 +293,11 @@ void basm_translate_include(Basm *basm, Include include, File_Location location)
     }
 }
 
+void basm_translate_if(Basm *basm, If eef, File_Location location)
+{
+    assert(false && "basm_translate_if is not implemented");
+}
+
 void basm_translate_statement(Basm *basm, Statement statement)
 {
     switch (statement.kind) {
@@ -322,6 +327,9 @@ void basm_translate_statement(Basm *basm, Statement statement)
         break;
     case STATEMENT_KIND_BLOCK:
         basm_translate_block(basm, statement.value.as_block);
+        break;
+    case STATEMENT_KIND_IF:
+        basm_translate_if(basm, statement.value.as_if, statement.location);
         break;
     default:
         assert(false && "basm_translate_statement: unreachable");

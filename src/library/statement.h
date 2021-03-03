@@ -18,6 +18,7 @@ typedef enum {
     STATEMENT_KIND_ERROR,
     STATEMENT_KIND_ENTRY,
     STATEMENT_KIND_BLOCK,
+    STATEMENT_KIND_IF,
 } Statement_Kind;
 
 typedef struct {
@@ -55,6 +56,11 @@ typedef struct {
     Expr value;
 } Entry;
 
+typedef struct {
+    Expr condition;
+    Block *then;
+} If;
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
@@ -65,6 +71,7 @@ typedef union {
     Error as_error;
     Entry as_entry;
     Block *as_block;
+    If as_if;
 } Statement_Value;
 
 struct Statement {
@@ -88,6 +95,7 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement);
 
 void dump_block(FILE *stream, Block *block, int level);
 void dump_statement(FILE *stream, Statement statement, int level);
+int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter);
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
 void dump_statement_as_dot(FILE *stream, Statement statement);
 
