@@ -261,6 +261,14 @@ void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location 
                     location);
 }
 
+void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
+{
+    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
+        .expr = azzert.condition,
+        .location = location,
+    };
+}
+
 void basm_translate_statement(Basm *basm, Statement statement)
 {
     switch (statement.kind) {
@@ -280,7 +288,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         assert(false && "TODO(#233): translating INCLUDE is not implemented");
         break;
     case STATEMENT_KIND_ASSERT:
-        assert(false && "TODO(#234): translating ASSERT is not implemented");
+        basm_translate_assert(basm, statement.value.as_assert, statement.location);
         break;
     case STATEMENT_KIND_ENTRY:
         basm_translate_entry(basm, statement.value.as_entry, statement.location);
