@@ -19,9 +19,6 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream, "    -I <include/path/>    Add include path\n");
     fprintf(stream, "    -o <output.bm>        Provide output path\n");
     fprintf(stream, "    -h                    Print this help to stdout\n");
-    fprintf(stream, "    -ast                  Use new experimental mechanism for\n");
-    fprintf(stream, "                          the source code translation based on the\n");
-    fprintf(stream, "                          AST of the program.\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -43,7 +40,6 @@ int main(int argc, char **argv)
     static Basm basm = {0};
 
     bool have_symbol_table = false;
-    bool ast_translation = false;
     const char *program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
@@ -60,8 +56,6 @@ int main(int argc, char **argv)
         } else if (strcmp(flag, "-h") == 0) {
             usage(stdout, program);
             exit(0);
-        } else if (strcmp(flag, "-ast") == 0) {
-            ast_translation = true;
         } else {
             if (input_file_path != NULL) {
                 usage(stderr, program);
@@ -87,19 +81,7 @@ int main(int argc, char **argv)
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
-    if (ast_translation) {
-        Linizer linizer = {0};
-        if (!linizer_from_file(&linizer, &basm.arena, sv_from_cstr(input_file_path))) {
-            fprintf(stderr, "ERROR: could not read file `%s`: %s\n",
-                    input_file_path, strerror(errno));
-            exit(1);
-        }
-
-        Block *input_file_block = parse_block_from_lines(&basm.arena, &linizer);
-        basm_translate_block(&basm, input_file_block);
-    } else {
-        basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
-    }
+    basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
 
     if (!basm.has_entry) {
         fprintf(stderr, "%s: ERROR: entry point for a BM program is not provided. Use translation directive %%entry to provide the entry point.\n", input_file_path);

@@ -195,8 +195,6 @@ void basm_translate_block(Basm *basm, Block *block)
         basm_translate_statement(basm, block->statement);
         block = block->next;
     }
-
-    basm_translate_second_pass(basm);
 }
 
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
@@ -269,6 +267,16 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
     };
 }
 
+void basm_translate_include(Basm *basm, Include include, File_Location location)
+{
+    File_Location prev_include_location = basm->include_location;
+    basm->include_level += 1;
+    basm->include_location = location;
+    basm_translate_source_file(basm, include.path);
+    basm->include_location = prev_include_location;
+    basm->include_level -= 1;
+}
+
 void basm_translate_statement(Basm *basm, Statement statement)
 {
     switch (statement.kind) {
@@ -285,7 +293,7 @@ void basm_translate_statement(Basm *basm, Statement statement)
         basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
         break;
     case STATEMENT_KIND_INCLUDE:
-        assert(false && "TODO(#233): translating INCLUDE is not implemented");
+        basm_translate_include(basm, statement.value.as_include, statement.location);
         break;
     case STATEMENT_KIND_ASSERT:
         basm_translate_assert(basm, statement.value.as_assert, statement.location);
@@ -296,6 +304,9 @@ void basm_translate_statement(Basm *basm, Statement statement)
     case STATEMENT_KIND_BLOCK:
         basm_translate_block(basm, statement.value.as_block);
         break;
+    default:
+        assert(false && "basm_translate_statement: unreachable");
+        exit(1);
     }
 }
 
@@ -321,129 +332,8 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
         exit(1);
     }
 
-    // First pass
-    Line line = {0};
-    while (linizer_next(&linizer, &line)) {
-        const File_Location location = line.location;
-        switch (line.kind) {
-        case LINE_KIND_DIRECTIVE: {
-            String_View name = line.value.as_directive.name;
-            String_View body = line.value.as_directive.body;
-
-            if (sv_eq(line.value.as_directive.name, sv_from_cstr("const"))) {
-                basm_translate_bind_directive(basm, body, location, BINDING_CONST);
-            } else if (sv_eq(name, sv_from_cstr("native"))) {
-                basm_translate_bind_directive(basm, body, location, BINDING_NATIVE);
-            } else if (sv_eq(name, sv_from_cstr("assert"))) {
-                Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(body), location);
-                basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
-                    .expr = expr,
-                    .location = location,
-                };
-            } else if (sv_eq(name, sv_from_cstr("include"))) {
-                Expr expr = parse_expr_from_sv(&basm->arena, sv_trim(body), location);
-                if (expr.kind != EXPR_KIND_LIT_STR) {
-                    fprintf(stderr, FL_Fmt": ERROR: %%include directive only support string literals as file paths\n",
-                            FL_Arg(location));
-                    exit(1);
-                }
-
-                File_Location prev_include_location = basm->include_location;
-                basm->include_level += 1;
-                basm->include_location = location;
-                basm_translate_source_file(basm, expr.value.as_lit_str);
-                basm->include_location = prev_include_location;
-                basm->include_level -= 1;
-            } else if (sv_eq(name, sv_from_cstr("entry"))) {
-                if (basm->has_entry) {
-                    fprintf(stderr,
-                            FL_Fmt": ERROR: entry point has been already set!\n",
-                            FL_Arg(location));
-                    fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
-                            FL_Arg(basm->entry_location));
-                    exit(1);
-                }
-
-                body = sv_trim(body);
-                bool inline_entry = false;
-
-                if (sv_ends_with(body, sv_from_cstr(":"))) {
-                    sv_chop_right(&body, 1);
-                    inline_entry = true;
-                }
-
-                Expr expr = parse_expr_from_sv(&basm->arena, body, location);
-
-                if (expr.kind != EXPR_KIND_BINDING) {
-                    fprintf(stderr, FL_Fmt": ERROR: only bindings are allowed to be set as entry points for now.\n",
-                            FL_Arg(location));
-                    exit(1);
-                }
-
-                String_View label = expr.value.as_binding;
-
-                if (inline_entry) {
-                    basm_bind_value(basm, label, word_u64(basm->program_size),
-                                    BINDING_LABEL, location);
-                }
-
-                basm->deferred_entry_binding_name = label;
-                basm->has_entry = true;
-                basm->entry_location = location;
-            } else {
-                fprintf(stderr,
-                        FL_Fmt": ERROR: unknown pre-processor directive `"SV_Fmt"`\n",
-                        FL_Arg(location),
-                        SV_Arg(name));
-                exit(1);
-
-            }
-        }
-        break;
-        case LINE_KIND_LABEL: {
-            String_View name = line.value.as_label.name;
-            basm_bind_value(basm, name, word_u64(basm->program_size),
-                            BINDING_LABEL, location);
-        }
-        break;
-
-        case LINE_KIND_INSTRUCTION: {
-            String_View name = line.value.as_instruction.name;
-            String_View operand = line.value.as_instruction.operand;
-            Inst_Type inst_type = INST_NOP;
-            if (inst_by_name(name, &inst_type)) {
-                assert(basm->program_size < BM_PROGRAM_CAPACITY);
-                basm->program[basm->program_size].type = inst_type;
-
-                if (inst_has_operand(inst_type)) {
-                    if (operand.count == 0) {
-                        fprintf(stderr, FL_Fmt": ERROR: instruction `"SV_Fmt"` requires an operand\n",
-                                FL_Arg(location),
-                                SV_Arg(name));
-                        exit(1);
-                    }
-
-                    Expr expr = parse_expr_from_sv(&basm->arena, operand, location);
-                    basm_push_deferred_operand(basm, basm->program_size, expr, location);
-                }
-
-                basm->program_size += 1;
-            } else {
-                fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
-                        FL_Arg(location),
-                        SV_Arg(name));
-                exit(1);
-            }
-        }
-        break;
-
-        default: {
-            assert(false && "basm_translate_source: unreachable");
-            exit(1);
-        }
-        }
-    }
-
+    Block *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
+    basm_translate_block(basm, input_file_block);
     basm_translate_second_pass(basm);
 }
 
