@@ -237,6 +237,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
     if (sv_eq(name, sv_from_cstr("include"))) {
         Statement statement = {0};
+        statement.location = location;
         statement.kind = STATEMENT_KIND_INCLUDE;
         // TODO(#226): it is a bit of an overhead to call the whole parser to just parse the path of the include
         // It would be better to extract specifically string parsing into a separate function and call it directly.
@@ -258,6 +259,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         // %const M = 420
         // ```
         Statement statement = {0};
+        statement.location = location;
         statement.kind = STATEMENT_KIND_BIND_CONST;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
@@ -276,6 +278,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("native"))) {
         Statement statement = {0};
+        statement.location = location;
         statement.kind = STATEMENT_KIND_BIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
@@ -293,6 +296,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("assert"))) {
         Statement statement = {0};
+        statement.location = location;
         statement.kind = STATEMENT_KIND_ASSERT;
         statement.value.as_assert.condition =
             parse_expr_from_sv(arena, body, line.location);
@@ -310,6 +314,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
         {
             Statement statement = {0};
+            statement.location = location;
             statement.kind = STATEMENT_KIND_ENTRY;
             statement.value.as_entry.value = expr;
             block_list_push(arena, output, statement);
@@ -317,6 +322,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
         if (inline_entry) {
             Statement statement = {0};
+            statement.location = location;
             statement.kind = STATEMENT_KIND_BIND_LABEL;
 
             if (expr.kind != EXPR_KIND_BINDING) {
@@ -331,6 +337,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, SV("error"))) {
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Statement statement = {0};
+        statement.location = location;
         statement.kind = STATEMENT_KIND_ERROR;
         statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, location);
         expect_no_tokens(&tokenizer, location);
@@ -363,6 +370,7 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
 
 
             Statement statement = {0};
+            statement.location = location;
             statement.kind = STATEMENT_KIND_EMIT_INST;
             statement.value.as_emit_inst.type = type;
 
@@ -389,6 +397,7 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
             }
 
             Statement statement = {0};
+            statement.location = location;
             statement.kind = STATEMENT_KIND_BIND_LABEL;
             statement.value.as_bind_label.name = label.value.as_binding;
             block_list_push(arena, &result, statement);
