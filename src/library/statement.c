@@ -68,6 +68,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_ERROR: {
+        fprintf(stream, "%*sError: "SV_Fmt"\n",
+                level * 2, "", SV_Arg(statement.value.as_error.message));
+    }
+    break;
+
     case STATEMENT_KIND_ENTRY: {
         fprintf(stream, "%*sEntry:\n", level * 2, "");
         dump_expr(stream, statement.value.as_entry.value, level + 1);
@@ -146,6 +152,15 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                 id);
         int child_id = dump_expr_as_dot_edges(stream, statement.value.as_assert.condition, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+    }
+    break;
+
+    case STATEMENT_KIND_ERROR: {
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%error\"]\n",
+                id);
+        int child_id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"\\\""SV_Fmt"\\\"\"]\n",
+                child_id, SV_Arg(statement.value.as_error.message));
     }
     break;
 
@@ -313,6 +328,13 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
             statement.value.as_bind_label.name = expr.value.as_binding;
             block_list_push(arena, output, statement);
         }
+    } else if (sv_eq(name, SV("error"))) {
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Statement statement = {0};
+        statement.kind = STATEMENT_KIND_ERROR;
+        statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, location);
+        expect_no_tokens(&tokenizer, location);
+        block_list_push(arena, output, statement);
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));
