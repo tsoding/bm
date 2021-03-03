@@ -267,6 +267,13 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
     };
 }
 
+void basm_translate_error(Error error, File_Location location)
+{
+    fprintf(stderr, FL_Fmt": ERROR: "SV_Fmt"\n",
+            FL_Arg(location), SV_Arg(error.message));
+    exit(1);
+}
+
 void basm_translate_include(Basm *basm, Include include, File_Location location)
 {
     {
@@ -306,6 +313,9 @@ void basm_translate_statement(Basm *basm, Statement statement)
         break;
     case STATEMENT_KIND_ASSERT:
         basm_translate_assert(basm, statement.value.as_assert, statement.location);
+        break;
+    case STATEMENT_KIND_ERROR:
+        basm_translate_error(statement.value.as_error, statement.location);
         break;
     case STATEMENT_KIND_ENTRY:
         basm_translate_entry(basm, statement.value.as_entry, statement.location);

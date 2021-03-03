@@ -300,6 +300,18 @@ static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Lo
     return result;
 }
 
+String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, File_Location location)
+{
+    Token token = {0};
+    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_STR) {
+        fprintf(stderr, FL_Fmt": ERROR: expected token %s\n",
+                FL_Arg(location), token_kind_name(token.kind));
+        exit(1);
+    }
+
+    return token.text;
+}
+
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
     Token token = {0};
@@ -314,11 +326,8 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
     switch (token.kind) {
     case TOKEN_KIND_STR: {
-        tokenizer_next(tokenizer, NULL, location);
-
-        // TODO(#66): string literals don't support escaped characters
         result.kind = EXPR_KIND_LIT_STR;
-        result.value.as_lit_str = token.text;
+        result.value.as_lit_str = parse_lit_str_from_tokens(tokenizer, location);
     }
     break;
 
