@@ -336,78 +336,77 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
 
     Block *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
     basm_translate_block(basm, input_file_block);
-    basm_translate_second_pass(basm);
-}
 
-void basm_translate_second_pass(Basm *basm)
-{
-    // Force Evaluating the Bindings
-    for (size_t i = 0; i < basm->bindings_size; ++i) {
-        basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location);
-    }
-
-    // Eval deferred asserts
-    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-        Word value = basm_expr_eval(
-                         basm,
-                         basm->deferred_asserts[i].expr,
-                         basm->deferred_asserts[i].location);
-        if (!value.as_u64) {
-            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                    FL_Arg(basm->deferred_asserts[i].location));
-            exit(1);
+    // Second pass
+    {
+        // Force Evaluating the Bindings
+        for (size_t i = 0; i < basm->bindings_size; ++i) {
+            basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location);
         }
-    }
 
-    // Eval deferred operands
-    for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        Inst_Addr addr = basm->deferred_operands[i].addr;
-        Expr expr = basm->deferred_operands[i].expr;
-        File_Location location = basm->deferred_operands[i].location;
+        // Eval deferred asserts
+        for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
+            Word value = basm_expr_eval(
+                             basm,
+                             basm->deferred_asserts[i].expr,
+                             basm->deferred_asserts[i].location);
+            if (!value.as_u64) {
+                fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                        FL_Arg(basm->deferred_asserts[i].location));
+                exit(1);
+            }
+        }
 
-        if (expr.kind == EXPR_KIND_BINDING) {
-            String_View name = expr.value.as_binding;
+        // Eval deferred operands
+        for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
+            Inst_Addr addr = basm->deferred_operands[i].addr;
+            Expr expr = basm->deferred_operands[i].expr;
+            File_Location location = basm->deferred_operands[i].location;
 
-            Binding *binding = basm_resolve_binding(basm, name);
+            if (expr.kind == EXPR_KIND_BINDING) {
+                String_View name = expr.value.as_binding;
+
+                Binding *binding = basm_resolve_binding(basm, name);
+                if (binding == NULL) {
+                    fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                            FL_Arg(basm->deferred_operands[i].location),
+                            SV_Arg(name));
+                    exit(1);
+                }
+
+                if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+                    fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                    exit(1);
+                }
+
+                if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+                    fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                    exit(1);
+                }
+            }
+
+            basm->program[addr].operand = basm_expr_eval(basm, expr, location);
+        }
+
+        // Resolving deferred entry point
+        if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
+            Binding *binding = basm_resolve_binding(
+                                   basm,
+                                   basm->deferred_entry_binding_name);
             if (binding == NULL) {
                 fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                        FL_Arg(basm->deferred_operands[i].location),
-                        SV_Arg(name));
+                        FL_Arg(basm->entry_location),
+                        SV_Arg(basm->deferred_entry_binding_name));
                 exit(1);
             }
 
-            if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+            if (binding->kind != BINDING_LABEL) {
+                fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
                 exit(1);
             }
 
-            if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
-                exit(1);
-            }
+            basm->entry = basm_binding_eval(basm, binding, basm->entry_location).as_u64;
         }
-
-        basm->program[addr].operand = basm_expr_eval(basm, expr, location);
-    }
-
-    // Resolving deferred entry point
-    if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
-        Binding *binding = basm_resolve_binding(
-                               basm,
-                               basm->deferred_entry_binding_name);
-        if (binding == NULL) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->entry_location),
-                    SV_Arg(basm->deferred_entry_binding_name));
-            exit(1);
-        }
-
-        if (binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
-            exit(1);
-        }
-
-        basm->entry = basm_binding_eval(basm, binding, basm->entry_location).as_u64;
     }
 }
 

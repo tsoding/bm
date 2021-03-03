@@ -112,6 +112,5 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location loc
 void basm_translate_statement(Basm *basm, Statement statement);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_bind_directive(Basm *basm, String_View line, File_Location location, Binding_Kind binding_kind);
-void basm_translate_second_pass(Basm *basm);
 
 #endif // BASM_H_
