@@ -316,7 +316,6 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     case TOKEN_KIND_STR: {
         tokenizer_next(tokenizer, NULL, location);
 
-        // TODO(#66): string literals don't support escaped characters
         result.kind = EXPR_KIND_LIT_STR;
         result.value.as_lit_str = token.text;
     }

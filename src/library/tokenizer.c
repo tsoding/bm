@@ -78,6 +78,7 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
         size_t index = 0;
 
         if (sv_index_of(tokenizer->source, '"', &index)) {
+            // TODO(#66): string literals don't support escaped characters
             String_View text = sv_chop_left(&tokenizer->source, index);
             sv_chop_left(&tokenizer->source, 1);
             token.kind = TOKEN_KIND_STR;
