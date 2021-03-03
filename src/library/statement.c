@@ -401,6 +401,25 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, location);
         expect_no_tokens(&tokenizer, location);
         block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("if"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_IF;
+        statement.value.as_if.condition = parse_expr_from_sv(arena, body, location);
+        statement.value.as_if.then = parse_block_from_lines(arena, linizer);
+
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%if` block\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: the %%if block starts here",
+                    FL_Arg(statement.location));
+            exit(1);
+        }
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("end"))) {
+        assert(false && "parse_directive_from_line: unreachable. %%end should not be handled here");
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));
@@ -466,6 +485,10 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
         break;
 
         case LINE_KIND_DIRECTIVE: {
+            if (sv_eq(line.value.as_directive.name, SV("end"))) {
+                return result.begin;
+            }
+
             parse_directive_from_line(arena, linizer, &result);
         }
         break;
