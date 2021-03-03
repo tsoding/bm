@@ -269,12 +269,21 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
 
 void basm_translate_include(Basm *basm, Include include, File_Location location)
 {
-    File_Location prev_include_location = basm->include_location;
-    basm->include_level += 1;
-    basm->include_location = location;
-    basm_translate_source_file(basm, include.path);
-    basm->include_location = prev_include_location;
-    basm->include_level -= 1;
+    {
+        String_View resolved_path = SV_NULL;
+        if (basm_resolve_include_file_path(basm, include.path, &resolved_path)) {
+            include.path = resolved_path;
+        }
+    }
+
+    {
+        File_Location prev_include_location = basm->include_location;
+        basm->include_level += 1;
+        basm->include_location = location;
+        basm_translate_source_file(basm, include.path);
+        basm->include_location = prev_include_location;
+        basm->include_level -= 1;
+    }
 }
 
 void basm_translate_statement(Basm *basm, Statement statement)
@@ -312,13 +321,6 @@ void basm_translate_statement(Basm *basm, Statement statement)
 
 void basm_translate_source_file(Basm *basm, String_View input_file_path)
 {
-    {
-        String_View resolved_path = SV_NULL;
-        if (basm_resolve_include_file_path(basm, input_file_path, &resolved_path)) {
-            input_file_path = resolved_path;
-        }
-    }
-
     Linizer linizer = {0};
     if (!linizer_from_file(&linizer, &basm->arena, input_file_path)) {
         if (basm->include_level > 0) {
