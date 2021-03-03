@@ -169,26 +169,6 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
-void basm_translate_bind_directive(Basm *basm, String_View line,
-                                   File_Location location,
-                                   Binding_Kind binding_kind)
-{
-    line = sv_trim(line);
-    String_View name = sv_chop_by_delim(&line, ' ');
-    if (name.count > 0) {
-        line = sv_trim(line);
-        Expr expr = parse_expr_from_sv(&basm->arena, line, location);
-
-        basm_bind_expr(basm, name, expr, binding_kind, location);
-
-    } else {
-        fprintf(stderr,
-                FL_Fmt": ERROR: binding name is not provided\n",
-                FL_Arg(location));
-        exit(1);
-    }
-}
-
 void basm_translate_block(Basm *basm, Block *block)
 {
     // First pass
