@@ -29,6 +29,8 @@ typedef enum {
     BINDING_DEFERRED,
 } Binding_Status;
 
+const char *binding_status_as_cstr(Binding_Status status);
+
 typedef struct {
     Binding_Kind kind;
     String_View name;
@@ -93,6 +95,7 @@ typedef enum {
 } Eval_Status;
 
 Binding *basm_resolve_binding(Basm *basm, String_View name);
+void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);

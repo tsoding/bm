@@ -40,6 +40,30 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
     };
 }
 
+void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location)
+{
+    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
+
+    Binding *existing = basm_resolve_binding(basm, name);
+    if (existing) {
+        fprintf(stderr,
+                FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
+                FL_Arg(location),
+                SV_Arg(name));
+        fprintf(stderr,
+                FL_Fmt": NOTE: first binding is located here\n",
+                FL_Arg(existing->location));
+        exit(1);
+    }
+
+    basm->bindings[basm->bindings_size++] = (Binding) {
+        .name = name,
+        .status = BINDING_DEFERRED,
+        .kind = kind,
+        .location = location,
+    };
+}
+
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
 {
     assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
@@ -169,12 +193,202 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     fclose(f);
 }
 
+const char *binding_status_as_cstr(Binding_Status status)
+{
+    switch (status) {
+    case BINDING_UNEVALUATED:
+        return "BINDING_UNEVALUATED";
+    case BINDING_EVALUATING:
+        return "BINDING_EVALUATING";
+    case BINDING_EVALUATED:
+        return "BINDING_EVALUATED";
+    case BINDING_DEFERRED:
+        return "BINDING_DEFERRED";
+    default: {
+        assert(false && "binding_status_as_cstr: unreachable");
+        exit(1);
+    }
+    }
+}
+
 void basm_translate_block(Basm *basm, Block *block)
 {
-#if 0
-    (void) basm;
-    (void) block;
-    assert(false && "TODO: basm_translate_block is not implemented");
+#if 1
+    // first pass begin
+    {
+        for (Block *iter = block; iter != NULL; iter = iter->next) {
+            Statement statement = iter->statement;
+            switch (statement.kind) {
+            case STATEMENT_KIND_BIND_LABEL: {
+                basm_defer_binding(basm,
+                                   statement.value.as_bind_label.name,
+                                   BINDING_LABEL,
+                                   statement.location);
+            }
+            break;
+            case STATEMENT_KIND_BIND_CONST:
+                basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
+                break;
+            case STATEMENT_KIND_BIND_NATIVE:
+                basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
+                break;
+            case STATEMENT_KIND_INCLUDE:
+                basm_translate_include(basm, statement.value.as_include, statement.location);
+                break;
+            case STATEMENT_KIND_ASSERT:
+                basm_translate_assert(basm, statement.value.as_assert, statement.location);
+                break;
+            case STATEMENT_KIND_ERROR:
+                basm_translate_error(statement.value.as_error, statement.location);
+                break;
+            case STATEMENT_KIND_ENTRY:
+                basm_translate_entry(basm, statement.value.as_entry, statement.location);
+                break;
+            case STATEMENT_KIND_BLOCK:
+                basm_translate_block(basm, statement.value.as_block);
+                break;
+
+            case STATEMENT_KIND_EMIT_INST:
+            case STATEMENT_KIND_IF:
+                // NOTE: ignored at the first pass
+                break;
+
+            default:
+                assert(false && "basm_translate_statement: unreachable");
+                exit(1);
+            }
+        }
+    }
+    // first pass end
+
+    // second pass begin
+    {
+        for (Block *iter = block; iter != NULL; iter = iter->next) {
+            Statement statement = iter->statement;
+            switch (statement.kind) {
+            case STATEMENT_KIND_EMIT_INST: {
+                basm_translate_emit_inst(basm, statement.value.as_emit_inst, statement.location);
+            }
+            break;
+
+            case STATEMENT_KIND_BIND_LABEL: {
+                Binding *binding = basm_resolve_binding(basm, statement.value.as_bind_label.name);
+                assert(binding != NULL);
+                assert(binding->kind == BINDING_LABEL);
+                assert(binding->status == BINDING_DEFERRED);
+
+                binding->status = BINDING_EVALUATED;
+                binding->value.as_u64 = basm->program_size;
+            }
+            break;
+
+            case STATEMENT_KIND_IF:
+                basm_translate_if(basm, statement.value.as_if, statement.location);
+                break;
+
+            case STATEMENT_KIND_BLOCK:
+            case STATEMENT_KIND_ENTRY:
+            case STATEMENT_KIND_ERROR:
+            case STATEMENT_KIND_ASSERT:
+            case STATEMENT_KIND_INCLUDE:
+            case STATEMENT_KIND_BIND_CONST:
+            case STATEMENT_KIND_BIND_NATIVE:
+                // NOTE: ignored at the second pass
+                break;
+
+            default:
+                assert(false && "basm_translate_statement: unreachable");
+                exit(1);
+            }
+        }
+    }
+    // second pass end
+
+    // deferred asserts begin
+    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
+        Word value = {0};
+        if (basm_expr_eval(
+                    basm,
+                    basm->deferred_asserts[i].expr,
+                    basm->deferred_asserts[i].location,
+                    &value) == EVAL_STATUS_DEFERRED) {
+            fprintf(stderr, FL_Fmt": ERROR: the value of this condition is still deferred.",
+                    FL_Arg(basm->deferred_asserts[i].location));
+            exit(1);
+
+        }
+        if (!value.as_u64) {
+            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                    FL_Arg(basm->deferred_asserts[i].location));
+            exit(1);
+        }
+    }
+    // deferred asserts end
+
+    // deferred operands begin
+    for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
+        Inst_Addr addr = basm->deferred_operands[i].addr;
+        Expr expr = basm->deferred_operands[i].expr;
+        File_Location location = basm->deferred_operands[i].location;
+
+        if (expr.kind == EXPR_KIND_BINDING) {
+            String_View name = expr.value.as_binding;
+
+            Binding *binding = basm_resolve_binding(basm, name);
+            if (binding == NULL) {
+                fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                        FL_Arg(basm->deferred_operands[i].location),
+                        SV_Arg(name));
+                exit(1);
+            }
+
+            if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                exit(1);
+            }
+
+            if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                exit(1);
+            }
+        }
+
+        if (basm_expr_eval(basm, expr, location, &basm->program[addr].operand)) {
+            fprintf(stderr, FL_Fmt": ERROR: the value of this operand is still deferred\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+    }
+    // deferred operands end
+
+    // deferred entry point begin
+    if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
+        Binding *binding = basm_resolve_binding(
+                               basm,
+                               basm->deferred_entry_binding_name);
+        if (binding == NULL) {
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                    FL_Arg(basm->entry_location),
+                    SV_Arg(basm->deferred_entry_binding_name));
+            exit(1);
+        }
+
+        if (binding->kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
+            exit(1);
+        }
+
+        Word entry = {0};
+
+        if (basm_binding_eval(basm, binding, basm->entry_location, &entry) == EVAL_STATUS_DEFERRED) {
+            fprintf(stderr, FL_Fmt": ERROR: the value of entry is still deferred\n",
+                    FL_Arg(basm->entry_location));
+            exit(1);
+        }
+
+        basm->entry = entry.as_u64;
+    }
+    // deferred entry point begin
 #else
     // First pass
     while (block != NULL) {
@@ -378,10 +592,16 @@ void basm_translate_include(Basm *basm, Include include, File_Location location)
 
 void basm_translate_if(Basm *basm, If eef, File_Location location)
 {
-    (void) basm;
-    (void) eef;
-    (void) location;
-    assert(false && "TODO: basm_translate_if is not implemented");
+    Word condition = {0};
+    if (basm_expr_eval(basm, eef.condition, location, &condition) == EVAL_STATUS_DEFERRED) {
+        fprintf(stderr, FL_Fmt": ERROR: if-label paradox has been detected\n",
+                FL_Arg(location));
+        exit(1);
+    }
+
+    if (condition.as_u64) {
+        basm_translate_block(basm, eef.then);
+    }
 }
 
 void basm_translate_statement(Basm *basm, Statement statement)
