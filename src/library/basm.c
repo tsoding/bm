@@ -490,7 +490,7 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
 {
     Word condition = {0};
     if (basm_expr_eval(basm, eef.condition, location, &condition) == EVAL_STATUS_DEFERRED) {
-        // TODO: better error message on if-label paradox
+        // TODO(#245): better error message on if-label paradox
         // Preferably include the location of the deferred label and the explanation on
         // how to resolve the paradox.
         fprintf(stderr, FL_Fmt": ERROR: if-label paradox has been detected\n",
