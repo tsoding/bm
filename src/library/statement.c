@@ -84,15 +84,44 @@ void dump_statement(FILE *stream, Statement statement, int level)
         dump_block(stream, statement.value.as_block, level);
     }
     break;
+
+    case STATEMENT_KIND_IF: {
+        fprintf(stream, "%*sIf:\n", level * 2, "");
+        fprintf(stream, "%*sCondition:\n", (level + 1) * 2, "");
+        dump_expr(stream, statement.value.as_if.condition, level + 2);
+        fprintf(stream, "%*sThen:\n", (level + 1) * 2, "");
+        dump_block(stream, statement.value.as_if.then, level + 2);
     }
+    break;
+    }
+}
+
+int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter)
+{
+    int id = (*counter)++;
+
+    fprintf(stream, "Expr_%d [shape=box label=\"Block\"]\n", id);
+
+    int block_id = id;
+
+    while (block) {
+        int next_id = dump_statement_as_dot_edges(stream, block->statement, counter);
+        if (block_id >= 0) {
+            fprintf(stream, "Expr_%d -> Expr_%d\n", block_id, next_id);
+        }
+
+        block_id = next_id;
+        block = block->next;
+    }
+
+    return id;
 }
 
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
 {
-    int id = (*counter)++;
-
     switch (statement.kind) {
     case STATEMENT_KIND_EMIT_INST: {
+        int id = (*counter)++;
         Inst_Type type = statement.value.as_emit_inst.type;
         Expr operand = statement.value.as_emit_inst.operand;
 
@@ -103,17 +132,21 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
             int child_id = dump_expr_as_dot_edges(stream, operand, counter);
             fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
         }
+        return id;
     }
     break;
 
     case STATEMENT_KIND_BIND_LABEL: {
+        int id = (*counter)++;
         String_View name = statement.value.as_bind_label.name;
         fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
                 id, SV_Arg(name));
+        return id;
     }
     break;
 
     case STATEMENT_KIND_BIND_CONST: {
+        int id = (*counter)++;
         String_View name = statement.value.as_bind_const.name;
         Expr value = statement.value.as_bind_const.value;
 
@@ -121,10 +154,12 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                 id, SV_Arg(name));
         int child_id = dump_expr_as_dot_edges(stream, value, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_BIND_NATIVE: {
+        int id = (*counter)++;
         String_View name = statement.value.as_bind_native.name;
         Expr value = statement.value.as_bind_native.value;
 
@@ -132,10 +167,12 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                 id, SV_Arg(name));
         int child_id = dump_expr_as_dot_edges(stream, value, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_INCLUDE: {
+        int id = (*counter)++;
         int child_id = (*counter)++;
 
         String_View path = statement.value.as_include.path;
@@ -144,54 +181,76 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
                 child_id, SV_Arg(path));
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_ASSERT: {
+        int id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%assert\"]\n",
                 id);
         int child_id = dump_expr_as_dot_edges(stream, statement.value.as_assert.condition, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_ERROR: {
+        int id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%error\"]\n",
                 id);
         int child_id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=box label=\"\\\""SV_Fmt"\\\"\"]\n",
                 child_id, SV_Arg(statement.value.as_error.message));
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_ENTRY: {
+        int id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%entry\"]\n",
                 id);
         int child_id = dump_expr_as_dot_edges(stream, statement.value.as_entry.value, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
     }
     break;
 
     case STATEMENT_KIND_BLOCK: {
-        fprintf(stream, "Expr_%d [shape=box label=\"Block\"]\n", id);
-
-        int block_id = id;
-
-        Block *block = statement.value.as_block;
-        while (block) {
-            int next_id = dump_statement_as_dot_edges(stream, block->statement, counter);
-            if (block_id >= 0) {
-                fprintf(stream, "Expr_%d -> Expr_%d\n", block_id, next_id);
-            }
-
-            block_id = next_id;
-            block = block->next;
-        }
+        return dump_block_as_dot_edges(stream, statement.value.as_block, counter);
     }
     break;
-    }
 
-    return id;
+    case STATEMENT_KIND_IF: {
+        int id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"If\"]\n", id);
+
+        int condition_id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"Condition\"]\n", condition_id);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, condition_id);
+        int condition_child_id =
+            dump_expr_as_dot_edges(stream, statement.value.as_if.condition,
+                                   counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n",
+                condition_id, condition_child_id);
+
+        int then_id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"Then\"]\n", then_id);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, then_id);
+        int then_child_id =
+            dump_block_as_dot_edges(stream, statement.value.as_if.then,
+                                    counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", then_id, then_child_id);
+        return id;
+    }
+    break;
+
+    default: {
+        assert(false && "dump_statement_as_dot_edges: unreachable");
+        exit(1);
+    }
+    }
 }
 
 void dump_statement_as_dot(FILE *stream, Statement statement)
@@ -342,6 +401,25 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, location);
         expect_no_tokens(&tokenizer, location);
         block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("if"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_IF;
+        statement.value.as_if.condition = parse_expr_from_sv(arena, body, location);
+        statement.value.as_if.then = parse_block_from_lines(arena, linizer);
+
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%if` block\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: the %%if block starts here",
+                    FL_Arg(statement.location));
+            exit(1);
+        }
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("end"))) {
+        assert(false && "parse_directive_from_line: unreachable. %%end should not be handled here");
     } else {
         fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
                 FL_Arg(line.location), SV_Arg(name));
@@ -407,6 +485,10 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
         break;
 
         case LINE_KIND_DIRECTIVE: {
+            if (sv_eq(line.value.as_directive.name, SV("end"))) {
+                return result.begin;
+            }
+
             parse_directive_from_line(arena, linizer, &result);
         }
         break;
