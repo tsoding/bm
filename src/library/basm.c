@@ -171,6 +171,11 @@ void basm_save_to_file(Basm *basm, const char *file_path)
 
 void basm_translate_block(Basm *basm, Block *block)
 {
+#if 0
+    (void) basm;
+    (void) block;
+    assert(false && "TODO: basm_translate_block is not implemented");
+#else
     // First pass
     while (block != NULL) {
         basm_translate_statement(basm, block->statement);
@@ -181,15 +186,27 @@ void basm_translate_block(Basm *basm, Block *block)
     {
         // Force Evaluating the Bindings
         for (size_t i = 0; i < basm->bindings_size; ++i) {
-            basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location);
+            Word ignore = {0};
+            if (basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location, &ignore) == EVAL_STATUS_DEFERRED) {
+                fprintf(stderr, FL_Fmt": ERROR: the value of this binding is still deferred.",
+                        FL_Arg(basm->bindings[i].location));
+                exit(1);
+            }
         }
 
         // Eval deferred asserts
         for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-            Word value = basm_expr_eval(
-                             basm,
-                             basm->deferred_asserts[i].expr,
-                             basm->deferred_asserts[i].location);
+            Word value = {0};
+            if (basm_expr_eval(
+                        basm,
+                        basm->deferred_asserts[i].expr,
+                        basm->deferred_asserts[i].location,
+                        &value) == EVAL_STATUS_DEFERRED) {
+                fprintf(stderr, FL_Fmt": ERROR: the value of this condition is still deferred.",
+                        FL_Arg(basm->deferred_asserts[i].location));
+                exit(1);
+
+            }
             if (!value.as_u64) {
                 fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
                         FL_Arg(basm->deferred_asserts[i].location));
@@ -225,7 +242,11 @@ void basm_translate_block(Basm *basm, Block *block)
                 }
             }
 
-            basm->program[addr].operand = basm_expr_eval(basm, expr, location);
+            if (basm_expr_eval(basm, expr, location, &basm->program[addr].operand)) {
+                fprintf(stderr, FL_Fmt": ERROR: the value of this operand is still deferred\n",
+                        FL_Arg(location));
+                exit(1);
+            }
         }
 
         // Resolving deferred entry point
@@ -245,9 +266,18 @@ void basm_translate_block(Basm *basm, Block *block)
                 exit(1);
             }
 
-            basm->entry = basm_binding_eval(basm, binding, basm->entry_location).as_u64;
+            Word entry = {0};
+
+            if (basm_binding_eval(basm, binding, basm->entry_location, &entry) == EVAL_STATUS_DEFERRED) {
+                fprintf(stderr, FL_Fmt": ERROR: the value of entry is still deferred\n",
+                        FL_Arg(basm->entry_location));
+                exit(1);
+            }
+
+            basm->entry = entry.as_u64;
         }
     }
+#endif
 }
 
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
@@ -412,44 +442,67 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
     basm_translate_block(basm, input_file_block);
 }
 
-Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location)
+Eval_Status basm_binding_eval(Basm *basm, Binding *binding, File_Location location, Word *output)
 {
-    if (binding->status == BINDING_EVALUATING) {
+    switch (binding->status) {
+    case BINDING_UNEVALUATED: {
+        binding->status = BINDING_EVALUATING;
+        Eval_Status status = basm_expr_eval(basm, binding->expr, location, output);
+        binding->status = BINDING_EVALUATED;
+        binding->value = *output;
+        return status;
+    }
+    break;
+    case BINDING_EVALUATING: {
         fprintf(stderr, FL_Fmt": ERROR: cycling binding definition.\n",
                 FL_Arg(binding->location));
         exit(1);
     }
-
-    if (binding->status == BINDING_UNEVALUATED) {
-        binding->status = BINDING_EVALUATING;
-        Word value = basm_expr_eval(basm, binding->expr, location);
-        binding->status = BINDING_EVALUATED;
-        binding->value = value;
+    break;
+    case BINDING_EVALUATED: {
+        *output = binding->value;
+        return EVAL_STATUS_OKEG;
     }
+    break;
+    case BINDING_DEFERRED: {
+        return EVAL_STATUS_DEFERRED;
+    }
+    break;
 
-    return binding->value;
+    default: {
+        assert(false && "basm_binding_eval: unreachable");
+        exit(1);
+    }
+    }
 }
 
-static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
+static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location, Word *output)
 {
-    Word left = basm_expr_eval(basm, binary_op->left, location);
-    Word right = basm_expr_eval(basm, binary_op->right, location);
+    Word left = {0};
+    if (basm_expr_eval(basm, binary_op->left, location, &left) == EVAL_STATUS_DEFERRED) {
+        return EVAL_STATUS_DEFERRED;
+    }
+
+    Word right = {0};
+    if (basm_expr_eval(basm, binary_op->right, location, &right) == EVAL_STATUS_DEFERRED) {
+        return EVAL_STATUS_DEFERRED;
+    }
 
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
         // TODO(#183): compile-time sum can only work with integers
-        return word_u64(left.as_u64 + right.as_u64);
+        *output = word_u64(left.as_u64 + right.as_u64);
     }
     break;
 
     case BINARY_OP_MULT: {
         // TODO(#183): compile-time mult can only work with integers
-        return word_u64(left.as_u64 * right.as_u64);
+        *output = word_u64(left.as_u64 * right.as_u64);
     }
     break;
 
     case BINARY_OP_GT: {
-        return word_u64(left.as_u64 > right.as_u64);
+        *output = word_u64(left.as_u64 > right.as_u64);
     }
     break;
 
@@ -458,22 +511,36 @@ static Word basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location 
         exit(1);
     }
     }
+
+    return EVAL_STATUS_OKEG;
 }
 
-Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
+Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output)
 {
     switch (expr.kind) {
-    case EXPR_KIND_LIT_INT:
-        return word_u64(expr.value.as_lit_int);
+    case EXPR_KIND_LIT_INT: {
+        *output = word_u64(expr.value.as_lit_int);
+        return EVAL_STATUS_OKEG;
+    }
+    break;
 
-    case EXPR_KIND_LIT_FLOAT:
-        return word_f64(expr.value.as_lit_float);
+    case EXPR_KIND_LIT_FLOAT: {
+        *output = word_f64(expr.value.as_lit_float);
+        return EVAL_STATUS_OKEG;
+    }
+    break;
 
-    case EXPR_KIND_LIT_CHAR:
-        return word_u64((uint64_t) expr.value.as_lit_char);
+    case EXPR_KIND_LIT_CHAR: {
+        *output = word_u64((uint64_t) expr.value.as_lit_char);
+        return EVAL_STATUS_OKEG;
+    }
+    break;
 
-    case EXPR_KIND_LIT_STR:
-        return basm_push_string_to_memory(basm, expr.value.as_lit_str);
+    case EXPR_KIND_LIT_STR: {
+        *output = basm_push_string_to_memory(basm, expr.value.as_lit_str);
+        return EVAL_STATUS_OKEG;
+    }
+    break;
 
     case EXPR_KIND_FUNCALL: {
         if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("len"))) {
@@ -484,14 +551,17 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                 exit(1);
             }
 
-            Word addr = basm_expr_eval(basm, expr.value.as_funcall->args->value, location);
+            Word addr = {0};
+            if (basm_expr_eval(basm, expr.value.as_funcall->args->value, location, &addr) == EVAL_STATUS_DEFERRED) {
+                return EVAL_STATUS_DEFERRED;
+            }
             Word length = {0};
             if (!basm_string_length_by_addr(basm, addr.as_u64, &length)) {
                 fprintf(stderr, FL_Fmt": ERROR: Could not compute the length of string at address %"PRIu64"\n", FL_Arg(location), addr.as_u64);
                 exit(1);
             }
 
-            return length;
+            *output = length;
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
             Funcall_Arg *args = expr.value.as_funcall->args;
 
@@ -502,18 +572,25 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                 exit(1);
             }
 
-            Word size = basm_expr_eval(basm, args->value, location);
+            Word size = {0};
+            if (basm_expr_eval(basm, args->value, location, &size) == EVAL_STATUS_DEFERRED) {
+                return EVAL_STATUS_DEFERRED;
+            }
             args = args->next;
 
-            Word value = basm_expr_eval(basm, args->value, location);
+            Word value = {0};
+            if (basm_expr_eval(basm, args->value, location, &value) == EVAL_STATUS_DEFERRED) {
+                return EVAL_STATUS_DEFERRED;
+            }
 
-            return basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
+            *output = basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
                     FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
             exit(1);
         }
+        return EVAL_STATUS_OKEG;
     }
     break;
 
@@ -526,12 +603,12 @@ Word basm_expr_eval(Basm *basm, Expr expr, File_Location location)
             exit(1);
         }
 
-        return basm_binding_eval(basm, binding, location);
+        return basm_binding_eval(basm, binding, location, output);
     }
     break;
 
     case EXPR_KIND_BINARY_OP: {
-        return basm_binary_op_eval(basm, expr.value.as_binary_op, location);
+        return basm_binary_op_eval(basm, expr.value.as_binary_op, location, output);
     }
     break;
 
