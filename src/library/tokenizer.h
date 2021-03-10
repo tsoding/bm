@@ -16,6 +16,7 @@ typedef enum {
     TOKEN_KIND_CLOSING_PAREN,
     TOKEN_KIND_COMMA,
     TOKEN_KIND_GT,
+    TOKEN_KIND_EE,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);

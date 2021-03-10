@@ -88,6 +88,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_EE) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_EQUALS;
+        return true;
+    }
+
     return false;
 }
 
@@ -398,6 +403,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_EE:
     case TOKEN_KIND_MULT:
     case TOKEN_KIND_GT:
     case TOKEN_KIND_COMMA:
@@ -421,6 +427,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 size_t binary_op_kind_precedence(Binary_Op_Kind kind)
 {
     switch (kind) {
+    case BINARY_OP_EQUALS:
     case BINARY_OP_GT:
         return 0;
     case BINARY_OP_PLUS:
@@ -442,6 +449,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return ">";
     case BINARY_OP_MULT:
         return "*";
+    case BINARY_OP_EQUALS:
+        return "==";
     default:
         assert(false && "binary_op_kind_name: unreachable");
         exit(1);
@@ -473,6 +482,8 @@ const char *token_kind_name(Token_Kind kind)
         return "comma";
     case TOKEN_KIND_GT:
         return ">";
+    case TOKEN_KIND_EE:
+        return "==";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);

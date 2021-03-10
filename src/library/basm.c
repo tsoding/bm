@@ -213,7 +213,6 @@ const char *binding_status_as_cstr(Binding_Status status)
 
 void basm_translate_block(Basm *basm, Block *block)
 {
-#if 1
     // first pass begin
     {
         for (Block *iter = block; iter != NULL; iter = iter->next) {
@@ -388,110 +387,7 @@ void basm_translate_block(Basm *basm, Block *block)
 
         basm->entry = entry.as_u64;
     }
-    // deferred entry point begin
-#else
-    // First pass
-    while (block != NULL) {
-        basm_translate_statement(basm, block->statement);
-        block = block->next;
-    }
-
-    // Second pass
-    {
-        // Force Evaluating the Bindings
-        for (size_t i = 0; i < basm->bindings_size; ++i) {
-            Word ignore = {0};
-            if (basm_binding_eval(basm, &basm->bindings[i], basm->bindings[i].location, &ignore) == EVAL_STATUS_DEFERRED) {
-                fprintf(stderr, FL_Fmt": ERROR: the value of this binding is still deferred.",
-                        FL_Arg(basm->bindings[i].location));
-                exit(1);
-            }
-        }
-
-        // Eval deferred asserts
-        for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-            Word value = {0};
-            if (basm_expr_eval(
-                        basm,
-                        basm->deferred_asserts[i].expr,
-                        basm->deferred_asserts[i].location,
-                        &value) == EVAL_STATUS_DEFERRED) {
-                fprintf(stderr, FL_Fmt": ERROR: the value of this condition is still deferred.",
-                        FL_Arg(basm->deferred_asserts[i].location));
-                exit(1);
-
-            }
-            if (!value.as_u64) {
-                fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                        FL_Arg(basm->deferred_asserts[i].location));
-                exit(1);
-            }
-        }
-
-        // Eval deferred operands
-        for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-            Inst_Addr addr = basm->deferred_operands[i].addr;
-            Expr expr = basm->deferred_operands[i].expr;
-            File_Location location = basm->deferred_operands[i].location;
-
-            if (expr.kind == EXPR_KIND_BINDING) {
-                String_View name = expr.value.as_binding;
-
-                Binding *binding = basm_resolve_binding(basm, name);
-                if (binding == NULL) {
-                    fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                            FL_Arg(basm->deferred_operands[i].location),
-                            SV_Arg(name));
-                    exit(1);
-                }
-
-                if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                    fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
-                    exit(1);
-                }
-
-                if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                    fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
-                    exit(1);
-                }
-            }
-
-            if (basm_expr_eval(basm, expr, location, &basm->program[addr].operand)) {
-                fprintf(stderr, FL_Fmt": ERROR: the value of this operand is still deferred\n",
-                        FL_Arg(location));
-                exit(1);
-            }
-        }
-
-        // Resolving deferred entry point
-        if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
-            Binding *binding = basm_resolve_binding(
-                                   basm,
-                                   basm->deferred_entry_binding_name);
-            if (binding == NULL) {
-                fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                        FL_Arg(basm->entry_location),
-                        SV_Arg(basm->deferred_entry_binding_name));
-                exit(1);
-            }
-
-            if (binding->kind != BINDING_LABEL) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
-                exit(1);
-            }
-
-            Word entry = {0};
-
-            if (basm_binding_eval(basm, binding, basm->entry_location, &entry) == EVAL_STATUS_DEFERRED) {
-                fprintf(stderr, FL_Fmt": ERROR: the value of entry is still deferred\n",
-                        FL_Arg(basm->entry_location));
-                exit(1);
-            }
-
-            basm->entry = entry.as_u64;
-        }
-    }
-#endif
+    // deferred entry point end
 }
 
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
@@ -594,6 +490,9 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
 {
     Word condition = {0};
     if (basm_expr_eval(basm, eef.condition, location, &condition) == EVAL_STATUS_DEFERRED) {
+        // TODO: better error message on if-label paradox
+        // Preferably include the location of the deferred label and the explanation on
+        // how to resolve the paradox.
         fprintf(stderr, FL_Fmt": ERROR: if-label paradox has been detected\n",
                 FL_Arg(location));
         exit(1);
@@ -723,6 +622,11 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
 
     case BINARY_OP_GT: {
         *output = word_u64(left.as_u64 > right.as_u64);
+    }
+    break;
+
+    case BINARY_OP_EQUALS: {
+        *output = word_u64(left.as_u64 == right.as_u64);
     }
     break;
 

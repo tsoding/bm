@@ -72,6 +72,17 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
     }
     break;
 
+    case '=': {
+        if (tokenizer->source.count <= 1 || tokenizer->source.data[1] != '=') {
+            fprintf(stderr, FL_Fmt": ERROR: Unknown token starts with =\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+        token.kind = TOKEN_KIND_EE;
+        token.text = sv_chop_left(&tokenizer->source, 2);
+    }
+    break;
+
     case '"': {
         sv_chop_left(&tokenizer->source, 1);
 
