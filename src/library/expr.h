@@ -44,7 +44,8 @@ void dump_expr_as_dot(FILE *stream, Expr expr);
 typedef enum {
     BINARY_OP_PLUS,
     BINARY_OP_MULT,
-    BINARY_OP_GT
+    BINARY_OP_GT,
+    BINARY_OP_EQUALS,
 } Binary_Op_Kind;
 
 #define MAX_PRECEDENCE 2

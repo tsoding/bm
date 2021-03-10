@@ -26,7 +26,10 @@ typedef enum {
     BINDING_UNEVALUATED = 0,
     BINDING_EVALUATING,
     BINDING_EVALUATED,
+    BINDING_DEFERRED,
 } Binding_Status;
+
+const char *binding_status_as_cstr(Binding_Status status);
 
 typedef struct {
     Binding_Kind kind;
@@ -86,7 +89,13 @@ typedef struct {
     size_t include_paths_size;
 } Basm;
 
+typedef enum {
+    EVAL_STATUS_OKEG = 0,
+    EVAL_STATUS_DEFERRED
+} Eval_Status;
+
 Binding *basm_resolve_binding(Basm *basm, String_View name);
+void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
@@ -94,8 +103,8 @@ void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
-Word basm_expr_eval(Basm *basm, Expr expr, File_Location location);
-Word basm_binding_eval(Basm *basm, Binding *binding, File_Location location);
+Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output);
+Eval_Status basm_binding_eval(Basm *basm, Binding *binding, File_Location location, Word *output);
 void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,

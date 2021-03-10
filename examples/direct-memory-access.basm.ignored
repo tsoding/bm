@@ -1,5 +1,6 @@
 %native write 0
 %const N 69
+;; TODO(#244): memory allocation should be done via statements not expressions
 %const xs byte_array(N, 'e')
 
 %entry main:
