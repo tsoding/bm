@@ -56,6 +56,19 @@ typedef struct {
     File_Location location;
 } Deferred_Assert;
 
+typedef enum {
+    EVAL_STATUS_KIND_OK = 0,
+    EVAL_STATUS_KIND_DEFERRED
+} Eval_Status_Kind;
+
+typedef struct {
+    Eval_Status_Kind kind;
+    Binding *deferred_binding;
+} Eval_Status;
+
+Eval_Status eval_status_ok(void);
+Eval_Status eval_status_deferred(Binding *deferred_binding);
+
 typedef struct {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
@@ -88,11 +101,6 @@ typedef struct {
     String_View include_paths[BASM_INCLUDE_PATHS_CAPACITY];
     size_t include_paths_size;
 } Basm;
-
-typedef enum {
-    EVAL_STATUS_OKEG = 0,
-    EVAL_STATUS_DEFERRED
-} Eval_Status;
 
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);

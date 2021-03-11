@@ -20,7 +20,7 @@ typedef struct {
 
 // printf macros for String_View
 #define SV_Fmt "%.*s"
-#define SV_Arg(sv) (int) sv.count, sv.data
+#define SV_Arg(sv) (int) (sv).count, (sv).data
 // USAGE:
 //   String_View name = ...;
 //   printf("Name: "SV_Fmt"\n", SV_Arg(name));
