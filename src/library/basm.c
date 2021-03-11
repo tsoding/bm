@@ -500,7 +500,7 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
     Eval_Status status = basm_expr_eval(basm, eef.condition, location, &condition);
 
     if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-        // TODO: there are no CI tests for compiler errors
+        // TODO(#248): there are no CI tests for compiler errors
         assert(status.deferred_binding);
         assert(status.deferred_binding->kind == BINDING_LABEL);
         assert(status.deferred_binding->status == BINDING_DEFERRED);
