@@ -569,7 +569,6 @@ int main(int argc, char **argv)
      */
     char previous_command[INPUT_CAPACITY] = {0};
 
-    // TODO(#189): ^D prints an error in bdb before exiting
     while (!feof(stdin)) {
         printf("(bdb) ");
         char input_buf[INPUT_CAPACITY] = {0};
