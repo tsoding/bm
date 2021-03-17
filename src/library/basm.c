@@ -506,14 +506,6 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location loc
     basm->program_size += 1;
 }
 
-void basm_translate_for(Basm *basm, For phor, File_Location location)
-{
-    (void) basm;
-    (void) phor;
-    (void) location;
-    assert(false && "TODO: basm_translate_for");
-}
-
 void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
 {
     if (basm->has_entry) {
@@ -598,6 +590,56 @@ void basm_translate_include(Basm *basm, Include include, File_Location location)
         basm_translate_source_file(basm, include.path);
         basm->include_location = prev_include_location;
         basm->include_level -= 1;
+    }
+}
+
+void basm_translate_for(Basm *basm, For phor, File_Location location)
+{
+    Word from = {0};
+    {
+        Eval_Status status = basm_expr_eval(basm, phor.from, location, &from);
+        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            assert(status.deferred_binding);
+            assert(status.deferred_binding->kind == BINDING_LABEL);
+            assert(status.deferred_binding->status == BINDING_DEFERRED);
+
+            fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
+                    FL_Arg(location),
+                    SV_Arg(status.deferred_binding->name));
+            fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%for block defined above it.\n",
+                    FL_Arg(status.deferred_binding->location),
+                    SV_Arg(status.deferred_binding->name));
+            fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%for block that depends on it.\n");
+            exit(1);
+        }
+    }
+
+    Word to = {0};
+    {
+        Eval_Status status = basm_expr_eval(basm, phor.to, location, &to);
+        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            assert(status.deferred_binding);
+            assert(status.deferred_binding->kind == BINDING_LABEL);
+            assert(status.deferred_binding->status == BINDING_DEFERRED);
+
+            fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
+                    FL_Arg(location),
+                    SV_Arg(status.deferred_binding->name));
+            fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%for block defined above it.\n",
+                    FL_Arg(status.deferred_binding->location),
+                    SV_Arg(status.deferred_binding->name));
+            fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%for block that depends on it.\n");
+            exit(1);
+        }
+    }
+
+    for (uint64_t var_value = from.as_u64;
+            var_value <= to.as_u64;
+            ++var_value) {
+        basm_push_new_scope(basm);
+        basm_bind_value(basm, phor.var, word_u64(var_value), BINDING_CONST, location);
+        basm_translate_block(basm, phor.body);
+        basm_pop_scope(basm);
     }
 }
 
