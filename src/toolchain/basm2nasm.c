@@ -66,15 +66,6 @@ int main(int argc, char *argv[])
             fprintf(output, "_start:\n");
         }
 
-        for (size_t j = 0; j < BASM_BINDINGS_CAPACITY; ++j) {
-            if (basm.bindings[j].kind != BINDING_LABEL) continue;
-
-            if (basm.bindings[j].value.as_u64 == i) {
-                fprintf(output, "\n;; "SV_Fmt":\n", SV_Arg(basm.bindings[j].name));
-                break;
-            }
-        }
-
         fprintf(output, "inst_%zu:\n", i);
         switch (inst.type) {
         case INST_NOP:

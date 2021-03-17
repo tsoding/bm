@@ -19,22 +19,47 @@ Eval_Status eval_status_deferred(Binding *deferred_binding)
     };
 }
 
-Binding *basm_resolve_binding(Basm *basm, String_View name)
+Binding *scope_resolve_binding(Scope *scope, String_View name)
 {
-    for (size_t i = 0; i < basm->bindings_size; ++i) {
-        if (sv_eq(basm->bindings[i].name, name)) {
-            return &basm->bindings[i];
+    for (size_t i = 0; i < scope->bindings_size; ++i) {
+        if (sv_eq(scope->bindings[i].name, name)) {
+            return &scope->bindings[i];
         }
     }
 
     return NULL;
 }
 
-void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
+void basm_push_new_scope(Basm *basm)
 {
-    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
+    Scope *scope = arena_alloc(&basm->arena, sizeof(*basm->scope));
+    scope->previous = basm->scope;
+    basm->scope = scope;
+}
 
-    Binding *existing = basm_resolve_binding(basm, name);
+void basm_pop_scope(Basm *basm)
+{
+    assert(basm->scope != NULL);
+    basm->scope = basm->scope->previous;
+}
+
+Binding *basm_resolve_binding(Basm *basm, String_View name)
+{
+    for (Scope *scope = basm->scope;
+            scope != NULL;
+            scope = scope->previous) {
+        Binding *binding = scope_resolve_binding(scope, name);
+        if (binding) {
+            return binding;
+        }
+    }
+
+    return NULL;
+}
+
+void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location)
+{
+    Binding *existing = scope_resolve_binding(scope, name);
     if (existing) {
         fprintf(stderr,
                 FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
@@ -46,7 +71,8 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
         exit(1);
     }
 
-    basm->bindings[basm->bindings_size++] = (Binding) {
+    assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
+    scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .value = value,
         .status = BINDING_EVALUATED,
@@ -55,11 +81,11 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind
     };
 }
 
-void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location)
+void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location)
 {
-    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
+    assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    Binding *existing = basm_resolve_binding(basm, name);
+    Binding *existing = scope_resolve_binding(scope, name);
     if (existing) {
         fprintf(stderr,
                 FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
@@ -71,7 +97,7 @@ void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Lo
         exit(1);
     }
 
-    basm->bindings[basm->bindings_size++] = (Binding) {
+    scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .status = BINDING_DEFERRED,
         .kind = kind,
@@ -79,11 +105,11 @@ void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Lo
     };
 }
 
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location)
 {
-    assert(basm->bindings_size < BASM_BINDINGS_CAPACITY);
+    assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
 
-    Binding *existing = basm_resolve_binding(basm, name);
+    Binding *existing = scope_resolve_binding(scope, name);
     if (existing) {
         fprintf(stderr,
                 FL_Fmt": ERROR: name `"SV_Fmt"` is already bound\n",
@@ -95,7 +121,7 @@ void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, 
         exit(1);
     }
 
-    basm->bindings[basm->bindings_size++] = (Binding) {
+    scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .expr = expr,
         .kind = kind,
@@ -103,13 +129,48 @@ void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, 
     };
 }
 
-void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
+void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
 {
-    assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
-    basm->deferred_operands[basm->deferred_operands_size++] =
+    if (basm->scope == NULL) {
+        basm_push_new_scope(basm);
+    }
+
+    scope_bind_value(basm->scope, name, value, kind, location);
+}
+
+void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location)
+{
+    if (basm->scope == NULL) {
+        basm_push_new_scope(basm);
+    }
+    scope_defer_binding(basm->scope, name, kind, location);
+}
+
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
+{
+    if (basm->scope == NULL) {
+        basm_push_new_scope(basm);
+    }
+
+    scope_bind_expr(basm->scope, name, expr, kind, location);
+}
+
+void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_Location location)
+{
+    assert(scope->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
+    scope->deferred_operands[scope->deferred_operands_size++] =
     (Deferred_Operand) {
         .addr = addr, .expr = expr, .location = location
     };
+}
+
+void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
+{
+    if (basm->scope == NULL) {
+        basm_push_new_scope(basm);
+    }
+
+    scope_push_deferred_operand(basm->scope, addr, expr, location);
 }
 
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value)
@@ -319,56 +380,11 @@ void basm_translate_block(Basm *basm, Block *block)
     // second pass end
 
     // deferred asserts begin
-    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-        Word value = {0};
-        Eval_Status status = basm_expr_eval(
-                                 basm,
-                                 basm->deferred_asserts[i].expr,
-                                 basm->deferred_asserts[i].location,
-                                 &value);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
-
-        if (!value.as_u64) {
-            fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                    FL_Arg(basm->deferred_asserts[i].location));
-            exit(1);
-        }
-    }
+    basm_eval_deferred_asserts(basm);
     // deferred asserts end
 
     // deferred operands begin
-    for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
-        Inst_Addr addr = basm->deferred_operands[i].addr;
-        Expr expr = basm->deferred_operands[i].expr;
-        File_Location location = basm->deferred_operands[i].location;
-
-        if (expr.kind == EXPR_KIND_BINDING) {
-            String_View name = expr.value.as_binding;
-
-            Binding *binding = basm_resolve_binding(basm, name);
-            if (binding == NULL) {
-                fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                        FL_Arg(basm->deferred_operands[i].location),
-                        SV_Arg(name));
-                exit(1);
-            }
-
-            if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
-                exit(1);
-            }
-
-            if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
-                exit(1);
-            }
-        }
-
-        Eval_Status status = basm_expr_eval(
-                                 basm, expr, location,
-                                 &basm->program[addr].operand);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
-    }
+    basm_eval_deferred_operands(basm);
     // deferred operands end
 
     // deferred entry point begin
@@ -396,6 +412,65 @@ void basm_translate_block(Basm *basm, Block *block)
         basm->entry = entry.as_u64;
     }
     // deferred entry point end
+}
+
+void basm_eval_deferred_asserts(Basm *basm)
+{
+    if (basm->scope) {
+        for (size_t i = 0; i < basm->scope->deferred_asserts_size; ++i) {
+            Word value = {0};
+            Eval_Status status = basm_expr_eval(
+                                     basm,
+                                     basm->scope->deferred_asserts[i].expr,
+                                     basm->scope->deferred_asserts[i].location,
+                                     &value);
+            assert(status.kind == EVAL_STATUS_KIND_OK);
+
+            if (!value.as_u64) {
+                fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                        FL_Arg(basm->scope->deferred_asserts[i].location));
+                exit(1);
+            }
+        }
+    }
+}
+
+void basm_eval_deferred_operands(Basm *basm)
+{
+    if (basm->scope) {
+        for (size_t i = 0; i < basm->scope->deferred_operands_size; ++i) {
+            Inst_Addr addr = basm->scope->deferred_operands[i].addr;
+            Expr expr = basm->scope->deferred_operands[i].expr;
+            File_Location location = basm->scope->deferred_operands[i].location;
+
+            if (expr.kind == EXPR_KIND_BINDING) {
+                String_View name = expr.value.as_binding;
+
+                Binding *binding = basm_resolve_binding(basm, name);
+                if (binding == NULL) {
+                    fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                            FL_Arg(basm->scope->deferred_operands[i].location),
+                            SV_Arg(name));
+                    exit(1);
+                }
+
+                if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+                    fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->scope->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                    exit(1);
+                }
+
+                if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+                    fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                    exit(1);
+                }
+            }
+
+            Eval_Status status = basm_expr_eval(
+                                     basm, expr, location,
+                                     &basm->program[addr].operand);
+            assert(status.kind == EVAL_STATUS_KIND_OK);
+        }
+    }
 }
 
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
@@ -462,7 +537,10 @@ void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location 
 
 void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
 {
-    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
+    if (basm->scope == NULL) {
+        basm_push_new_scope(basm);
+    }
+    basm->scope->deferred_asserts[basm->scope->deferred_asserts_size++] = (Deferred_Assert) {
         .expr = azzert.condition,
         .location = location,
     };
