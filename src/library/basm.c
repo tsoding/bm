@@ -358,9 +358,9 @@ void basm_translate_block(Basm *basm, Block *block)
             }
             break;
 
-            case STATEMENT_KIND_IF:
+            case STATEMENT_KIND_IF: {
                 basm_translate_if(basm, statement.value.as_if, statement.location);
-                break;
+            } break;
 
             case STATEMENT_KIND_SCOPE: {
                 basm_push_new_scope(basm);
@@ -608,7 +608,9 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
     }
 
     if (condition.as_u64) {
+        basm_push_new_scope(basm);
         basm_translate_block(basm, eef.then);
+        basm_pop_scope(basm);
     }
 }
 
