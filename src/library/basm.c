@@ -323,6 +323,7 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
+            case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
             case STATEMENT_KIND_EMIT_INST:
             case STATEMENT_KIND_IF:
@@ -367,6 +368,11 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_push_new_scope(basm);
                 basm_translate_block(basm, statement.value.as_scope);
                 basm_pop_scope(basm);
+            }
+            break;
+
+            case STATEMENT_KIND_FOR: {
+                basm_translate_for(basm, statement.value.as_for, statement.location);
             }
             break;
 
@@ -498,6 +504,14 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location loc
     }
 
     basm->program_size += 1;
+}
+
+void basm_translate_for(Basm *basm, For phor, File_Location location)
+{
+    (void) basm;
+    (void) phor;
+    (void) location;
+    assert(false && "TODO: basm_translate_for");
 }
 
 void basm_translate_entry(Basm *basm, Entry entry, File_Location location)

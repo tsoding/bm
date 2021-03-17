@@ -20,6 +20,7 @@ typedef enum {
     STATEMENT_KIND_BLOCK,
     STATEMENT_KIND_IF,
     STATEMENT_KIND_SCOPE,
+    STATEMENT_KIND_FOR,
 } Statement_Kind;
 
 typedef struct {
@@ -63,6 +64,13 @@ typedef struct {
     Block *then;
 } If;
 
+typedef struct {
+    String_View var;
+    Expr from;
+    Expr to;
+    Block *body;
+} For;
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
@@ -75,6 +83,7 @@ typedef union {
     Block *as_block;
     If as_if;
     Block *as_scope;
+    For as_for;
 } Statement_Value;
 
 struct Statement {
