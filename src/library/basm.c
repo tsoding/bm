@@ -360,7 +360,8 @@ void basm_translate_block(Basm *basm, Block *block)
 
             case STATEMENT_KIND_IF: {
                 basm_translate_if(basm, statement.value.as_if, statement.location);
-            } break;
+            }
+            break;
 
             case STATEMENT_KIND_SCOPE: {
                 basm_push_new_scope(basm);
