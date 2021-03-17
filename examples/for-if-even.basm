@@ -1,0 +1,14 @@
+%include "natives.hasm"
+
+%entry main:
+%scope
+    push 0
+    %for i from 1 to 100
+        %if i % 2 == 0
+            push i
+            plusi
+        %end
+    %end
+    call dump_u64
+    halt
+%end

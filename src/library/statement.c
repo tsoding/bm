@@ -99,6 +99,17 @@ void dump_statement(FILE *stream, Statement statement, int level)
         dump_block(stream, statement.value.as_scope, level + 1);
     }
     break;
+
+    case STATEMENT_KIND_FOR: {
+        fprintf(stream, "%*sFor\n", level * 2, "");
+        fprintf(stream, "%*sVar: "SV_Fmt"\n", (level + 1) * 2, "",
+                SV_Arg(statement.value.as_for.var));
+        fprintf(stream, "%*sFrom:\n", (level + 1) * 2, "");
+        dump_expr(stream, statement.value.as_for.from, level + 2);
+        fprintf(stream, "%*sTo:\n", (level + 1) * 2, "");
+        dump_expr(stream, statement.value.as_for.to, level + 2);
+    }
+    break;
     }
 }
 
@@ -259,6 +270,53 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
             dump_block_as_dot_edges(stream, statement.value.as_scope,
                                     counter);
         fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_FOR: {
+        int id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"For\"]\n", id);
+
+        // Var
+        {
+            int var_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Var: "SV_Fmt"\"]\n", var_id, SV_Arg(statement.value.as_for.var));
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, var_id);
+        }
+
+        // From
+        {
+            int from_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"From\"]\n", from_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, from_id);
+
+            int from_expr_id = dump_expr_as_dot_edges(stream, statement.value.as_for.from,
+                               counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", from_id, from_expr_id);
+        }
+
+        // To
+        {
+            int to_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"To\"]\n", to_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, to_id);
+
+            int to_expr_id = dump_expr_as_dot_edges(stream, statement.value.as_for.to,
+                                                    counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", to_id, to_expr_id);
+        }
+
+        // Body
+        {
+            int body_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Body\"]\n", body_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, body_id);
+
+            int body_block_id = dump_block_as_dot_edges(stream, statement.value.as_for.body, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", body_id, body_block_id);
+        }
+
         return id;
     }
     break;
@@ -444,12 +502,53 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         if (!linizer_next(linizer, &line) ||
                 line.kind != LINE_KIND_DIRECTIVE ||
                 !sv_eq(line.value.as_directive.name, SV("end"))) {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%if` block\n",
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%scope` block\n",
                     FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: the %%if block starts here",
+            fprintf(stderr, FL_Fmt": NOTE: the %%scope block starts here",
                     FL_Arg(statement.location));
             exit(1);
         }
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("for"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_FOR;
+
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Token token = {0};
+
+        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_NAME) {
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_NAME));
+            exit(1);
+        }
+        statement.value.as_for.var = token.text;
+
+        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_FROM) {
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_FROM));
+            exit(1);
+        }
+
+        statement.value.as_for.from = parse_primary_from_tokens(arena, &tokenizer, location);
+
+        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_TO) {
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_TO));
+            exit(1);
+        }
+
+        statement.value.as_for.to = parse_primary_from_tokens(arena, &tokenizer, location);
+
+        statement.value.as_for.body = parse_block_from_lines(arena, linizer);
+
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%for` block\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: the %%for block starts here",
+                    FL_Arg(statement.location));
+            exit(1);
+        }
+
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("end"))) {
         assert(false && "parse_directive_from_line: unreachable. %%end should not be handled here");

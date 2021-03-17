@@ -93,6 +93,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_MOD) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_MOD;
+        return true;
+    }
+
     return false;
 }
 
@@ -403,11 +408,14 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_MOD:
     case TOKEN_KIND_EE:
     case TOKEN_KIND_MULT:
     case TOKEN_KIND_GT:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
+    case TOKEN_KIND_FROM:
+    case TOKEN_KIND_TO:
     case TOKEN_KIND_PLUS: {
         fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
                 FL_Arg(location), token_kind_name(token.kind));
@@ -432,6 +440,7 @@ size_t binary_op_kind_precedence(Binary_Op_Kind kind)
         return 0;
     case BINARY_OP_PLUS:
         return 1;
+    case BINARY_OP_MOD:
     case BINARY_OP_MULT:
         return 2;
     default:
@@ -451,6 +460,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return "*";
     case BINARY_OP_EQUALS:
         return "==";
+    case BINARY_OP_MOD:
+        return "%";
     default:
         assert(false && "binary_op_kind_name: unreachable");
         exit(1);
@@ -484,6 +495,12 @@ const char *token_kind_name(Token_Kind kind)
         return ">";
     case TOKEN_KIND_EE:
         return "==";
+    case TOKEN_KIND_FROM:
+        return "from";
+    case TOKEN_KIND_TO:
+        return "to";
+    case TOKEN_KIND_MOD:
+        return "%";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
