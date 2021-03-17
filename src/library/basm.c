@@ -418,18 +418,21 @@ void basm_eval_deferred_asserts(Basm *basm)
 {
     if (basm->scope) {
         for (size_t i = 0; i < basm->scope->deferred_asserts_size; ++i) {
-            Word value = {0};
-            Eval_Status status = basm_expr_eval(
-                                     basm,
-                                     basm->scope->deferred_asserts[i].expr,
-                                     basm->scope->deferred_asserts[i].location,
-                                     &value);
-            assert(status.kind == EVAL_STATUS_KIND_OK);
+            if (!basm->scope->deferred_asserts[i].evaluated) {
+                Word value = {0};
+                Eval_Status status = basm_expr_eval(
+                                         basm,
+                                         basm->scope->deferred_asserts[i].expr,
+                                         basm->scope->deferred_asserts[i].location,
+                                         &value);
+                assert(status.kind == EVAL_STATUS_KIND_OK);
 
-            if (!value.as_u64) {
-                fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                        FL_Arg(basm->scope->deferred_asserts[i].location));
-                exit(1);
+                if (!value.as_u64) {
+                    fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
+                            FL_Arg(basm->scope->deferred_asserts[i].location));
+                    exit(1);
+                }
+                basm->scope->deferred_asserts[i].evaluated = true;
             }
         }
     }
@@ -439,36 +442,39 @@ void basm_eval_deferred_operands(Basm *basm)
 {
     if (basm->scope) {
         for (size_t i = 0; i < basm->scope->deferred_operands_size; ++i) {
-            Inst_Addr addr = basm->scope->deferred_operands[i].addr;
-            Expr expr = basm->scope->deferred_operands[i].expr;
-            File_Location location = basm->scope->deferred_operands[i].location;
+            if (!basm->scope->deferred_operands[i].evaluated) {
+                Inst_Addr addr = basm->scope->deferred_operands[i].addr;
+                Expr expr = basm->scope->deferred_operands[i].expr;
+                File_Location location = basm->scope->deferred_operands[i].location;
 
-            if (expr.kind == EXPR_KIND_BINDING) {
-                String_View name = expr.value.as_binding;
+                if (expr.kind == EXPR_KIND_BINDING) {
+                    String_View name = expr.value.as_binding;
 
-                Binding *binding = basm_resolve_binding(basm, name);
-                if (binding == NULL) {
-                    fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                            FL_Arg(basm->scope->deferred_operands[i].location),
-                            SV_Arg(name));
-                    exit(1);
+                    Binding *binding = basm_resolve_binding(basm, name);
+                    if (binding == NULL) {
+                        fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                                FL_Arg(basm->scope->deferred_operands[i].location),
+                                SV_Arg(name));
+                        exit(1);
+                    }
+
+                    if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
+                        fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->scope->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                        exit(1);
+                    }
+
+                    if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
+                        fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                        exit(1);
+                    }
                 }
 
-                if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                    fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->scope->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
-                    exit(1);
-                }
-
-                if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                    fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
-                    exit(1);
-                }
+                Eval_Status status = basm_expr_eval(
+                                         basm, expr, location,
+                                         &basm->program[addr].operand);
+                assert(status.kind == EVAL_STATUS_KIND_OK);
+                basm->scope->deferred_operands[i].evaluated = true;
             }
-
-            Eval_Status status = basm_expr_eval(
-                                     basm, expr, location,
-                                     &basm->program[addr].operand);
-            assert(status.kind == EVAL_STATUS_KIND_OK);
         }
     }
 }
