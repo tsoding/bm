@@ -323,6 +323,7 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
+            case STATEMENT_KIND_SCOPE:
             case STATEMENT_KIND_EMIT_INST:
             case STATEMENT_KIND_IF:
                 // NOTE: ignored at the first pass
@@ -360,6 +361,13 @@ void basm_translate_block(Basm *basm, Block *block)
             case STATEMENT_KIND_IF:
                 basm_translate_if(basm, statement.value.as_if, statement.location);
                 break;
+
+            case STATEMENT_KIND_SCOPE: {
+                basm_push_new_scope(basm);
+                basm_translate_block(basm, statement.value.as_scope);
+                basm_pop_scope(basm);
+            }
+            break;
 
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
@@ -601,45 +609,6 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
 
     if (condition.as_u64) {
         basm_translate_block(basm, eef.then);
-    }
-}
-
-void basm_translate_statement(Basm *basm, Statement statement)
-{
-    switch (statement.kind) {
-    case STATEMENT_KIND_EMIT_INST:
-        basm_translate_emit_inst(basm, statement.value.as_emit_inst, statement.location);
-        break;
-    case STATEMENT_KIND_BIND_LABEL:
-        basm_translate_bind_label(basm, statement.value.as_bind_label, statement.location);
-        break;
-    case STATEMENT_KIND_BIND_CONST:
-        basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
-        break;
-    case STATEMENT_KIND_BIND_NATIVE:
-        basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
-        break;
-    case STATEMENT_KIND_INCLUDE:
-        basm_translate_include(basm, statement.value.as_include, statement.location);
-        break;
-    case STATEMENT_KIND_ASSERT:
-        basm_translate_assert(basm, statement.value.as_assert, statement.location);
-        break;
-    case STATEMENT_KIND_ERROR:
-        basm_translate_error(statement.value.as_error, statement.location);
-        break;
-    case STATEMENT_KIND_ENTRY:
-        basm_translate_entry(basm, statement.value.as_entry, statement.location);
-        break;
-    case STATEMENT_KIND_BLOCK:
-        basm_translate_block(basm, statement.value.as_block);
-        break;
-    case STATEMENT_KIND_IF:
-        basm_translate_if(basm, statement.value.as_if, statement.location);
-        break;
-    default:
-        assert(false && "basm_translate_statement: unreachable");
-        exit(1);
     }
 }
 

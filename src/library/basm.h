@@ -149,7 +149,6 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location);
 void basm_translate_error(Error error, File_Location location);
 void basm_translate_entry(Basm *basm, Entry entry, File_Location location);
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location);
-void basm_translate_statement(Basm *basm, Statement statement);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 
 #endif // BASM_H_
