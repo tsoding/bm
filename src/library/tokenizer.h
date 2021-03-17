@@ -17,6 +17,7 @@ typedef enum {
     TOKEN_KIND_COMMA,
     TOKEN_KIND_GT,
     TOKEN_KIND_EE,
+    TOKEN_KIND_MOD,
     TOKEN_KIND_FROM,
     TOKEN_KIND_TO
 } Token_Kind;

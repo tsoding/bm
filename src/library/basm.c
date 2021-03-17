@@ -765,6 +765,11 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
     break;
 
+    case BINARY_OP_MOD: {
+        *output = word_u64(left.as_u64 % right.as_u64);
+    }
+    break;
+
     default: {
         assert(false && "basm_binary_op_eval: unreachable");
         exit(1);
