@@ -122,8 +122,15 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
 
     default: {
         if (isalpha(*tokenizer->source.data)) {
-            token.kind = TOKEN_KIND_NAME;
             token.text = sv_chop_left_while(&tokenizer->source, is_name);
+
+            if (sv_eq(token.text, SV("to"))) {
+                token.kind = TOKEN_KIND_TO;
+            } else if (sv_eq(token.text, SV("from"))) {
+                token.kind = TOKEN_KIND_FROM;
+            } else {
+                token.kind = TOKEN_KIND_NAME;
+            }
         } else if (isdigit(*tokenizer->source.data)) {
             token.kind = TOKEN_KIND_NUMBER;
             token.text = sv_chop_left_while(&tokenizer->source, is_number);

@@ -408,6 +408,8 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     case TOKEN_KIND_GT:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
+    case TOKEN_KIND_FROM:
+    case TOKEN_KIND_TO:
     case TOKEN_KIND_PLUS: {
         fprintf(stderr, FL_Fmt": ERROR: expected primary expression but found %s\n",
                 FL_Arg(location), token_kind_name(token.kind));
@@ -484,6 +486,10 @@ const char *token_kind_name(Token_Kind kind)
         return ">";
     case TOKEN_KIND_EE:
         return "==";
+    case TOKEN_KIND_FROM:
+        return "from";
+    case TOKEN_KIND_TO:
+        return "to";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);

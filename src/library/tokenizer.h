@@ -17,6 +17,8 @@ typedef enum {
     TOKEN_KIND_COMMA,
     TOKEN_KIND_GT,
     TOKEN_KIND_EE,
+    TOKEN_KIND_FROM,
+    TOKEN_KIND_TO
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
