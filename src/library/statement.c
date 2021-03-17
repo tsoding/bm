@@ -93,6 +93,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
         dump_block(stream, statement.value.as_if.then, level + 2);
     }
     break;
+
+    case STATEMENT_KIND_SCOPE: {
+        fprintf(stream, "%*sScope:\n", level * 2, "");
+        dump_block(stream, statement.value.as_scope, level + 1);
+    }
+    break;
     }
 }
 
@@ -242,6 +248,17 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
             dump_block_as_dot_edges(stream, statement.value.as_if.then,
                                     counter);
         fprintf(stream, "Expr_%d -> Expr_%d\n", then_id, then_child_id);
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_SCOPE: {
+        int id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"Scope\"]\n", id);
+        int child_id =
+            dump_block_as_dot_edges(stream, statement.value.as_scope,
+                                    counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
         return id;
     }
     break;
@@ -407,6 +424,22 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.kind = STATEMENT_KIND_IF;
         statement.value.as_if.condition = parse_expr_from_sv(arena, body, location);
         statement.value.as_if.then = parse_block_from_lines(arena, linizer);
+
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%if` block\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: the %%if block starts here",
+                    FL_Arg(statement.location));
+            exit(1);
+        }
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("scope"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_SCOPE;
+        statement.value.as_scope = parse_block_from_lines(arena, linizer);
 
         if (!linizer_next(linizer, &line) ||
                 line.kind != LINE_KIND_DIRECTIVE ||

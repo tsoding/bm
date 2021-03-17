@@ -118,7 +118,6 @@ void examples_command(void)
         {
             CMD(PATH("build", "toolchain", "basm"),
                 "-I", "./examples/stdlib/",
-                "-g",
                 PATH("examples", example),
                 "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
         }

@@ -7,6 +7,7 @@
 ;; addr_a
 ;; addr_b
 swap8:
+%scope
     swap 2
     dup 1
     dup 1
@@ -27,19 +28,21 @@ swap8:
     drop
 
     ret
+%end
 
 reverse:
+%scope
     swap 2
     swap 1
     dup 0
     push 2
     divi
 
-    reverse_loop:
+    loop:
         dup 0
         push 0
         eqi
-        jmp_if reverse_loop_end
+        jmp_if end
 
         dup 2
         dup 2
@@ -62,28 +65,32 @@ reverse:
            plusi
         swap 2
 
-        jmp reverse_loop
-    reverse_loop_end:
+        jmp loop
+    end:
 
     drop
     drop
     drop
 
     ret
+%end
 
 fabs:
+%scope
     swap 1
     dup 0
     push 0.0
     gef
-    jmp_if fabs_skip_negation
+    jmp_if skip_negation
        push -0.0
        xor
-    fabs_skip_negation:
+    skip_negation:
     swap 1
     ret
+%end
 
 frac:
+%scope
     swap 1
        dup 0
        f2i
@@ -91,8 +98,10 @@ frac:
        minusf
     swap 1
     ret
+%end
 
 floor:
+%scope
     swap 1
         dup 0
         f2i
@@ -102,124 +111,21 @@ floor:
         minusf
         push 0.0
         lef
-        jmp_if floor_skip_dec
+        jmp_if skip_dec
             push 1.0
             minusf
-        floor_skip_dec:
+        skip_dec:
     swap 1
     ret
-
-;; 1.0^{-n}
-b:
-    swap 1
-    push 1.0
-
-    b_loop_begin:
-       dup 1
-       push 0
-       lei
-       jmp_if b_loop_end
-
-       push 0.1
-       multf
-
-       swap 1
-       push 1
-       minusi
-       swap 1
-
-       jmp b_loop_begin
-    b_loop_end:
-
-    swap 1
-    drop
-
-    swap 1
-
-    ret
-
-print_frac:
-    swap 1
-    push FRAC_PRECISION
-    call b
-    push 2.0
-    divf
-    print_frac_loop_begin:
-        ;; U
-        dup 1
-        push 10.0
-        multf
-        call floor
-
-        swap 2
-          push 10.0
-          multf
-          call frac
-        swap 2
-
-        swap 1
-             push 10.0
-             multf
-        swap 1
-
-        ;; if (R < M) break;
-        dup 2
-        dup 2
-        ltf
-        jmp_if print_frac_loop_end
-
-        ;; if (R > 1 - M) break;
-        dup 2
-        dup 2
-        push 1.0
-        swap 1
-        minusf
-        gtf
-        jmp_if print_frac_loop_end
-
-        f2i
-        push '0'
-        plusi
-        push print_memory
-        swap 1
-        write8
-
-        push print_memory
-        push 1
-        native write
-
-    jmp print_frac_loop_begin
-    print_frac_loop_end:
-
-    dup 2
-    push 0.5
-    lef
-    jmp_if print_frac_skip_inc
-       push 1.0
-       plusf
-    print_frac_skip_inc:
-
-    f2i
-    push '0'
-    plusi
-    push print_memory
-    swap 1
-    write8
-
-    push print_memory
-    push 1
-    native write
-
-    drop
-    drop
-    ret
+%end
 
 print_positive:
+%scope
     swap 1
 
     push print_memory
 
-    print_positive_loop:
+    loop:
         dup 1
         push 10
         modu
@@ -242,7 +148,7 @@ print_positive:
         push 0
         equ
         not
-    jmp_if print_positive_loop
+    jmp_if loop
 
     push print_memory
     minusi
@@ -258,29 +164,30 @@ print_positive:
     drop
 
     ret
+%end
 
 ;; TODO(#142): dump_f64 does not support NaN and Inf
 dump_f64:
+%scope
     swap 1
 
     dup 0
     push -0.0
     andb
     not
-    jmp_if dump_f64_skip_negative
+    jmp_if skip_negative
         push -0.0
         xor
 
         push print_memory
         push '-'
         write8
-        
+
         push print_memory
         push 1
         native write
-    dump_f64_skip_negative:
+    skip_negative:
 
-debug:
     push FRAC_PRECISION
     call b
     push 2.0
@@ -292,7 +199,7 @@ debug:
     minusf
 
     gef
-    jmp_if dump_f64_no_frac
+    jmp_if no_frac
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,9 +218,9 @@ debug:
     call frac
     call print_frac
 
-    jmp dump_f64_no_frac_end
+    jmp no_frac_end
 
-dump_f64_no_frac:
+no_frac:
 
     f2i
     push 1
@@ -336,7 +243,7 @@ dump_f64_no_frac:
     push 1
     native write
 
-dump_f64_no_frac_end:
+no_frac_end:
 
     push print_memory
     push 10
@@ -348,12 +255,124 @@ dump_f64_no_frac_end:
 
     ret
 
+    ;; 1.0^{-n}
+    b:
+    %scope
+        swap 1
+        push 1.0
+
+        loop_begin:
+           dup 1
+           push 0
+           lei
+           jmp_if loop_end
+
+           push 0.1
+           multf
+
+           swap 1
+           push 1
+           minusi
+           swap 1
+
+           jmp loop_begin
+        loop_end:
+
+        swap 1
+        drop
+
+        swap 1
+
+        ret
+    %end
+
+    print_frac:
+    %scope
+        swap 1
+        push FRAC_PRECISION
+        call b
+        push 2.0
+        divf
+        loop_begin:
+            ;; U
+            dup 1
+            push 10.0
+            multf
+            call floor
+
+            swap 2
+              push 10.0
+              multf
+              call frac
+            swap 2
+
+            swap 1
+                 push 10.0
+                 multf
+            swap 1
+
+            ;; if (R < M) break;
+            dup 2
+            dup 2
+            ltf
+            jmp_if loop_end
+
+            ;; if (R > 1 - M) break;
+            dup 2
+            dup 2
+            push 1.0
+            swap 1
+            minusf
+            gtf
+            jmp_if loop_end
+
+            f2i
+            push '0'
+            plusi
+            push print_memory
+            swap 1
+            write8
+
+            push print_memory
+            push 1
+            native write
+
+        jmp loop_begin
+        loop_end:
+
+        dup 2
+        push 0.5
+        lef
+        jmp_if skip_inc
+           push 1.0
+           plusf
+        skip_inc:
+
+        f2i
+        push '0'
+        plusi
+        push print_memory
+        swap 1
+        write8
+
+        push print_memory
+        push 1
+        native write
+
+        drop
+        drop
+        ret
+
+    %end
+%end
+
 dump_i64:
+%scope
     swap 1
     dup 0
     push 0
     gei
-    jmp_if dump_i64_skip_negation
+    jmp_if skip_negation
        push print_memory
        push '-'
        write8
@@ -364,7 +383,7 @@ dump_i64:
 
        push -1
        multi
-    dump_i64_skip_negation:
+    skip_negation:
 
     call print_positive
 
@@ -377,8 +396,10 @@ dump_i64:
     native write
 
     ret
+%end
 
 dump_u64:
+%scope
     swap 1
     call print_positive
 
@@ -391,3 +412,4 @@ dump_u64:
     native write
 
     ret
+%end

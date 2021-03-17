@@ -19,6 +19,7 @@ typedef enum {
     STATEMENT_KIND_ENTRY,
     STATEMENT_KIND_BLOCK,
     STATEMENT_KIND_IF,
+    STATEMENT_KIND_SCOPE,
 } Statement_Kind;
 
 typedef struct {
@@ -73,6 +74,7 @@ typedef union {
     Entry as_entry;
     Block *as_block;
     If as_if;
+    Block *as_scope;
 } Statement_Value;
 
 struct Statement {

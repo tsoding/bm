@@ -44,6 +44,7 @@ typedef struct {
     Inst_Addr addr;
     Expr expr;
     File_Location location;
+    bool evaluated;
 } Deferred_Operand;
 
 typedef struct {
@@ -54,6 +55,7 @@ typedef struct {
 typedef struct {
     Expr expr;
     File_Location location;
+    bool evaluated;
 } Deferred_Assert;
 
 typedef enum {
@@ -69,7 +71,11 @@ typedef struct {
 Eval_Status eval_status_ok(void);
 Eval_Status eval_status_deferred(Binding *deferred_binding);
 
-typedef struct {
+typedef struct Scope Scope;
+
+struct Scope {
+    Scope *previous;
+
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
@@ -78,6 +84,16 @@ typedef struct {
 
     Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
     size_t deferred_asserts_size;
+};
+
+Binding *scope_resolve_binding(Scope *scope, String_View name);
+void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);
+void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location);
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location);
+void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_Location location);
+
+typedef struct {
+    Scope *scope;
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
@@ -102,6 +118,11 @@ typedef struct {
     size_t include_paths_size;
 } Basm;
 
+void basm_push_new_scope(Basm *basm);
+void basm_pop_scope(Basm *basm);
+
+void basm_eval_deferred_asserts(Basm *basm);
+void basm_eval_deferred_operands(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
@@ -128,7 +149,6 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location);
 void basm_translate_error(Error error, File_Location location);
 void basm_translate_entry(Basm *basm, Entry entry, File_Location location);
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location);
-void basm_translate_statement(Basm *basm, Statement statement);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 
 #endif // BASM_H_
