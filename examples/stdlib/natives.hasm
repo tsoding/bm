@@ -119,115 +119,6 @@ floor:
     ret
 %end
 
-;; 1.0^{-n}
-b:
-%scope
-    swap 1
-    push 1.0
-
-    loop_begin:
-       dup 1
-       push 0
-       lei
-       jmp_if loop_end
-
-       push 0.1
-       multf
-
-       swap 1
-       push 1
-       minusi
-       swap 1
-
-       jmp loop_begin
-    loop_end:
-
-    swap 1
-    drop
-
-    swap 1
-
-    ret
-%end
-
-print_frac:
-%scope
-    swap 1
-    push FRAC_PRECISION
-    call b
-    push 2.0
-    divf
-    loop_begin:
-        ;; U
-        dup 1
-        push 10.0
-        multf
-        call floor
-
-        swap 2
-          push 10.0
-          multf
-          call frac
-        swap 2
-
-        swap 1
-             push 10.0
-             multf
-        swap 1
-
-        ;; if (R < M) break;
-        dup 2
-        dup 2
-        ltf
-        jmp_if loop_end
-
-        ;; if (R > 1 - M) break;
-        dup 2
-        dup 2
-        push 1.0
-        swap 1
-        minusf
-        gtf
-        jmp_if loop_end
-
-        f2i
-        push '0'
-        plusi
-        push print_memory
-        swap 1
-        write8
-
-        push print_memory
-        push 1
-        native write
-
-    jmp loop_begin
-    loop_end:
-
-    dup 2
-    push 0.5
-    lef
-    jmp_if skip_inc
-       push 1.0
-       plusf
-    skip_inc:
-
-    f2i
-    push '0'
-    plusi
-    push print_memory
-    swap 1
-    write8
-
-    push print_memory
-    push 1
-    native write
-
-    drop
-    drop
-    ret
-%end
-
 print_positive:
 %scope
     swap 1
@@ -291,7 +182,7 @@ dump_f64:
         push print_memory
         push '-'
         write8
-        
+
         push print_memory
         push 1
         native write
@@ -363,6 +254,116 @@ no_frac_end:
     native write
 
     ret
+
+    ;; 1.0^{-n}
+    b:
+    %scope
+        swap 1
+        push 1.0
+
+        loop_begin:
+           dup 1
+           push 0
+           lei
+           jmp_if loop_end
+
+           push 0.1
+           multf
+
+           swap 1
+           push 1
+           minusi
+           swap 1
+
+           jmp loop_begin
+        loop_end:
+
+        swap 1
+        drop
+
+        swap 1
+
+        ret
+    %end
+
+    print_frac:
+    %scope
+        swap 1
+        push FRAC_PRECISION
+        call b
+        push 2.0
+        divf
+        loop_begin:
+            ;; U
+            dup 1
+            push 10.0
+            multf
+            call floor
+
+            swap 2
+              push 10.0
+              multf
+              call frac
+            swap 2
+
+            swap 1
+                 push 10.0
+                 multf
+            swap 1
+
+            ;; if (R < M) break;
+            dup 2
+            dup 2
+            ltf
+            jmp_if loop_end
+
+            ;; if (R > 1 - M) break;
+            dup 2
+            dup 2
+            push 1.0
+            swap 1
+            minusf
+            gtf
+            jmp_if loop_end
+
+            f2i
+            push '0'
+            plusi
+            push print_memory
+            swap 1
+            write8
+
+            push print_memory
+            push 1
+            native write
+
+        jmp loop_begin
+        loop_end:
+
+        dup 2
+        push 0.5
+        lef
+        jmp_if skip_inc
+           push 1.0
+           plusf
+        skip_inc:
+
+        f2i
+        push '0'
+        plusi
+        push print_memory
+        swap 1
+        write8
+
+        push print_memory
+        push 1
+        native write
+
+        drop
+        drop
+        ret
+
+    %end
 %end
 
 dump_i64:
