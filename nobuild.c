@@ -209,47 +209,62 @@ void build_lib_object(const char *name)
 #endif // _WIN32
 }
 
-void link_lib_objects(void)
+void link_lib_objects(Cstr *objects, size_t objects_count)
 {
+    Cmd cmd = {0};
+
 #ifdef _WIN32
-    CMD("lib",
-        CONCAT("/out:", PATH("build", "library", "bm.lib")),
-        PATH("build", "library", "arena.obj"),
-        PATH("build", "library", "basm.obj"),
-        PATH("build", "library", "bm.obj"),
-        PATH("build", "library", "sv.obj"),
-        PATH("build", "library", "expr.obj"),
-        PATH("build", "library", "linizer.obj"),
-        PATH("build", "library", "path.obj"),
-        PATH("build", "library", "tokenizer.obj"),
-        PATH("build", "library", "statement.obj"));
+    cmd.line = cstr_array_make(
+                   "lib",
+                   CONCAT("/out:", PATH("build", "library", "bm.lib")),
+                   NULL);
+
+    for (size_t i = 0; i < objects_count; ++i) {
+        cmd.line = cstr_array_append(
+                       cmd.line,
+                       PATH("build", "library", CONCAT(objects[i], ".obj")));
+    }
 #else
-    CMD("ar", "-crs",
-        PATH("build", "library", "libbm.a"),
-        PATH("build", "library", "arena.o"),
-        PATH("build", "library", "basm.o"),
-        PATH("build", "library", "bm.o"),
-        PATH("build", "library", "sv.o"),
-        PATH("build", "library", "expr.o"),
-        PATH("build", "library", "linizer.o"),
-        PATH("build", "library", "path.o"),
-        PATH("build", "library", "tokenizer.o"),
-        PATH("build", "library", "statement.o"));
+    cmd.line = cstr_array_make(
+                   "ar", "-crs",
+                   PATH("build", "library", "libbm.a"),
+                   NULL);
+
+    for (size_t i = 0; i < objects_count; ++i) {
+        cmd.line = cstr_array_append(
+                       cmd.line,
+                       PATH("build", "library", CONCAT(objects[i], ".o")));
+    }
 #endif // _WIN32
+
+    INFO("CMD: %s", cmd_show(cmd));
+    cmd_run_sync(cmd);
 }
 
 void lib_command(void)
 {
     MKDIRS("build", "library");
 
+    size_t objects_size = 0;
+
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c"))
         {
+            objects_size += 1;
             build_lib_object(NOEXT(file));
         }
     });
 
-    link_lib_objects();
+    Cstr *objects = malloc(sizeof(Cstr) * objects_size);
+    objects_size = 0;
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c"))
+        {
+            objects[objects_size++] = NOEXT(file);
+        }
+    });
+
+    link_lib_objects(objects, objects_size);
 }
 
 void print_help(FILE *stream)
