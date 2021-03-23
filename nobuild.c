@@ -245,26 +245,26 @@ void lib_command(void)
 {
     MKDIRS("build", "library");
 
+    size_t objects_size = 0;
+
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c"))
         {
+            objects_size += 1;
             build_lib_object(NOEXT(file));
         }
     });
 
-    Cstr objects[] = {
-        "arena",
-        "basm",
-        "bm",
-        "sv",
-        "expr",
-        "linizer",
-        "path",
-        "tokenizer",
-        "statement",
-    };
+    Cstr *objects = malloc(sizeof(Cstr) * objects_size);
+    objects_size = 0;
+    FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
+        if (ENDS_WITH(file, ".c"))
+        {
+            objects[objects_size++] = NOEXT(file);
+        }
+    });
 
-    link_lib_objects(objects, sizeof(objects) / sizeof(objects[0]));
+    link_lib_objects(objects, objects_size);
 }
 
 void print_help(FILE *stream)
