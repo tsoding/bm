@@ -303,7 +303,7 @@ void run_command_by_name(const char *command_name)
 
 int main(int argc, char **argv)
 {
-    shift(&argc, &argv);        // skip program
+    shift_args(&argc, &argv);        // skip program
 
     if (argc == 0) {
         print_help(stderr);
