@@ -483,15 +483,37 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.value.as_if.condition = parse_expr_from_sv(arena, body, location);
         statement.value.as_if.then = parse_block_from_lines(arena, linizer);
 
-        if (!linizer_next(linizer, &line) ||
-                line.kind != LINE_KIND_DIRECTIVE ||
-                !sv_eq(line.value.as_directive.name, SV("end"))) {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%if` block\n",
+        if (linizer_next(linizer, &line) && line.kind == LINE_KIND_DIRECTIVE) {
+            if (sv_eq(line.value.as_directive.name, SV("end"))) {
+                // Elseless if
+            } else if (sv_eq(line.value.as_directive.name, SV("else"))) {
+                File_Location else_location = line.location;
+                statement.value.as_if.elze = parse_block_from_lines(arena, linizer);
+                if (!linizer_next(linizer, &line) &&
+                        line.kind != LINE_KIND_DIRECTIVE &&
+                        !sv_eq(line.value.as_directive.name, SV("end"))) {
+                    fprintf(stderr, FL_Fmt": ERROR: expected `%%end` after `%%else`\n",
+                            FL_Arg(linizer->location));
+                    fprintf(stderr, FL_Fmt": NOTE: %%else is here",
+                            FL_Arg(else_location));
+                    exit(1);
+                }
+            } else {
+                fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`, but got `"SV_Fmt"`\n",
+                        FL_Arg(linizer->location),
+                        SV_Arg(line.value.as_directive.name));
+                fprintf(stderr, FL_Fmt": NOTE: %%if is here",
+                        FL_Arg(statement.location));
+                exit(1);
+            }
+        } else {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`\n",
                     FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: the %%if block starts here",
+            fprintf(stderr, FL_Fmt": NOTE: %%if is here",
                     FL_Arg(statement.location));
             exit(1);
         }
+
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("scope"))) {
         Statement statement = {0};
@@ -559,6 +581,11 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     }
 }
 
+static bool is_block_stop_directive(Line_Directive directive)
+{
+    return sv_eq(directive.name, SV("end")) || sv_eq(directive.name, SV("else"));
+}
+
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
 {
     Block_List result = {0};
@@ -617,7 +644,7 @@ Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
         break;
 
         case LINE_KIND_DIRECTIVE: {
-            if (sv_eq(line.value.as_directive.name, SV("end"))) {
+            if (is_block_stop_directive(line.value.as_directive)) {
                 return result.begin;
             }
 
