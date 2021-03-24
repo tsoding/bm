@@ -44,7 +44,6 @@ typedef struct {
     Inst_Addr addr;
     Expr expr;
     File_Location location;
-    bool evaluated;
 } Deferred_Operand;
 
 typedef struct {
@@ -55,7 +54,6 @@ typedef struct {
 typedef struct {
     Expr expr;
     File_Location location;
-    bool evaluated;
 } Deferred_Assert;
 
 typedef enum {
