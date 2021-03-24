@@ -44,7 +44,6 @@ typedef struct {
     Inst_Addr addr;
     Expr expr;
     File_Location location;
-    bool evaluated;
 } Deferred_Operand;
 
 typedef struct {
@@ -55,7 +54,6 @@ typedef struct {
 typedef struct {
     Expr expr;
     File_Location location;
-    bool evaluated;
 } Deferred_Assert;
 
 typedef enum {
@@ -84,6 +82,9 @@ struct Scope {
 
     Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
     size_t deferred_asserts_size;
+
+    String_View deferred_entry_binding_name;
+    File_Location deferred_entry_location;
 };
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
@@ -97,10 +98,10 @@ typedef struct {
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
+
     Inst_Addr entry;
     bool has_entry;
     File_Location entry_location;
-    String_View deferred_entry_binding_name;
 
     String_Length string_lengths[BASM_STRING_LENGTHS_CAPACITY];
     size_t string_lengths_size;
@@ -123,6 +124,7 @@ void basm_pop_scope(Basm *basm);
 
 void basm_eval_deferred_asserts(Basm *basm);
 void basm_eval_deferred_operands(Basm *basm);
+void basm_eval_deferred_entry(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
@@ -151,5 +153,6 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location);
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location);
 void basm_translate_for(Basm *basm, For phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
+void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
 
 #endif // BASM_H_
