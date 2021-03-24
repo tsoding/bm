@@ -131,27 +131,19 @@ void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kin
 
 void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
 {
-    if (basm->scope == NULL) {
-        basm_push_new_scope(basm);
-    }
-
+    assert(basm->scope != NULL);
     scope_bind_value(basm->scope, name, value, kind, location);
 }
 
 void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location)
 {
-    if (basm->scope == NULL) {
-        basm_push_new_scope(basm);
-    }
+    assert(basm->scope != NULL);
     scope_defer_binding(basm->scope, name, kind, location);
 }
 
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
 {
-    if (basm->scope == NULL) {
-        basm_push_new_scope(basm);
-    }
-
+    assert(basm->scope != NULL);
     scope_bind_expr(basm->scope, name, expr, kind, location);
 }
 
@@ -166,10 +158,7 @@ void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_L
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
 {
-    if (basm->scope == NULL) {
-        basm_push_new_scope(basm);
-    }
-
+    assert(basm->scope != NULL);
     scope_push_deferred_operand(basm->scope, addr, expr, location);
 }
 
@@ -555,9 +544,7 @@ void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location 
 
 void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
 {
-    if (basm->scope == NULL) {
-        basm_push_new_scope(basm);
-    }
+    assert(basm->scope != NULL);
     basm->scope->deferred_asserts[basm->scope->deferred_asserts_size++] = (Deferred_Assert) {
         .expr = azzert.condition,
         .location = location,
@@ -666,6 +653,13 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
         basm_translate_block(basm, eef.then);
         basm_pop_scope(basm);
     }
+}
+
+void basm_translate_root_source_file(Basm *basm, String_View input_file_path)
+{
+    basm_push_new_scope(basm);
+    basm_translate_source_file(basm, input_file_path);
+    basm_pop_scope(basm);
 }
 
 void basm_translate_source_file(Basm *basm, String_View input_file_path)

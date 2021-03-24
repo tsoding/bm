@@ -77,7 +77,7 @@ int main(int argc, char **argv)
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
-    basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
+    basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
 
     if (!basm.has_entry) {
         fprintf(stderr, "%s: ERROR: entry point for a BM program is not provided. Use translation directive %%entry to provide the entry point.\n", input_file_path);
