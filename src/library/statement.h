@@ -58,7 +58,7 @@ typedef struct {
     Expr value;
 } Entry;
 
-// TODO: %if construction does not support %elif
+// TODO(#255): %if construction does not support %elif
 typedef struct {
     Expr condition;
     Block *then;
