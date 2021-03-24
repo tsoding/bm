@@ -1,16 +1,16 @@
 %include "natives.hasm"
 
 ; only this string needs to be changed
-%const secret "Uryyb, jbeyq! Sebz EBG13."
+%const secret = "Uryyb, jbeyq! Sebz EBG13."
 
 ; TODO(#81): remove string length hack from rot13 example
 ; After #77 is implemented
 ; ---
 ; this small hack will take care of length of strign
-%const secret_end ""
+%const secret_end = ""
 
-%const ROT13 13
-%const MOD   26
+%const ROT13 = 13
+%const MOD   = 26
 
 ; high >= value >= low
 is_between:

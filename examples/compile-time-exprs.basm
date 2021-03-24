@@ -1,9 +1,9 @@
 %include "natives.hasm"
 
-%const A 66
-%const B A + 1
-%const C B + 1
-%const D C + 1
+%const A = 66
+%const B = A + 1
+%const C = B + 1
+%const D = C + 1
 
 %entry main:
     push A

@@ -1,8 +1,8 @@
 %include "natives.hasm"
 
-%const true 1
-%const false 0
-%const N 100
+%const true  = 1
+%const false = 0
+%const N     = 100
 %assert N > 1
 
 is_prime:

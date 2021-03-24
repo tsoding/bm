@@ -80,12 +80,12 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
 
     case '=': {
         if (tokenizer->source.count <= 1 || tokenizer->source.data[1] != '=') {
-            fprintf(stderr, FL_Fmt": ERROR: Unknown token starts with =\n",
-                    FL_Arg(location));
-            exit(1);
+            token.kind = TOKEN_KIND_EQ;
+            token.text = sv_chop_left(&tokenizer->source, 1);
+        } else {
+            token.kind = TOKEN_KIND_EE;
+            token.text = sv_chop_left(&tokenizer->source, 2);
         }
-        token.kind = TOKEN_KIND_EE;
-        token.text = sv_chop_left(&tokenizer->source, 2);
     }
     break;
 
@@ -181,6 +181,25 @@ void expect_no_tokens(Tokenizer *tokenizer, File_Location location)
     if (tokenizer_next(tokenizer, &token, location)) {
         fprintf(stderr, FL_Fmt": ERROR: unexpected token `"SV_Fmt"`\n",
                 FL_Arg(location), SV_Arg(token.text));
+        exit(1);
+    }
+}
+
+void expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Location location)
+{
+    Token token = {0};
+
+    if (!tokenizer_next(tokenizer, &token, location)) {
+        fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n",
+                FL_Arg(location), token_kind_name(expected_kind));
+        exit(1);
+    }
+
+    if (token.kind != expected_kind) {
+        fprintf(stderr, FL_Fmt": ERROR: expected token `%s`, but got `%s`\n",
+                FL_Arg(location),
+                token_kind_name(expected_kind),
+                token_kind_name(token.kind));
         exit(1);
     }
 }

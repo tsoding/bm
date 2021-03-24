@@ -8,7 +8,7 @@
 ; subsequent odd number. The more times you do this, the closer you will get to pi.
 ;
 
-%const N 750000
+%const N = 750000
 
 %entry main:
     push 4.0        ; acc (result of first division 4/1)
