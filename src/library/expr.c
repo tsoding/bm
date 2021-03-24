@@ -255,51 +255,35 @@ size_t funcall_args_len(Funcall_Arg *args)
 
 static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    Token token = {0};
-
-    if (!tokenizer_next(tokenizer, &token, location)) {
-        fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
-                FL_Arg(location));
-        exit(1);
-    }
+    Token token = expect_token_next(tokenizer, TOKEN_KIND_NUMBER, location);
 
     Expr result = {0};
 
-    if (token.kind == TOKEN_KIND_NUMBER) {
-        String_View text = token.text;
+    const char *cstr = arena_sv_to_cstr(arena, token.text);
+    char *endptr = 0;
 
-        const char *cstr = arena_sv_to_cstr(arena, text);
-        char *endptr = 0;
-
-        if (sv_starts_with(text, sv_from_cstr("0x"))) {
-            result.value.as_lit_int = strtoull(cstr, &endptr, 16);
-            if ((size_t) (endptr - cstr) != text.count) {
-                fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",
-                        FL_Arg(location), SV_Arg(text));
-                exit(1);
-            }
-
-            result.kind = EXPR_KIND_LIT_INT;
-        } else {
-            result.value.as_lit_int = strtoull(cstr, &endptr, 10);
-            if ((size_t) (endptr - cstr) != text.count) {
-                result.value.as_lit_float = strtod(cstr, &endptr);
-                if ((size_t) (endptr - cstr) != text.count) {
-                    fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number literal\n",
-                            FL_Arg(location), SV_Arg(text));
-                } else {
-                    result.kind = EXPR_KIND_LIT_FLOAT;
-                }
-            } else {
-                result.kind = EXPR_KIND_LIT_INT;
-            }
+    if (sv_starts_with(token.text, sv_from_cstr("0x"))) {
+        result.value.as_lit_int = strtoull(cstr, &endptr, 16);
+        if ((size_t) (endptr - cstr) != token.text.count) {
+            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",
+                    FL_Arg(location), SV_Arg(token.text));
+            exit(1);
         }
+
+        result.kind = EXPR_KIND_LIT_INT;
     } else {
-        fprintf(stderr, FL_Fmt": ERROR: expected %s but got %s",
-                FL_Arg(location),
-                token_kind_name(TOKEN_KIND_NUMBER),
-                token_kind_name(token.kind));
-        exit(1);
+        result.value.as_lit_int = strtoull(cstr, &endptr, 10);
+        if ((size_t) (endptr - cstr) != token.text.count) {
+            result.value.as_lit_float = strtod(cstr, &endptr);
+            if ((size_t) (endptr - cstr) != token.text.count) {
+                fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number literal\n",
+                        FL_Arg(location), SV_Arg(token.text));
+            } else {
+                result.kind = EXPR_KIND_LIT_FLOAT;
+            }
+        } else {
+            result.kind = EXPR_KIND_LIT_INT;
+        }
     }
 
     return result;
