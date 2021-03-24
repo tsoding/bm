@@ -40,6 +40,11 @@ void basm_push_new_scope(Basm *basm)
 void basm_pop_scope(Basm *basm)
 {
     assert(basm->scope != NULL);
+
+    basm_eval_deferred_asserts(basm);
+    basm_eval_deferred_operands(basm);
+    basm_eval_deferred_entry(basm);
+
     basm->scope = basm->scope->previous;
 }
 
@@ -382,10 +387,6 @@ void basm_translate_block(Basm *basm, Block *block)
         }
     }
     // second pass end
-
-    basm_eval_deferred_asserts(basm);
-    basm_eval_deferred_operands(basm);
-    basm_eval_deferred_entry(basm);
 }
 
 void basm_eval_deferred_asserts(Basm *basm)
