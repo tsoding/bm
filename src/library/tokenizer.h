@@ -40,7 +40,7 @@ typedef struct {
 } Tokenizer;
 
 void expect_no_tokens(Tokenizer *tokenizer, File_Location location);
-void expect_token_next(Tokenizer *tokenizer, Token_Kind kind, File_Location location);
+Token expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Location location);
 
 bool tokenizer_next(Tokenizer *tokenizer, Token *token, File_Location location);
 bool tokenizer_peek(Tokenizer *tokenizer, Token *token, File_Location location);

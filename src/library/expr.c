@@ -25,12 +25,7 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Locatio
 {
     Token token = {0};
 
-    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_OPEN_PAREN) {
-        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
-                FL_Arg(location),
-                token_kind_name(TOKEN_KIND_OPEN_PAREN));
-        exit(1);
-    }
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, location);
 
     if (tokenizer_peek(tokenizer, &token, location) && token.kind == TOKEN_KIND_CLOSING_PAREN) {
         tokenizer_next(tokenizer, NULL, location);
@@ -260,51 +255,35 @@ size_t funcall_args_len(Funcall_Arg *args)
 
 static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    Token token = {0};
-
-    if (!tokenizer_next(tokenizer, &token, location)) {
-        fprintf(stderr, FL_Fmt": ERROR: Cannot parse empty expression\n",
-                FL_Arg(location));
-        exit(1);
-    }
+    Token token = expect_token_next(tokenizer, TOKEN_KIND_NUMBER, location);
 
     Expr result = {0};
 
-    if (token.kind == TOKEN_KIND_NUMBER) {
-        String_View text = token.text;
+    const char *cstr = arena_sv_to_cstr(arena, token.text);
+    char *endptr = 0;
 
-        const char *cstr = arena_sv_to_cstr(arena, text);
-        char *endptr = 0;
-
-        if (sv_starts_with(text, sv_from_cstr("0x"))) {
-            result.value.as_lit_int = strtoull(cstr, &endptr, 16);
-            if ((size_t) (endptr - cstr) != text.count) {
-                fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",
-                        FL_Arg(location), SV_Arg(text));
-                exit(1);
-            }
-
-            result.kind = EXPR_KIND_LIT_INT;
-        } else {
-            result.value.as_lit_int = strtoull(cstr, &endptr, 10);
-            if ((size_t) (endptr - cstr) != text.count) {
-                result.value.as_lit_float = strtod(cstr, &endptr);
-                if ((size_t) (endptr - cstr) != text.count) {
-                    fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number literal\n",
-                            FL_Arg(location), SV_Arg(text));
-                } else {
-                    result.kind = EXPR_KIND_LIT_FLOAT;
-                }
-            } else {
-                result.kind = EXPR_KIND_LIT_INT;
-            }
+    if (sv_starts_with(token.text, sv_from_cstr("0x"))) {
+        result.value.as_lit_int = strtoull(cstr, &endptr, 16);
+        if ((size_t) (endptr - cstr) != token.text.count) {
+            fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a hex literal\n",
+                    FL_Arg(location), SV_Arg(token.text));
+            exit(1);
         }
+
+        result.kind = EXPR_KIND_LIT_INT;
     } else {
-        fprintf(stderr, FL_Fmt": ERROR: expected %s but got %s",
-                FL_Arg(location),
-                token_kind_name(TOKEN_KIND_NUMBER),
-                token_kind_name(token.kind));
-        exit(1);
+        result.value.as_lit_int = strtoull(cstr, &endptr, 10);
+        if ((size_t) (endptr - cstr) != token.text.count) {
+            result.value.as_lit_float = strtod(cstr, &endptr);
+            if ((size_t) (endptr - cstr) != token.text.count) {
+                fprintf(stderr, FL_Fmt": ERROR: `"SV_Fmt"` is not a number literal\n",
+                        FL_Arg(location), SV_Arg(token.text));
+            } else {
+                result.kind = EXPR_KIND_LIT_FLOAT;
+            }
+        } else {
+            result.kind = EXPR_KIND_LIT_INT;
+        }
     }
 
     return result;
@@ -312,14 +291,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Lo
 
 String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, File_Location location)
 {
-    Token token = {0};
-    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_STR) {
-        fprintf(stderr, FL_Fmt": ERROR: expected token %s\n",
-                FL_Arg(location), token_kind_name(token.kind));
-        exit(1);
-    }
-
-    return token.text;
+    return expect_token_next(tokenizer, TOKEN_KIND_STR, location).text;
 }
 
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
@@ -332,20 +304,22 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
         exit(1);
     }
 
-    Expr result = {0};
-
     switch (token.kind) {
     case TOKEN_KIND_STR: {
+        Expr result = {0};
         result.kind = EXPR_KIND_LIT_STR;
         result.value.as_lit_str = parse_lit_str_from_tokens(tokenizer, location);
+        return result;
     }
     break;
 
     case TOKEN_KIND_CHAR: {
+        Expr result = {0};
         tokenizer_next(tokenizer, NULL, location);
 
         if (token.text.count != 1) {
             // TODO(#179): char literals don't support escaped characters
+            // TODO(#258): multi symbol char literals (up to 8 chars)
             fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
                     FL_Arg(location));
             exit(1);
@@ -353,10 +327,12 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
         result.kind = EXPR_KIND_LIT_CHAR;
         result.value.as_lit_char = token.text.data[0];
+        return result;
     }
     break;
 
     case TOKEN_KIND_NAME: {
+        Expr result = {0};
         tokenizer_next(tokenizer, NULL, location);
 
         Token next = {0};
@@ -369,6 +345,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
             result.value.as_binding = token.text;
             result.kind = EXPR_KIND_BINDING;
         }
+        return result;
     }
     break;
 
@@ -379,32 +356,27 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
     case TOKEN_KIND_MINUS: {
         tokenizer_next(tokenizer, NULL, location);
-        Expr expr = parse_number_from_tokens(arena, tokenizer, location);
+        Expr result = parse_number_from_tokens(arena, tokenizer, location);
 
-        if (expr.kind == EXPR_KIND_LIT_INT) {
+        if (result.kind == EXPR_KIND_LIT_INT) {
             // TODO(#184): more cross-platform way to negate integer literals
             // what if somewhere the numbers are not two's complement
-            expr.value.as_lit_int = (~expr.value.as_lit_int + 1);
-        } else if (expr.kind == EXPR_KIND_LIT_FLOAT) {
-            expr.value.as_lit_float = -expr.value.as_lit_float;
+            result.value.as_lit_int = (~result.value.as_lit_int + 1);
+        } else if (result.kind == EXPR_KIND_LIT_FLOAT) {
+            result.value.as_lit_float = -result.value.as_lit_float;
         } else {
             assert(false && "parse_primary_from_tokens: unreachable");
         }
 
-        return expr;
+        return result;
     }
     break;
 
     case TOKEN_KIND_OPEN_PAREN: {
         tokenizer_next(tokenizer, NULL, location);
-        Expr expr = parse_expr_from_tokens(arena, tokenizer, location);
-
-        if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_CLOSING_PAREN) {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%s`\n",
-                    FL_Arg(location), token_kind_name(TOKEN_KIND_CLOSING_PAREN));
-            exit(1);
-        }
-        return expr;
+        Expr result = parse_expr_from_tokens(arena, tokenizer, location);
+        expect_token_next(tokenizer, TOKEN_KIND_CLOSING_PAREN, location);
+        return result;
     }
     break;
 
@@ -425,12 +397,13 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     break;
 
     default: {
-        assert(false && "parse_primary_from_tokens: unreachable");
-        exit(1);
     }
     }
 
-    return result;
+    assert(false && "parse_primary_from_tokens: unreachable");
+    return (Expr) {
+        0
+    };
 }
 
 size_t binary_op_kind_precedence(Binary_Op_Kind kind)

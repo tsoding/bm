@@ -185,7 +185,7 @@ void expect_no_tokens(Tokenizer *tokenizer, File_Location location)
     }
 }
 
-void expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Location location)
+Token expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Location location)
 {
     Token token = {0};
 
@@ -202,4 +202,6 @@ void expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Loca
                 token_kind_name(token.kind));
         exit(1);
     }
+
+    return token;
 }
