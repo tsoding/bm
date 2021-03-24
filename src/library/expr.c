@@ -291,14 +291,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Lo
 
 String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, File_Location location)
 {
-    Token token = {0};
-    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_STR) {
-        fprintf(stderr, FL_Fmt": ERROR: expected token %s\n",
-                FL_Arg(location), token_kind_name(token.kind));
-        exit(1);
-    }
-
-    return token.text;
+    return expect_token_next(tokenizer, TOKEN_KIND_STR, location).text;
 }
 
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
