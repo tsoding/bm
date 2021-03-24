@@ -319,7 +319,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
         if (token.text.count != 1) {
             // TODO(#179): char literals don't support escaped characters
-            // TODO: multi symbol char literals (up to 8 chars)
+            // TODO(#258): multi symbol char literals (up to 8 chars)
             fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
                     FL_Arg(location));
             exit(1);
