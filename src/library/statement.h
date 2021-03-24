@@ -58,10 +58,11 @@ typedef struct {
     Expr value;
 } Entry;
 
-// TODO(#246): %if construction does not support %elif and %else sub-blocks
+// TODO: %if construction does not support %elif
 typedef struct {
     Expr condition;
     Block *then;
+    Block *elze;
 } If;
 
 typedef struct {

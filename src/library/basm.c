@@ -661,6 +661,10 @@ void basm_translate_if(Basm *basm, If eef, File_Location location)
         basm_push_new_scope(basm);
         basm_translate_block(basm, eef.then);
         basm_pop_scope(basm);
+    } else if (eef.elze) {
+        basm_push_new_scope(basm);
+        basm_translate_block(basm, eef.elze);
+        basm_pop_scope(basm);
     }
 }
 
