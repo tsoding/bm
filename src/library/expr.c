@@ -318,6 +318,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
         if (token.text.count != 1) {
             // TODO(#179): char literals don't support escaped characters
+            // TODO: multi symbol char literals (up to 8 chars)
             fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
                     FL_Arg(location));
             exit(1);
@@ -370,12 +371,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     case TOKEN_KIND_OPEN_PAREN: {
         tokenizer_next(tokenizer, NULL, location);
         Expr expr = parse_expr_from_tokens(arena, tokenizer, location);
-
-        if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_CLOSING_PAREN) {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%s`\n",
-                    FL_Arg(location), token_kind_name(TOKEN_KIND_CLOSING_PAREN));
-            exit(1);
-        }
+        expect_token_next(tokenizer, TOKEN_KIND_CLOSING_PAREN, location);
         return expr;
     }
     break;
