@@ -25,12 +25,7 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Locatio
 {
     Token token = {0};
 
-    if (!tokenizer_next(tokenizer, &token, location) || token.kind != TOKEN_KIND_OPEN_PAREN) {
-        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
-                FL_Arg(location),
-                token_kind_name(TOKEN_KIND_OPEN_PAREN));
-        exit(1);
-    }
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, location);
 
     if (tokenizer_peek(tokenizer, &token, location) && token.kind == TOKEN_KIND_CLOSING_PAREN) {
         tokenizer_next(tokenizer, NULL, location);
