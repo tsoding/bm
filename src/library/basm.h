@@ -99,8 +99,8 @@ typedef struct {
     uint64_t program_size;
     Inst_Addr entry;
     bool has_entry;
-    File_Location entry_location;
     String_View deferred_entry_binding_name;
+    File_Location entry_location;
 
     String_Length string_lengths[BASM_STRING_LENGTHS_CAPACITY];
     size_t string_lengths_size;
@@ -123,6 +123,7 @@ void basm_pop_scope(Basm *basm);
 
 void basm_eval_deferred_asserts(Basm *basm);
 void basm_eval_deferred_operands(Basm *basm);
+void basm_eval_deferred_entry(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);

@@ -394,39 +394,9 @@ void basm_translate_block(Basm *basm, Block *block)
     }
     // second pass end
 
-    // deferred asserts begin
     basm_eval_deferred_asserts(basm);
-    // deferred asserts end
-
-    // deferred operands begin
     basm_eval_deferred_operands(basm);
-    // deferred operands end
-
-    // deferred entry point begin
-    if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
-        Binding *binding = basm_resolve_binding(
-                               basm,
-                               basm->deferred_entry_binding_name);
-        if (binding == NULL) {
-            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->entry_location),
-                    SV_Arg(basm->deferred_entry_binding_name));
-            exit(1);
-        }
-
-        if (binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
-            exit(1);
-        }
-
-        Word entry = {0};
-
-        Eval_Status status = basm_binding_eval(basm, binding, basm->entry_location, &entry);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
-
-        basm->entry = entry.as_u64;
-    }
-    // deferred entry point end
+    basm_eval_deferred_entry(basm);
 }
 
 void basm_eval_deferred_asserts(Basm *basm)
@@ -491,6 +461,33 @@ void basm_eval_deferred_operands(Basm *basm)
                 basm->scope->deferred_operands[i].evaluated = true;
             }
         }
+    }
+}
+
+void basm_eval_deferred_entry(Basm *basm)
+{
+    if (basm->has_entry && basm->deferred_entry_binding_name.count > 0) {
+        Binding *binding = basm_resolve_binding(
+                               basm,
+                               basm->deferred_entry_binding_name);
+        if (binding == NULL) {
+            fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
+                    FL_Arg(basm->entry_location),
+                    SV_Arg(basm->deferred_entry_binding_name));
+            exit(1);
+        }
+
+        if (binding->kind != BINDING_LABEL) {
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->entry_location), binding_kind_as_cstr(binding->kind));
+            exit(1);
+        }
+
+        Word entry = {0};
+
+        Eval_Status status = basm_binding_eval(basm, binding, basm->entry_location, &entry);
+        assert(status.kind == EVAL_STATUS_KIND_OK);
+
+        basm->entry = entry.as_u64;
     }
 }
 
