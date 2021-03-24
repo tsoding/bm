@@ -1,5 +1,5 @@
 %include "natives.hasm"
-%const N 30
+%const N = 30
 
 ; N-1
 ; F_1+F_0

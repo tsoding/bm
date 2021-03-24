@@ -408,6 +408,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_EQ:
     case TOKEN_KIND_MOD:
     case TOKEN_KIND_EE:
     case TOKEN_KIND_MULT:
@@ -493,6 +494,8 @@ const char *token_kind_name(Token_Kind kind)
         return "comma";
     case TOKEN_KIND_GT:
         return ">";
+    case TOKEN_KIND_EQ:
+        return "=";
     case TOKEN_KIND_EE:
         return "==";
     case TOKEN_KIND_FROM:

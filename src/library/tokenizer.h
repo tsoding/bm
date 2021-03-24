@@ -16,6 +16,7 @@ typedef enum {
     TOKEN_KIND_CLOSING_PAREN,
     TOKEN_KIND_COMMA,
     TOKEN_KIND_GT,
+    TOKEN_KIND_EQ,
     TOKEN_KIND_EE,
     TOKEN_KIND_MOD,
     TOKEN_KIND_FROM,
@@ -39,6 +40,7 @@ typedef struct {
 } Tokenizer;
 
 void expect_no_tokens(Tokenizer *tokenizer, File_Location location);
+void expect_token_next(Tokenizer *tokenizer, Token_Kind kind, File_Location location);
 
 bool tokenizer_next(Tokenizer *tokenizer, Token *token, File_Location location);
 bool tokenizer_peek(Tokenizer *tokenizer, Token *token, File_Location location);

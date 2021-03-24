@@ -1,8 +1,8 @@
-%native write       0
+%native write = 0
 
 ;; TODO(#127): a better way of allocating memory for standard printing functions
-%const print_memory "******************************"
-%const FRAC_PRECISION 10
+%const print_memory = "******************************"
+%const FRAC_PRECISION = 10
 
 ;; addr_a
 ;; addr_b

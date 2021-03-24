@@ -386,12 +386,6 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("const"))) {
-        // TODO(#227): %const and %native directive should have = in it
-        // Like so
-        // ```basm
-        // %const N = 69
-        // %const M = 420
-        // ```
         Statement statement = {0};
         statement.location = location;
         statement.kind = STATEMENT_KIND_BIND_CONST;
@@ -404,6 +398,8 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
             exit(1);
         }
         statement.value.as_bind_const.name = binding_name.value.as_binding;
+
+        expect_token_next(&tokenizer, TOKEN_KIND_EQ, location);
 
         statement.value.as_bind_const.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
@@ -423,6 +419,8 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
             exit(1);
         }
         statement.value.as_bind_native.name = binding_name.value.as_binding;
+
+        expect_token_next(&tokenizer, TOKEN_KIND_EQ, location);
 
         statement.value.as_bind_native.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
