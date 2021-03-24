@@ -304,16 +304,17 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
         exit(1);
     }
 
-    Expr result = {0};
-
     switch (token.kind) {
     case TOKEN_KIND_STR: {
+        Expr result = {0};
         result.kind = EXPR_KIND_LIT_STR;
         result.value.as_lit_str = parse_lit_str_from_tokens(tokenizer, location);
+        return result;
     }
     break;
 
     case TOKEN_KIND_CHAR: {
+        Expr result = {0};
         tokenizer_next(tokenizer, NULL, location);
 
         if (token.text.count != 1) {
@@ -326,10 +327,12 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
         result.kind = EXPR_KIND_LIT_CHAR;
         result.value.as_lit_char = token.text.data[0];
+        return result;
     }
     break;
 
     case TOKEN_KIND_NAME: {
+        Expr result = {0};
         tokenizer_next(tokenizer, NULL, location);
 
         Token next = {0};
@@ -342,6 +345,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
             result.value.as_binding = token.text;
             result.kind = EXPR_KIND_BINDING;
         }
+        return result;
     }
     break;
 
@@ -352,27 +356,27 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
 
     case TOKEN_KIND_MINUS: {
         tokenizer_next(tokenizer, NULL, location);
-        Expr expr = parse_number_from_tokens(arena, tokenizer, location);
+        Expr result = parse_number_from_tokens(arena, tokenizer, location);
 
-        if (expr.kind == EXPR_KIND_LIT_INT) {
+        if (result.kind == EXPR_KIND_LIT_INT) {
             // TODO(#184): more cross-platform way to negate integer literals
             // what if somewhere the numbers are not two's complement
-            expr.value.as_lit_int = (~expr.value.as_lit_int + 1);
-        } else if (expr.kind == EXPR_KIND_LIT_FLOAT) {
-            expr.value.as_lit_float = -expr.value.as_lit_float;
+            result.value.as_lit_int = (~result.value.as_lit_int + 1);
+        } else if (result.kind == EXPR_KIND_LIT_FLOAT) {
+            result.value.as_lit_float = -result.value.as_lit_float;
         } else {
             assert(false && "parse_primary_from_tokens: unreachable");
         }
 
-        return expr;
+        return result;
     }
     break;
 
     case TOKEN_KIND_OPEN_PAREN: {
         tokenizer_next(tokenizer, NULL, location);
-        Expr expr = parse_expr_from_tokens(arena, tokenizer, location);
+        Expr result = parse_expr_from_tokens(arena, tokenizer, location);
         expect_token_next(tokenizer, TOKEN_KIND_CLOSING_PAREN, location);
-        return expr;
+        return result;
     }
     break;
 
@@ -393,12 +397,13 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     break;
 
     default: {
-        assert(false && "parse_primary_from_tokens: unreachable");
-        exit(1);
     }
     }
 
-    return result;
+    assert(false && "parse_primary_from_tokens: unreachable");
+    return (Expr) {
+        0
+    };
 }
 
 size_t binary_op_kind_precedence(Binary_Op_Kind kind)
