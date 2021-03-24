@@ -78,21 +78,6 @@ int main(int argc, char **argv)
     }
 
     basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
-
-    if (!basm.has_entry) {
-        fprintf(stderr, "%s: ERROR: entry point for a BM program is not provided. Use translation directive %%entry to provide the entry point.\n", input_file_path);
-        fprintf(stderr, "  main:\n");
-        fprintf(stderr, "     push 69\n");
-        fprintf(stderr, "     halt\n");
-        fprintf(stderr, "  %%entry main\n");
-        fprintf(stderr, "\n");
-        fprintf(stderr, "You can also mark an existing label as the entry point like so:\n");
-        fprintf(stderr, "  %%entry main:\n");
-        fprintf(stderr, "     push 69\n");
-        fprintf(stderr, "     halt\n");
-        exit(1);
-    }
-
     basm_save_to_file(&basm, output_file_path);
 
     arena_free(&basm.arena);

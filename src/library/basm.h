@@ -82,6 +82,9 @@ struct Scope {
 
     Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
     size_t deferred_asserts_size;
+
+    String_View deferred_entry_binding_name;
+    File_Location deferred_entry_location;
 };
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
@@ -95,9 +98,9 @@ typedef struct {
 
     Inst program[BM_PROGRAM_CAPACITY];
     uint64_t program_size;
+
     Inst_Addr entry;
     bool has_entry;
-    String_View deferred_entry_binding_name;
     File_Location entry_location;
 
     String_Length string_lengths[BASM_STRING_LENGTHS_CAPACITY];
