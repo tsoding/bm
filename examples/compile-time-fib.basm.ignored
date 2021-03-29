@@ -1,0 +1,11 @@
+%include "natives.hasm"
+
+;; TODO: %func definitions are not interpreted at compile-time
+
+%func fib(N) if N < 2 = N
+%func fib(N) = fib(N - 1) + fib(N - 2)
+
+%entry main:
+    push fib(5)
+    call dump_u64
+    halt
