@@ -705,6 +705,7 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
     }
 
     Block *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
+    expect_no_lines(&linizer);
     basm_translate_block(basm, input_file_block);
 }
 

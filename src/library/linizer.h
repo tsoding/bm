@@ -16,6 +16,8 @@ typedef enum {
     LINE_KIND_DIRECTIVE,
 } Line_Kind;
 
+const char *line_kind_name(Line_Kind kind);
+
 typedef struct {
     String_View name;
     String_View operand;
@@ -48,6 +50,8 @@ typedef struct {
     Line peek_buffer;
     bool peek_buffer_full;
 } Linizer;
+
+void expect_no_lines(Linizer *linizer);
 
 bool linizer_from_file(Linizer *linizer, Arena *arena, String_View file_path);
 
