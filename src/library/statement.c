@@ -91,6 +91,8 @@ void dump_statement(FILE *stream, Statement statement, int level)
         dump_expr(stream, statement.value.as_if.condition, level + 2);
         fprintf(stream, "%*sThen:\n", (level + 1) * 2, "");
         dump_block(stream, statement.value.as_if.then, level + 2);
+        fprintf(stream, "%*sElse:\n", (level + 1) * 2, "");
+        dump_block(stream, statement.value.as_if.elze, level + 2);
     }
     break;
 
@@ -243,22 +245,40 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         int id = (*counter)++;
         fprintf(stream, "Expr_%d [shape=box label=\"If\"]\n", id);
 
-        int condition_id = (*counter)++;
-        fprintf(stream, "Expr_%d [shape=box label=\"Condition\"]\n", condition_id);
-        fprintf(stream, "Expr_%d -> Expr_%d\n", id, condition_id);
-        int condition_child_id =
-            dump_expr_as_dot_edges(stream, statement.value.as_if.condition,
-                                   counter);
-        fprintf(stream, "Expr_%d -> Expr_%d\n",
-                condition_id, condition_child_id);
+        // Condition
+        {
+            int condition_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Condition\"]\n", condition_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, condition_id);
+            int condition_child_id =
+                dump_expr_as_dot_edges(stream, statement.value.as_if.condition,
+                                       counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n",
+                    condition_id, condition_child_id);
+        }
 
-        int then_id = (*counter)++;
-        fprintf(stream, "Expr_%d [shape=box label=\"Then\"]\n", then_id);
-        fprintf(stream, "Expr_%d -> Expr_%d\n", id, then_id);
-        int then_child_id =
-            dump_block_as_dot_edges(stream, statement.value.as_if.then,
-                                    counter);
-        fprintf(stream, "Expr_%d -> Expr_%d\n", then_id, then_child_id);
+        // Then
+        {
+            int then_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Then\"]\n", then_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, then_id);
+            int then_child_id =
+                dump_block_as_dot_edges(stream, statement.value.as_if.then,
+                                        counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", then_id, then_child_id);
+        }
+
+        // Else
+        {
+            int else_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Else\"]\n", else_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, else_id);
+            int else_child_id =
+                dump_block_as_dot_edges(stream, statement.value.as_if.elze,
+                                        counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", else_id, else_child_id);
+        }
+
         return id;
     }
     break;
