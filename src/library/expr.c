@@ -74,6 +74,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_MINUS) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_MINUS;
+        return true;
+    }
+
     if (token_kind == TOKEN_KIND_MULT) {
         if (binary_op_kind) *binary_op_kind = BINARY_OP_MULT;
         return true;
@@ -437,6 +442,7 @@ size_t binary_op_kind_precedence(Binary_Op_Kind kind)
     case BINARY_OP_LT:
         return 0;
     case BINARY_OP_PLUS:
+    case BINARY_OP_MINUS:
         return 1;
     case BINARY_OP_MOD:
     case BINARY_OP_MULT:
@@ -452,6 +458,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
     switch (kind) {
     case BINARY_OP_PLUS:
         return "+";
+    case BINARY_OP_MINUS:
+        return "-";
     case BINARY_OP_GT:
         return ">";
     case BINARY_OP_LT:

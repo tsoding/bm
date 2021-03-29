@@ -770,8 +770,12 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
     break;
 
+    case BINARY_OP_MINUS: {
+        *output = word_u64(left.as_u64 - right.as_u64);
+    }
+    break;
+
     case BINARY_OP_MULT: {
-        // TODO(#183): compile-time mult can only work with integers
         *output = word_u64(left.as_u64 * right.as_u64);
     }
     break;
