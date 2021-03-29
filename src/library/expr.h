@@ -22,11 +22,18 @@ typedef struct Funcall_Arg Funcall_Arg;
 
 size_t funcall_args_len(Funcall_Arg *args);
 
+typedef struct {
+    size_t count;
+    char chars[sizeof(uint64_t)];
+} Lit_Char;
+
+uint64_t lit_char_value(Lit_Char lit_char);
+
 typedef union {
     String_View as_binding;
     uint64_t as_lit_int;
     double as_lit_float;
-    char as_lit_char;
+    Lit_Char as_lit_char;
     String_View as_lit_str;
     Binary_Op *as_binary_op;
     Funcall *as_funcall;

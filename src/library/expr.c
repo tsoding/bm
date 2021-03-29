@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <limits.h>
 #include "./expr.h"
 
 void dump_binary_op(FILE *stream, Binary_Op binary_op, int level)
@@ -160,7 +161,9 @@ void dump_expr(FILE *stream, Expr expr, int level)
         fprintf(stream, "Float Literal: %lf\n", expr.value.as_lit_float);
         break;
     case EXPR_KIND_LIT_CHAR:
-        fprintf(stream, "Char Literal: '%c'\n", expr.value.as_lit_char);
+        fprintf(stream, "Char Literal: '%.*s'\n",
+                (int) expr.value.as_lit_char.count,
+                expr.value.as_lit_char.chars);
         break;
     case EXPR_KIND_LIT_STR:
         fprintf(stream, "String Literal: \""SV_Fmt"\"\n",
@@ -200,8 +203,10 @@ int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
     }
     break;
     case EXPR_KIND_LIT_CHAR: {
-        fprintf(stream, "Expr_%d [shape=circle label=\"'%c'\"]\n",
-                id, expr.value.as_lit_char);
+        fprintf(stream, "Expr_%d [shape=circle label=\"'%.*s'\"]\n",
+                id,
+                (int) expr.value.as_lit_char.count,
+                expr.value.as_lit_char.chars);
     }
     break;
     case EXPR_KIND_LIT_STR: {
@@ -250,6 +255,17 @@ size_t funcall_args_len(Funcall_Arg *args)
         result += 1;
         args = args->next;
     }
+    return result;
+}
+
+uint64_t lit_char_value(Lit_Char lit_char)
+{
+    uint64_t result = 0;
+
+    for (size_t i = 0; i < lit_char.count; ++i) {
+        result = (result << CHAR_BIT) | (uint64_t) lit_char.chars[i];
+    }
+
     return result;
 }
 
@@ -317,16 +333,16 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
         Expr result = {0};
         tokenizer_next(tokenizer, NULL, location);
 
-        if (token.text.count != 1) {
+        if (token.text.count > 8) {
             // TODO(#179): char literals don't support escaped characters
-            // TODO(#258): multi symbol char literals (up to 8 chars)
-            fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be exactly one\n",
+            fprintf(stderr, FL_Fmt": ERROR: the length of char literal has to be less or equal to 8 to be able to fit into a 64 bit number\n",
                     FL_Arg(location));
             exit(1);
         }
 
         result.kind = EXPR_KIND_LIT_CHAR;
-        result.value.as_lit_char = token.text.data[0];
+        result.value.as_lit_char.count = token.text.count;
+        memcpy(result.value.as_lit_char.chars, token.text.data, token.text.count);
         return result;
     }
     break;
