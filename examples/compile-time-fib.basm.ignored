@@ -1,6 +1,6 @@
 %include "natives.hasm"
 
-;; TODO: %func definitions are not interpreted at compile-time
+;; TODO(#262): %func definitions are not interpreted at compile-time
 
 %func fib(N) if N < 2 = N
 %func fib(N) = fib(N - 1) + fib(N - 2)
