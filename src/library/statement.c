@@ -409,10 +409,10 @@ Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
     } else if (sv_eq(line.value.as_directive.name, SV("end"))) {
         // Elseless if
     } else if (sv_eq(line.value.as_directive.name, SV("elif"))) {
-        Expr condition = parse_expr_from_sv(arena, line.value.as_directive.body, line.location);
+        Expr elif_condition = parse_expr_from_sv(arena, line.value.as_directive.body, line.location);
         statement.value.as_if.elze = arena_alloc(arena, sizeof(*statement.value.as_if.elze));
         statement.value.as_if.elze->statement =
-            parse_if_else_body_from_lines(arena, linizer, condition, line.location);
+            parse_if_else_body_from_lines(arena, linizer, elif_condition, line.location);
     } else {
         fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`, but got `"SV_Fmt"`\n",
                 FL_Arg(linizer->location),
