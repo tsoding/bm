@@ -45,13 +45,16 @@ typedef struct {
 } Expr;
 
 void dump_expr(FILE *stream, Expr expr, int level);
+int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter);
 int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter);
 void dump_expr_as_dot(FILE *stream, Expr expr);
 
 typedef enum {
     BINARY_OP_PLUS,
+    BINARY_OP_MINUS,
     BINARY_OP_MULT,
     BINARY_OP_GT,
+    BINARY_OP_LT,
     BINARY_OP_EQUALS,
     BINARY_OP_MOD,
 } Binary_Op_Kind;

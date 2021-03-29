@@ -317,6 +317,7 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
+            case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
             case STATEMENT_KIND_EMIT_INST:
@@ -370,6 +371,7 @@ void basm_translate_block(Basm *basm, Block *block)
             }
             break;
 
+            case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
             case STATEMENT_KIND_ERROR:
@@ -768,14 +770,23 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
     break;
 
+    case BINARY_OP_MINUS: {
+        *output = word_u64(left.as_u64 - right.as_u64);
+    }
+    break;
+
     case BINARY_OP_MULT: {
-        // TODO(#183): compile-time mult can only work with integers
         *output = word_u64(left.as_u64 * right.as_u64);
     }
     break;
 
     case BINARY_OP_GT: {
         *output = word_u64(left.as_u64 > right.as_u64);
+    }
+    break;
+
+    case BINARY_OP_LT: {
+        *output = word_u64(left.as_u64 < right.as_u64);
     }
     break;
 

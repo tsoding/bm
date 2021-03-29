@@ -74,6 +74,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_MINUS) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_MINUS;
+        return true;
+    }
+
     if (token_kind == TOKEN_KIND_MULT) {
         if (binary_op_kind) *binary_op_kind = BINARY_OP_MULT;
         return true;
@@ -81,6 +86,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
 
     if (token_kind == TOKEN_KIND_GT) {
         if (binary_op_kind) *binary_op_kind = BINARY_OP_GT;
+        return true;
+    }
+
+    if (token_kind == TOKEN_KIND_LT) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_LT;
         return true;
     }
 
@@ -396,11 +406,13 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_IF:
     case TOKEN_KIND_EQ:
     case TOKEN_KIND_MOD:
     case TOKEN_KIND_EE:
     case TOKEN_KIND_MULT:
     case TOKEN_KIND_GT:
+    case TOKEN_KIND_LT:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
     case TOKEN_KIND_FROM:
@@ -427,8 +439,10 @@ size_t binary_op_kind_precedence(Binary_Op_Kind kind)
     switch (kind) {
     case BINARY_OP_EQUALS:
     case BINARY_OP_GT:
+    case BINARY_OP_LT:
         return 0;
     case BINARY_OP_PLUS:
+    case BINARY_OP_MINUS:
         return 1;
     case BINARY_OP_MOD:
     case BINARY_OP_MULT:
@@ -444,8 +458,12 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
     switch (kind) {
     case BINARY_OP_PLUS:
         return "+";
+    case BINARY_OP_MINUS:
+        return "-";
     case BINARY_OP_GT:
         return ">";
+    case BINARY_OP_LT:
+        return "<";
     case BINARY_OP_MULT:
         return "*";
     case BINARY_OP_EQUALS:
@@ -483,6 +501,8 @@ const char *token_kind_name(Token_Kind kind)
         return "comma";
     case TOKEN_KIND_GT:
         return ">";
+    case TOKEN_KIND_LT:
+        return "<";
     case TOKEN_KIND_EQ:
         return "=";
     case TOKEN_KIND_EE:
@@ -493,6 +513,8 @@ const char *token_kind_name(Token_Kind kind)
         return "to";
     case TOKEN_KIND_MOD:
         return "%";
+    case TOKEN_KIND_IF:
+        return "if";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);
