@@ -18,6 +18,7 @@ typedef enum {
     TOKEN_KIND_GT,
     TOKEN_KIND_EQ,
     TOKEN_KIND_EE,
+    TOKEN_KIND_LT,
     TOKEN_KIND_MOD,
     TOKEN_KIND_FROM,
     TOKEN_KIND_TO,

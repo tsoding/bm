@@ -84,6 +84,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_LT) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_LT;
+        return true;
+    }
+
     if (token_kind == TOKEN_KIND_EE) {
         if (binary_op_kind) *binary_op_kind = BINARY_OP_EQUALS;
         return true;
@@ -402,6 +407,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     case TOKEN_KIND_EE:
     case TOKEN_KIND_MULT:
     case TOKEN_KIND_GT:
+    case TOKEN_KIND_LT:
     case TOKEN_KIND_COMMA:
     case TOKEN_KIND_CLOSING_PAREN:
     case TOKEN_KIND_FROM:
@@ -428,6 +434,7 @@ size_t binary_op_kind_precedence(Binary_Op_Kind kind)
     switch (kind) {
     case BINARY_OP_EQUALS:
     case BINARY_OP_GT:
+    case BINARY_OP_LT:
         return 0;
     case BINARY_OP_PLUS:
         return 1;
@@ -447,6 +454,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return "+";
     case BINARY_OP_GT:
         return ">";
+    case BINARY_OP_LT:
+        return "<";
     case BINARY_OP_MULT:
         return "*";
     case BINARY_OP_EQUALS:
@@ -484,6 +493,8 @@ const char *token_kind_name(Token_Kind kind)
         return "comma";
     case TOKEN_KIND_GT:
         return ">";
+    case TOKEN_KIND_LT:
+        return "<";
     case TOKEN_KIND_EQ:
         return "=";
     case TOKEN_KIND_EE:

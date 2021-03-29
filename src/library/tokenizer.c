@@ -60,6 +60,12 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
     }
     break;
 
+    case '<': {
+        token.kind = TOKEN_KIND_LT;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
     case '*': {
         token.kind = TOKEN_KIND_MULT;
         token.text = sv_chop_left(&tokenizer->source, 1);
