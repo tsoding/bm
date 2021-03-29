@@ -31,6 +31,7 @@ int main(int argc, char **argv)
     Statement statement = {0};
     statement.kind = STATEMENT_KIND_BLOCK;
     statement.value.as_block = parse_block_from_lines(&arena, &linizer);
+    expect_no_lines(&linizer);
 
     dump_statement_as_dot(stdout, statement);
 

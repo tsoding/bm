@@ -1,6 +1,21 @@
 #include <assert.h>
 #include "./linizer.h"
 
+const char *line_kind_name(Line_Kind kind)
+{
+    switch (kind) {
+    case LINE_KIND_INSTRUCTION:
+        return "instruction";
+    case LINE_KIND_LABEL:
+        return "label";
+    case LINE_KIND_DIRECTIVE:
+        return "directive";
+    default:
+        assert(false && "line_kind_name: unreachable");
+        exit(1);
+    }
+}
+
 void line_dump(FILE *stream, const Line *line)
 {
     switch (line->kind) {
@@ -97,4 +112,15 @@ bool linizer_next(Linizer *linizer, Line *output)
     }
 
     return false;
+}
+
+void expect_no_lines(Linizer *linizer)
+{
+    Line line = {0};
+    if (linizer_next(linizer, &line)) {
+        fprintf(stderr, FL_Fmt": ERROR: unexpected %s line\n",
+                FL_Arg(line.location),
+                line_kind_name(line.kind));
+        exit(1);
+    }
 }

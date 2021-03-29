@@ -111,6 +111,8 @@ int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter);
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
 void dump_statement_as_dot(FILE *stream, Statement statement);
 
+Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
+                                        Expr condition, File_Location location);
 void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *output);
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer);
 

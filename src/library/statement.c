@@ -375,6 +375,56 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement)
     }
 }
 
+Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
+                                        Expr condition, File_Location location)
+{
+    Statement statement = {0};
+    statement.location = location;
+    statement.kind = STATEMENT_KIND_IF;
+    statement.value.as_if.condition = condition;
+    statement.value.as_if.then = parse_block_from_lines(arena, linizer);
+
+    Line line = {0};
+
+    if (!linizer_next(linizer, &line) || line.kind != LINE_KIND_DIRECTIVE) {
+        fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` or `%%elif` after `%%if`\n",
+                FL_Arg(linizer->location));
+        fprintf(stderr, FL_Fmt": NOTE: %%if is here",
+                FL_Arg(statement.location));
+        exit(1);
+    }
+
+    if (sv_eq(line.value.as_directive.name, SV("else"))) {
+        File_Location else_location = line.location;
+        statement.value.as_if.elze = parse_block_from_lines(arena, linizer);
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` after `%%else`\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: %%else is here",
+                    FL_Arg(else_location));
+            exit(1);
+        }
+    } else if (sv_eq(line.value.as_directive.name, SV("end"))) {
+        // Elseless if
+    } else if (sv_eq(line.value.as_directive.name, SV("elif"))) {
+        Expr condition = parse_expr_from_sv(arena, line.value.as_directive.body, line.location);
+        statement.value.as_if.elze = arena_alloc(arena, sizeof(*statement.value.as_if.elze));
+        statement.value.as_if.elze->statement =
+            parse_if_else_body_from_lines(arena, linizer, condition, line.location);
+    } else {
+        fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`, but got `"SV_Fmt"`\n",
+                FL_Arg(linizer->location),
+                SV_Arg(line.value.as_directive.name));
+        fprintf(stderr, FL_Fmt": NOTE: %%if is here",
+                FL_Arg(statement.location));
+        exit(1);
+    }
+
+    return statement;
+}
+
 void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *output)
 {
     Line line = {0};
@@ -495,45 +545,9 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         expect_no_tokens(&tokenizer, location);
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("if"))) {
-        Statement statement = {0};
-        statement.location = location;
-        statement.kind = STATEMENT_KIND_IF;
-        statement.value.as_if.condition = parse_expr_from_sv(arena, body, location);
-        statement.value.as_if.then = parse_block_from_lines(arena, linizer);
-
-        if (!linizer_next(linizer, &line) || line.kind != LINE_KIND_DIRECTIVE) {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` or `%%elif` after `%%if`\n",
-                    FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: %%if is here",
-                    FL_Arg(statement.location));
-            exit(1);
-        }
-
-        if (sv_eq(line.value.as_directive.name, SV("else"))) {
-            File_Location else_location = line.location;
-            statement.value.as_if.elze = parse_block_from_lines(arena, linizer);
-            if (!linizer_next(linizer, &line) &&
-                    line.kind != LINE_KIND_DIRECTIVE &&
-                    !sv_eq(line.value.as_directive.name, SV("end"))) {
-                fprintf(stderr, FL_Fmt": ERROR: expected `%%end` after `%%else`\n",
-                        FL_Arg(linizer->location));
-                fprintf(stderr, FL_Fmt": NOTE: %%else is here",
-                        FL_Arg(else_location));
-                exit(1);
-            }
-        } else if (sv_eq(line.value.as_directive.name, SV("end"))) {
-            // Elseless if
-        } else if (sv_eq(line.value.as_directive.name, SV("elif"))) {
-            assert(false && "TODO: Parsing %elif is not implemented yet");
-        } else {
-            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`, but got `"SV_Fmt"`\n",
-                    FL_Arg(linizer->location),
-                    SV_Arg(line.value.as_directive.name));
-            fprintf(stderr, FL_Fmt": NOTE: %%if is here",
-                    FL_Arg(statement.location));
-            exit(1);
-        }
-
+        Expr condition = parse_expr_from_sv(arena, body, location);
+        Statement statement =
+            parse_if_else_body_from_lines(arena, linizer, condition, location);
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("scope"))) {
         Statement statement = {0};
@@ -603,7 +617,9 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
 static bool is_block_stop_directive(Line_Directive directive)
 {
-    return sv_eq(directive.name, SV("end")) || sv_eq(directive.name, SV("else"));
+    return sv_eq(directive.name, SV("end"))
+           || sv_eq(directive.name, SV("else"))
+           || sv_eq(directive.name, SV("elif"));
 }
 
 Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
