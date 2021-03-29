@@ -813,7 +813,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
     break;
 
     case EXPR_KIND_LIT_CHAR: {
-        *output = word_u64((uint64_t) expr.value.as_lit_char);
+        *output = word_u64(lit_char_value(expr.value.as_lit_char));
         return eval_status_ok();
     }
     break;

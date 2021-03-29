@@ -1,5 +1,7 @@
 %native write = 0
 
+%const CHAR_LIT_MAX_SIZE = 8
+
 ;; TODO(#127): a better way of allocating memory for standard printing functions
 %const print_memory = "******************************"
 %const FRAC_PRECISION = 10

@@ -1,0 +1,16 @@
+%include "./examples/stdlib/natives.hasm"
+
+%entry main:
+%scope
+    %const BUFFER = byte_array(CHAR_LIT_MAX_SIZE, 0)
+
+    push BUFFER
+    push 'abcdefgh'
+    write64
+
+    push BUFFER
+    push CHAR_LIT_MAX_SIZE
+    native write
+
+    halt
+%end
