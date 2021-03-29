@@ -45,6 +45,7 @@ typedef struct {
 } Expr;
 
 void dump_expr(FILE *stream, Expr expr, int level);
+int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter);
 int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter);
 void dump_expr_as_dot(FILE *stream, Expr expr);
 

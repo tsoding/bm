@@ -7,6 +7,7 @@
 
 typedef struct Statement Statement;
 typedef struct Block Block;
+typedef struct Fundef Fundef;
 
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
@@ -21,6 +22,7 @@ typedef enum {
     STATEMENT_KIND_IF,
     STATEMENT_KIND_SCOPE,
     STATEMENT_KIND_FOR,
+    STATEMENT_KIND_FUNCDEF,
 } Statement_Kind;
 
 typedef struct {
@@ -72,6 +74,13 @@ typedef struct {
     Block *body;
 } For;
 
+struct Fundef {
+    String_View name;
+    Funcall_Arg *args;
+    Expr *guard;
+    Expr body;
+};
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
@@ -85,6 +94,7 @@ typedef union {
     If as_if;
     Block *as_scope;
     For as_for;
+    Fundef as_fundef;
 } Statement_Value;
 
 struct Statement {

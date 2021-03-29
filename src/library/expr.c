@@ -396,6 +396,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_IF:
     case TOKEN_KIND_EQ:
     case TOKEN_KIND_MOD:
     case TOKEN_KIND_EE:
@@ -493,6 +494,8 @@ const char *token_kind_name(Token_Kind kind)
         return "to";
     case TOKEN_KIND_MOD:
         return "%";
+    case TOKEN_KIND_IF:
+        return "if";
     default: {
         assert(false && "token_kind_name: unreachable");
         exit(1);

@@ -112,6 +112,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
         dump_expr(stream, statement.value.as_for.to, level + 2);
     }
     break;
+
+    case STATEMENT_KIND_FUNCDEF: {
+        assert(false && "TODO: Dumping function definitions is not implemented");
+        exit(1);
+    }
+    break;
     }
 }
 
@@ -335,6 +341,49 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
 
             int body_block_id = dump_block_as_dot_edges(stream, statement.value.as_for.body, counter);
             fprintf(stream, "Expr_%d -> Expr_%d\n", body_id, body_block_id);
+        }
+
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_FUNCDEF: {
+        int id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"Fundef\"]\n", id);
+
+        // Name + Args
+        {
+            int name_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Name: "SV_Fmt"\"]\n",
+                    name_id, SV_Arg(statement.value.as_fundef.name));
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, name_id);
+
+            for (Funcall_Arg *arg = statement.value.as_fundef.args;
+                    arg != NULL;
+                    arg = arg->next) {
+                int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
+                fprintf(stream, "Expr_%d -> Expr_%d\n", name_id, child_id);
+            }
+        }
+
+        // Guard
+        if (statement.value.as_fundef.guard) {
+            int guard_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Guard\"]\n", guard_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, guard_id);
+
+            int condition_id = dump_expr_as_dot_edges(stream, *statement.value.as_fundef.guard, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", guard_id, condition_id);
+        }
+
+        // Body
+        {
+            int body_id = (*counter)++;
+            fprintf(stream, "Expr_%d [shape=box label=\"Body\"]\n", body_id);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", id, body_id);
+
+            int expr_id = dump_expr_as_dot_edges(stream, statement.value.as_fundef.body, counter);
+            fprintf(stream, "Expr_%d -> Expr_%d\n", body_id, expr_id);
         }
 
         return id;
@@ -602,6 +651,47 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(linizer->location));
             fprintf(stderr, FL_Fmt": NOTE: the %%for block starts here",
                     FL_Arg(statement.location));
+            exit(1);
+        }
+
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, SV("func"))) {
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Token token = expect_token_next(&tokenizer, TOKEN_KIND_NAME, location);
+
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_FUNCDEF;
+        statement.value.as_fundef.name = token.text;
+        statement.value.as_fundef.args = parse_funcall_args(arena, &tokenizer, location);
+
+        for (Funcall_Arg *iter = statement.value.as_fundef.args;
+                iter != NULL;
+                iter = iter->next) {
+            if (iter->value.kind != EXPR_KIND_BINDING) {
+                fprintf(stderr, FL_Fmt": ERROR: only binding names are allowed in arguments of a function definition\n",
+                        FL_Arg(location));
+                exit(1);
+            }
+        }
+
+
+        if (tokenizer_peek(&tokenizer, &token, location) &&
+                token.kind == TOKEN_KIND_IF) {
+            tokenizer_next(&tokenizer, NULL, location);
+            statement.value.as_fundef.guard = arena_alloc(arena, sizeof(Expr));
+            *statement.value.as_fundef.guard = parse_expr_from_tokens(arena, &tokenizer, location);
+        }
+
+        if (tokenizer_peek(&tokenizer, &token, location) &&
+                token.kind == TOKEN_KIND_EQ) {
+            tokenizer_next(&tokenizer, NULL, location);
+            statement.value.as_fundef.body = parse_expr_from_tokens(arena, &tokenizer, location);
+        } else {
+            fprintf(stderr, FL_Fmt": ERROR: expected either `%s` or `%s`",
+                    FL_Arg(location),
+                    token_kind_name(TOKEN_KIND_IF),
+                    token_kind_name(TOKEN_KIND_EQ));
             exit(1);
         }
 

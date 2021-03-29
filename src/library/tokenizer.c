@@ -134,6 +134,8 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
                 token.kind = TOKEN_KIND_TO;
             } else if (sv_eq(token.text, SV("from"))) {
                 token.kind = TOKEN_KIND_FROM;
+            } else if (sv_eq(token.text, SV("if"))) {
+                token.kind = TOKEN_KIND_IF;
             } else {
                 token.kind = TOKEN_KIND_NAME;
             }

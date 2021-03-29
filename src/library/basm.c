@@ -317,6 +317,7 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
+            case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
             case STATEMENT_KIND_EMIT_INST:
@@ -370,6 +371,7 @@ void basm_translate_block(Basm *basm, Block *block)
             }
             break;
 
+            case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
             case STATEMENT_KIND_ERROR:
