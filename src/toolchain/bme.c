@@ -1,5 +1,6 @@
 #define BM_IMPLEMENTATION
 #include "./bm.h"
+#include "./native_loader.h"
 
 static char *shift(int *argc, char ***argv)
 {
@@ -16,6 +17,8 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream, "OPTIONS:\n");
     fprintf(stream, "    -l <limit>      Limit the amount of steps of the emulation.\n");
     fprintf(stream, "                    -1 means not limitation\n");
+    fprintf(stream, "    -n <.so|.DLL>   File path to a dynamic library to load native\n");
+    fprintf(stream, "                    functions from. You can provide several of them.\n");
     fprintf(stream, "    -h              Print this help to stdout\n");
 }
 
@@ -23,6 +26,7 @@ int main(int argc, char **argv)
 {
     // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
     static Bm bm = {0};
+    static Native_Loader native_loader = {0};
 
     const char *program = shift(&argc, &argv);
     const char *input_file_path = NULL;
@@ -42,6 +46,15 @@ int main(int argc, char **argv)
         } else if (strcmp(flag, "-h") == 0) {
             usage(stdout, program);
             exit(0);
+        } else if (strcmp(flag, "-n") == 0) {
+            if (argc == 0) {
+                usage(stderr, program);
+                fprintf(stderr, "ERROR: No argument is provide for flag `%s`\n", flag);
+                exit(1);
+            }
+
+            const char *object_path = shift(&argc, &argv);
+            native_loader_add_object(&native_loader, object_path);
         } else {
             if (input_file_path != NULL) {
                 usage(stderr, program);
@@ -68,6 +81,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
         return 1;
     }
+
+    native_loader_unload_all(&native_loader);
 
     return 0;
 }

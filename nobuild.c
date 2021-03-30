@@ -87,7 +87,8 @@ void build_tool(const char *name)
         "-I", PATH("src", "library"),
         "-L", PATH("build", "library"),
         PATH("src", "toolchain", CONCAT(name, ".c")),
-        "-lbm");
+        "-lbm",
+        "-ldl");
 #endif // _WIN32
 }
 
