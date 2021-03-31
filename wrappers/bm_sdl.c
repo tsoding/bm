@@ -1,6 +1,15 @@
 #include <SDL2/SDL.h>
 #include "./bm.h"
 
+Err bm_SDL_Init(Bm *bm);
+Err bm_SDL_Quit(Bm *bm);
+Err bm_SDL_CreateWindow(Bm *bm);
+Err bm_SDL_CreateRenderer(Bm *bm);
+Err bm_SDL_PollEvent(Bm *bm);
+Err bm_SDL_SetRenderDrawColor(Bm *bm);
+Err bm_SDL_RenderClear(Bm *bm);
+Err bm_SDL_RenderPresent(Bm *bm);
+
 Err bm_SDL_Init(Bm *bm)
 {
     if (bm->stack_size < 1) {
@@ -8,7 +17,7 @@ Err bm_SDL_Init(Bm *bm)
     }
 
     uint64_t flags = bm->stack[bm->stack_size - 1].as_u64;
-    bm->stack[bm->stack_size - 1].as_u64 = SDL_Init(flags);
+    bm->stack[bm->stack_size - 1].as_u64 = (uint64_t) SDL_Init((Uint32) flags);
 
     return ERR_OK;
 }
@@ -54,10 +63,8 @@ Err bm_SDL_PollEvent(Bm *bm)
         return ERR_STACK_UNDERFLOW;
     }
 
-    void *event = bm->stack[bm->stack_size - 1].as_ptr;
-
     // TODO: bm_SDL_PollEvent does not check if it's accessing valid memory (vulnerability)
-    bm->stack[bm->stack_size - 1].as_u64 = SDL_PollEvent(bm->memory + bm->stack[bm->stack_size - 1].as_u64);
+    bm->stack[bm->stack_size - 1].as_u64 = (uint64_t) SDL_PollEvent((void*) (bm->memory + bm->stack[bm->stack_size - 1].as_u64));
 
     return ERR_OK;
 }
@@ -74,7 +81,7 @@ Err bm_SDL_SetRenderDrawColor(Bm *bm)
     uint8_t b = (uint8_t) bm->stack[bm->stack_size - 2].as_u64;
     uint8_t a = (uint8_t) bm->stack[bm->stack_size - 1].as_u64;
     bm->stack_size -= 5;
-    bm->stack[bm->stack_size++].as_u64 = SDL_SetRenderDrawColor(renderer, r, g, b, a);
+    bm->stack[bm->stack_size++].as_u64 = (uint64_t) SDL_SetRenderDrawColor(renderer, r, g, b, a);
     return ERR_OK;
 }
 
@@ -84,7 +91,7 @@ Err bm_SDL_RenderClear(Bm *bm)
         return ERR_STACK_UNDERFLOW;
     }
 
-    bm->stack[bm->stack_size - 1].as_u64 = SDL_RenderClear(bm->stack[bm->stack_size - 1].as_ptr);
+    bm->stack[bm->stack_size - 1].as_u64 = (uint64_t) SDL_RenderClear(bm->stack[bm->stack_size - 1].as_ptr);
     return ERR_OK;
 }
 
