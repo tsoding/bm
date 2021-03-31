@@ -49,7 +49,7 @@ Err bm_SDL_CreateRenderer(Bm *bm)
         return ERR_STACK_UNDERFLOW;
     }
 
-    // TODO: renderer parameters are hardcoded in bm_SDL_CreateRenderer()
+    // TODO(#272): renderer parameters are hardcoded in bm_SDL_CreateRenderer()
     bm->stack[bm->stack_size - 1].as_ptr = SDL_CreateRenderer(
             bm->stack[bm->stack_size - 1].as_ptr,
             -1,
