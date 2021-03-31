@@ -31,7 +31,7 @@ Err bm_SDL_Quit(Bm *bm)
 
 Err bm_SDL_CreateWindow(Bm *bm)
 {
-    // TODO: window parameters are hardcoded in bm_SDL_CreateWindow()
+    // TODO(#271): window parameters are hardcoded in bm_SDL_CreateWindow()
     void *window = SDL_CreateWindow("Hello BM", 0, 0, 800, 600, 0x00000020);
 
     if (bm->stack_size >= BM_STACK_CAPACITY) {
