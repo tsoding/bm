@@ -47,10 +47,10 @@ The examples will be placed in `./build/examples/`.
 To run the examples use [basm](#basm) executable from the [toolchain](#toolchain):
 
 ```
-$ ./build/toolchain/bme -i ./build/examples/hello.bm
-$ ./build/toolchain/bme -i ./build/examples/fib.bm
-$ ./build/toolchain/bme -i ./build/examples/e.bm
-$ ./build/toolchain/bme -i ./build/examples/pi.bm
+$ ./build/toolchain/bme ./build/examples/hello.bm
+$ ./build/toolchain/bme ./build/examples/fib.bm
+$ ./build/toolchain/bme ./build/examples/e.bm
+$ ./build/toolchain/bme ./build/examples/pi.bm
 ```
 
 #### Adding More Examples
