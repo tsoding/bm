@@ -26,9 +26,9 @@
 
         ;; SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         dup 0
-        push 255
-        push 0
-        push 0
+        push 0x18
+        push 0x18
+        push 0x18
         push 255
         native SDL_SetRenderDrawColor
         drop
