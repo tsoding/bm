@@ -237,6 +237,14 @@ void fmt_command(void)
             CMD("astyle", "--style=kr", file_path);
         }
     });
+
+    FOREACH_FILE_IN_DIR(file, "wrappers", {
+        if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
+        {
+            const char *file_path = PATH("wrappers", file);
+            CMD("astyle", "--style=kr", file_path);
+        }
+    });
 }
 
 void print_help(FILE *stream);
