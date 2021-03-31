@@ -298,9 +298,9 @@ void bdb_print_location(Bdb_State *state)
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
+    // TODO(#276): bdb does not support native function loading
     bm_load_program_from_file(&state->bm, state->program_file_path);
     state->bm.halt = 1;
-    bm_load_standard_natives(&state->bm);
 
     arena_clean(&state->sym_arena);
     state->bindings_size = 0;

@@ -309,9 +309,6 @@ void basm_translate_block(Basm *basm, Block *block)
             case STATEMENT_KIND_BIND_NATIVE:
                 basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
                 break;
-            case STATEMENT_KIND_BIND_EXTERNAL:
-                basm_translate_bind_external(basm, statement.value.as_bind_external, statement.location);
-                break;
             case STATEMENT_KIND_INCLUDE:
                 basm_translate_include(basm, statement.value.as_include, statement.location);
                 break;
@@ -382,7 +379,7 @@ void basm_translate_block(Basm *basm, Block *block)
             }
             break;
 
-            case STATEMENT_KIND_BIND_EXTERNAL:
+            case STATEMENT_KIND_BIND_NATIVE:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
@@ -390,7 +387,6 @@ void basm_translate_block(Basm *basm, Block *block)
             case STATEMENT_KIND_ASSERT:
             case STATEMENT_KIND_INCLUDE:
             case STATEMENT_KIND_BIND_CONST:
-            case STATEMENT_KIND_BIND_NATIVE:
                 // NOTE: ignored at the second pass
                 break;
 
@@ -547,37 +543,28 @@ void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location 
                    location);
 }
 
-void basm_translate_bind_external(Basm *basm, Bind_External bind_external, File_Location location)
+void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
 {
-    if (bind_external.name.count >= EXTERNAL_NATIVE_NAME_CAPACITY - 1) {
-        fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for an external native function. The limit is %zu.\n", FL_Arg(location), (size_t) (EXTERNAL_NATIVE_NAME_CAPACITY - 1));
+    if (bind_native.name.count >= NATIVE_NAME_CAPACITY - 1) {
+        fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
         exit(1);
     }
 
     memset(basm->external_natives[basm->external_natives_size].name,
            0,
-           EXTERNAL_NATIVE_NAME_CAPACITY);
+           NATIVE_NAME_CAPACITY);
 
     memcpy(basm->external_natives[basm->external_natives_size].name,
-           bind_external.name.data,
-           bind_external.name.count);
-
-    basm->external_natives_size += 1;
+           bind_native.name.data,
+           bind_native.name.count);
 
     basm_bind_value(basm,
-                    bind_external.name,
+                    bind_native.name,
                     word_u64(basm->external_natives_size),
                     BINDING_NATIVE,
                     location);
-}
 
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
-{
-    basm_bind_expr(basm,
-                   bind_native.name,
-                   bind_native.value,
-                   BINDING_NATIVE,
-                   location);
+    basm->external_natives_size += 1;
 }
 
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)

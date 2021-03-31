@@ -14,7 +14,6 @@ typedef enum {
     STATEMENT_KIND_BIND_LABEL,
     STATEMENT_KIND_BIND_CONST,
     STATEMENT_KIND_BIND_NATIVE,
-    STATEMENT_KIND_BIND_EXTERNAL,
     STATEMENT_KIND_INCLUDE,
     STATEMENT_KIND_ASSERT,
     STATEMENT_KIND_ERROR,
@@ -42,12 +41,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-    Expr value;
 } Bind_Native;
-
-typedef struct {
-    String_View name;
-} Bind_External;
 
 typedef struct {
     String_View path;
@@ -91,7 +85,6 @@ typedef union {
     Bind_Label as_bind_label;
     Bind_Const as_bind_const;
     Bind_Native as_bind_native;
-    Bind_External as_bind_external;
     Include as_include;
     Assert as_assert;
     Error as_error;
