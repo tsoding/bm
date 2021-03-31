@@ -1,5 +1,5 @@
 ;; Print bits of number N
-%include "natives.hasm"
+%include "std.hasm"
 
 %const N = 69420
 

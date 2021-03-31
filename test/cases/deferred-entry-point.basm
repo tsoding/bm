@@ -1,4 +1,4 @@
-%include "natives.hasm"
+%include "std.hasm"
 
 main:
     push 69

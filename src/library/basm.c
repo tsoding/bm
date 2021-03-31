@@ -237,6 +237,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
         .program_size = basm->program_size,
         .memory_size = basm->memory_size,
         .memory_capacity = basm->memory_capacity,
+        .externals_size = basm->external_natives_size,
     };
 
     fwrite(&meta, sizeof(meta), 1, f);
@@ -254,6 +255,13 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     }
 
     fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->external_natives, sizeof(basm->external_natives[0]), basm->external_natives_size, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
                 file_path, strerror(errno));
@@ -300,6 +308,9 @@ void basm_translate_block(Basm *basm, Block *block)
                 break;
             case STATEMENT_KIND_BIND_NATIVE:
                 basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
+                break;
+            case STATEMENT_KIND_BIND_EXTERNAL:
+                basm_translate_bind_external(basm, statement.value.as_bind_external, statement.location);
                 break;
             case STATEMENT_KIND_INCLUDE:
                 basm_translate_include(basm, statement.value.as_include, statement.location);
@@ -371,6 +382,7 @@ void basm_translate_block(Basm *basm, Block *block)
             }
             break;
 
+            case STATEMENT_KIND_BIND_EXTERNAL:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
@@ -437,7 +449,7 @@ void basm_eval_deferred_operands(Basm *basm)
             }
 
             if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directive.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` or `%%external` basm directives.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
                 exit(1);
             }
         }
@@ -533,6 +545,30 @@ void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location 
                    bind_const.value,
                    BINDING_CONST,
                    location);
+}
+
+void basm_translate_bind_external(Basm *basm, Bind_External bind_external, File_Location location)
+{
+    if (bind_external.name.count >= EXTERNAL_NATIVE_NAME_CAPACITY - 1) {
+        fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for an external native function. The limit is %zu.\n", FL_Arg(location), (size_t) (EXTERNAL_NATIVE_NAME_CAPACITY - 1));
+        exit(1);
+    }
+
+    memset(basm->external_natives[basm->external_natives_size].name,
+           0,
+           EXTERNAL_NATIVE_NAME_CAPACITY);
+
+    memcpy(basm->external_natives[basm->external_natives_size].name,
+           bind_external.name.data,
+           bind_external.name.count);
+
+    basm->external_natives_size += 1;
+
+    basm_bind_value(basm,
+                    bind_external.name,
+                    word_u64(basm->external_natives_size),
+                    BINDING_NATIVE,
+                    location);
 }
 
 void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)

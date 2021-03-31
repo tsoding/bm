@@ -54,6 +54,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
+    case STATEMENT_KIND_BIND_EXTERNAL: {
+        assert(false && "TODO(#269): dumping Bind External statement is not implemented");
+        exit(1);
+    }
+    break;
+
     case STATEMENT_KIND_INCLUDE: {
         String_View path = statement.value.as_include.path;
 
@@ -114,7 +120,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
     break;
 
     case STATEMENT_KIND_FUNCDEF: {
-        assert(false && "TODO: Dumping function definitions is not implemented");
+        assert(false && "TODO(#270): Dumping function definitions is not implemented");
         exit(1);
     }
     break;
@@ -192,6 +198,16 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                 id, SV_Arg(name));
         int child_id = dump_expr_as_dot_edges(stream, value, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_BIND_EXTERNAL: {
+        int id = (*counter)++;
+        String_View name = statement.value.as_bind_external.name;
+
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%external "SV_Fmt"\"]\n",
+                id, SV_Arg(name));
         return id;
     }
     break;
@@ -544,6 +560,21 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.value.as_bind_native.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, sv_from_cstr("external"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_BIND_EXTERNAL;
+
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
+        if (binding_name.kind != EXPR_KIND_BINDING) {
+            fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%external binding\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+        statement.value.as_bind_external.name = binding_name.value.as_binding;
+
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, sv_from_cstr("assert"))) {
         Statement statement = {0};

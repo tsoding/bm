@@ -1,4 +1,4 @@
-%include "natives.hasm"
+%include "std.hasm"
 
 ;; TODO(#262): %func definitions are not interpreted at compile-time
 

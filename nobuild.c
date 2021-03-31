@@ -15,12 +15,14 @@ typedef struct {
 
 void all_command(void);
 void tools_command(void);
-void examples_command(void);
+void cases_command(void);
 void test_command(void);
 void record_command(void);
 void fmt_command(void);
 void help_command(void);
 void lib_command(void);
+void wrappers_command(void);
+void examples_command(void);
 
 Command commands[] = {
     {
@@ -29,9 +31,9 @@ Command commands[] = {
         .run = tools_command
     },
     {
-        .name = "examples",
-        .description = "Build examples",
-        .run = examples_command
+        .name = "cases",
+        .description = "Build test cases",
+        .run = cases_command
     },
     {
         .name = "test",
@@ -58,6 +60,16 @@ Command commands[] = {
         .description = "Build the BM library (experimental)",
         .run = lib_command,
     },
+    {
+        .name = "wrappers",
+        .description = "Build all the C library wrappers",
+        .run = wrappers_command,
+    },
+    {
+        .name = "examples",
+        .description = "Build all the examples from the ./examples/ folder",
+        .run = examples_command,
+    }
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
 
@@ -87,8 +99,67 @@ void build_tool(const char *name)
         "-I", PATH("src", "library"),
         "-L", PATH("build", "library"),
         PATH("src", "toolchain", CONCAT(name, ".c")),
-        "-lbm");
+        "-lbm",
+        "-ldl");
 #endif // _WIN32
+}
+
+void examples_command(void)
+{
+    tools_command();
+    wrappers_command();
+
+    RM(PATH("build", "examples"));
+    MKDIRS("build", "examples");
+
+    FOREACH_FILE_IN_DIR(example, "examples", {
+        if (ENDS_WITH(example, ".basm"))
+        {
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
+                PATH("examples", example));
+        }
+    });
+}
+
+void wrappers_command(void)
+{
+    RM(PATH("build", "wrappers"));
+    MKDIRS("build", "wrappers");
+
+#ifndef _WIN32
+    // SDL wrapper
+    {
+        CMD("cc", CFLAGS,
+            "-c", "-fpic",
+            "-I", PATH("src", "library"),
+            "-o", PATH("build", "wrappers", "bm_sdl.o"),
+            PATH("wrappers", "bm_sdl.c"));
+
+        CMD("cc", CFLAGS,
+            "-shared",
+            "-o", PATH("build", "wrappers", "libbm_sdl.so"),
+            PATH("build", "wrappers", "bm_sdl.o"),
+            "-lSDL2");
+    }
+
+    // hello wrapper
+    {
+        CMD("cc", CFLAGS,
+            "-c", "-fpic",
+            "-I", PATH("src", "library"),
+            "-o", PATH("build", "wrappers", "bm_hello.o"),
+            PATH("wrappers", "bm_hello.c"));
+
+        CMD("cc", CFLAGS,
+            "-shared",
+            "-o", PATH("build", "wrappers", "libbm_hello.so"),
+            PATH("build", "wrappers", "bm_hello.o"));
+    }
+#else
+    PANIC("TODO: build C wrappers is not implemented for Windows");
+#endif
 }
 
 void tools_command(void)
@@ -106,20 +177,20 @@ void tools_command(void)
     });
 }
 
-void examples_command(void)
+void cases_command(void)
 {
     tools_command();
 
-    RM(PATH("build", "examples"));
-    MKDIRS("build", "examples");
+    RM(PATH("build", "test", "cases"));
+    MKDIRS("build", "test", "cases");
 
-    FOREACH_FILE_IN_DIR(example, "examples", {
-        if (ENDS_WITH(example, ".basm"))
+    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+        if (ENDS_WITH(caze, ".basm"))
         {
             CMD(PATH("build", "toolchain", "basm"),
-                "-I", "./examples/stdlib/",
-                PATH("examples", example),
-                "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")));
+                "-I", "./lib/",
+                PATH("test", "cases", caze),
+                "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".bm")));
         }
     });
 }
@@ -142,22 +213,22 @@ void build_x86_64_example(const char *example)
 
 void test_command(void)
 {
-    examples_command();
+    cases_command();
 
-    FOREACH_FILE_IN_DIR(example, "examples", {
-        if (ENDS_WITH(example, ".basm"))
+    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+        if (ENDS_WITH(caze, ".basm"))
         {
-            const char *example_base = NOEXT(example);
+            const char *caze_base = NOEXT(caze);
             CMD(PATH("build", "toolchain", "bmr"),
-                "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
-                "-eo", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
+                "-p", PATH("build", "test", "cases", CONCAT(caze_base, ".bm")),
+                "-eo", PATH("test", "outputs", CONCAT(caze_base, ".expected.out")));
         }
     });
 }
 
 void record_command(void)
 {
-    examples_command();
+    cases_command();
 
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
@@ -184,6 +255,14 @@ void fmt_command(void)
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
             const char *file_path = PATH("src", "toolchain", file);
+            CMD("astyle", "--style=kr", file_path);
+        }
+    });
+
+    FOREACH_FILE_IN_DIR(file, "wrappers", {
+        if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
+        {
+            const char *file_path = PATH("wrappers", file);
             CMD("astyle", "--style=kr", file_path);
         }
     });
