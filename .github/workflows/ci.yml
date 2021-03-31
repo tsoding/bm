@@ -55,9 +55,6 @@ jobs:
         run: |
           cl.exe nobuild.c
           .\nobuild.exe test
-          .\nobuild.exe wrappers
-          .\build\toolchain\basm hello.basm
-          .\build\toolchain\bme -n .\build\wrappers\libbm_hello.so .\hello.bm
 # TODO(#21): there is no CI build for FreeBSD
 # TODO(#113): the x86_64 examples do not work on Windows
 # TODO(#114): the x86_64 examples do not work on MacOS

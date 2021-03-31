@@ -1,4 +1,0 @@
-%external hello
-%entry main:
-    native hello
-    halt
