@@ -30,6 +30,7 @@
 #define BM_PROGRAM_CAPACITY 1024
 #define BM_NATIVES_CAPACITY 1024
 #define BM_MEMORY_CAPACITY (640 * 1000)
+#define BM_EXTERNAL_NATIVES_CAPACITY 1024
 
 typedef enum {
     ERR_OK = 0,
@@ -146,6 +147,12 @@ typedef struct Bm Bm;
 
 typedef Err (*Bm_Native)(Bm*);
 
+#define EXTERNAL_NATIVE_NAME_CAPACITY 256
+
+typedef struct {
+    char name[EXTERNAL_NATIVE_NAME_CAPACITY];
+} External_Native;
+
 struct Bm {
     Word stack[BM_STACK_CAPACITY];
     uint64_t stack_size;
@@ -156,6 +163,9 @@ struct Bm {
 
     Bm_Native natives[BM_NATIVES_CAPACITY];
     size_t natives_size;
+
+    External_Native externals[BM_EXTERNAL_NATIVES_CAPACITY];
+    size_t externals_size;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
 
@@ -170,7 +180,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path);
 void bm_load_standard_natives(Bm *bm);
 
 #define BM_FILE_MAGIC 0xa4016d62
-#define BM_FILE_VERSION 6
+#define BM_FILE_VERSION 7
 
 PACK(struct Bm_File_Meta {
     uint32_t magic;
@@ -179,6 +189,7 @@ PACK(struct Bm_File_Meta {
     uint64_t entry;
     uint64_t memory_size;
     uint64_t memory_capacity;
+    uint64_t externals_size;
 });
 
 typedef struct Bm_File_Meta Bm_File_Meta;
