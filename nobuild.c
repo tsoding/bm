@@ -22,6 +22,7 @@ void fmt_command(void);
 void help_command(void);
 void lib_command(void);
 void wrappers_command(void);
+void examples_command(void);
 
 Command commands[] = {
     {
@@ -63,6 +64,11 @@ Command commands[] = {
         .name = "wrappers",
         .description = "Build all the C library wrappers",
         .run = wrappers_command,
+    },
+    {
+        .name = "examples",
+        .description = "Build all the examples from the ./examples/ folder",
+        .run = examples_command,
     }
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
@@ -96,6 +102,25 @@ void build_tool(const char *name)
         "-lbm",
         "-ldl");
 #endif // _WIN32
+}
+
+void examples_command(void)
+{
+    tools_command();
+    wrappers_command();
+
+    RM(PATH("build", "examples"));
+    MKDIRS("build", "examples");
+
+    FOREACH_FILE_IN_DIR(example, "examples", {
+        if (ENDS_WITH(example, ".basm"))
+        {
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
+                PATH("examples", example));
+        }
+    });
 }
 
 void wrappers_command(void)
