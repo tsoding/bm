@@ -120,7 +120,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
     break;
 
     case STATEMENT_KIND_FUNCDEF: {
-        assert(false && "TODO: Dumping function definitions is not implemented");
+        assert(false && "TODO(#270): Dumping function definitions is not implemented");
         exit(1);
     }
     break;
