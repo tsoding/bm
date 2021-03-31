@@ -1,5 +1,3 @@
-;; TODO(#266): combine %native and %external into a single mechanism
-;; For that you also need to introduce "hard-coded" native functions. An example of such "hard-coded" function could be `write`
 %native write
 
 %const CHAR_LIT_MAX_SIZE = 8
