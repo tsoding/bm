@@ -57,7 +57,8 @@ void dump_statement(FILE *stream, Statement statement, int level)
     case STATEMENT_KIND_BIND_EXTERNAL: {
         assert(false && "TODO: dumping Bind External statement is not implemented");
         exit(1);
-    } break;
+    }
+    break;
 
     case STATEMENT_KIND_INCLUDE: {
         String_View path = statement.value.as_include.path;
