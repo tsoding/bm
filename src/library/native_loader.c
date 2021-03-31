@@ -22,7 +22,7 @@ void native_loader_add_object(Native_Loader *loader, const char *object_path)
     loader->objects[loader->objects_size++] = result;
     printf("INFO: successfully loaded object `%s`\n", object_path);
 #else
-    // TODO: Dynamic loading of objects on Windows
+    // TODO(#268): Dynamic loading of objects on Windows
     (void) loader;
     (void) object_path;
     fprintf(stderr, "ERROR: loading dynamic objects in an emulator is not implemented for Windows yet.\n");
