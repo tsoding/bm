@@ -43,8 +43,8 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
-    case STATEMENT_KIND_BIND_EXTERNAL: {
-        assert(false && "TODO(#269): dumping Bind External statement is not implemented");
+    case STATEMENT_KIND_BIND_NATIVE: {
+        assert(false && "TODO: dumping Bind Native statement is not implemented");
         exit(1);
     }
     break;
@@ -178,11 +178,11 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
-    case STATEMENT_KIND_BIND_EXTERNAL: {
+    case STATEMENT_KIND_BIND_NATIVE: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_external.name;
+        String_View name = statement.value.as_bind_native.name;
 
-        fprintf(stream, "Expr_%d [shape=diamond label=\"%%external "SV_Fmt"\"]\n",
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%native "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
         return id;
     }
@@ -517,19 +517,19 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         expect_no_tokens(&tokenizer, location);
 
         block_list_push(arena, output, statement);
-    } else if (sv_eq(name, sv_from_cstr("external"))) {
+    } else if (sv_eq(name, sv_from_cstr("native"))) {
         Statement statement = {0};
         statement.location = location;
-        statement.kind = STATEMENT_KIND_BIND_EXTERNAL;
+        statement.kind = STATEMENT_KIND_BIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
         if (binding_name.kind != EXPR_KIND_BINDING) {
-            fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%external binding\n",
+            fprintf(stderr, FL_Fmt": ERROR: expected binding name for %%native binding\n",
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_external.name = binding_name.value.as_binding;
+        statement.value.as_bind_native.name = binding_name.value.as_binding;
         expect_no_tokens(&tokenizer, location);
 
         block_list_push(arena, output, statement);

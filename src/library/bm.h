@@ -147,10 +147,10 @@ typedef struct Bm Bm;
 
 typedef Err (*Bm_Native)(Bm*);
 
-#define EXTERNAL_NATIVE_NAME_CAPACITY 256
+#define NATIVE_NAME_CAPACITY 256
 
 typedef struct {
-    char name[EXTERNAL_NATIVE_NAME_CAPACITY];
+    char name[NATIVE_NAME_CAPACITY];
 } External_Native;
 
 struct Bm {

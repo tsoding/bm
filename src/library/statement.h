@@ -13,7 +13,7 @@ typedef enum {
     STATEMENT_KIND_EMIT_INST,
     STATEMENT_KIND_BIND_LABEL,
     STATEMENT_KIND_BIND_CONST,
-    STATEMENT_KIND_BIND_EXTERNAL,
+    STATEMENT_KIND_BIND_NATIVE,
     STATEMENT_KIND_INCLUDE,
     STATEMENT_KIND_ASSERT,
     STATEMENT_KIND_ERROR,
@@ -41,7 +41,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-} Bind_External;
+} Bind_Native;
 
 typedef struct {
     String_View path;
@@ -84,7 +84,7 @@ typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
     Bind_Const as_bind_const;
-    Bind_External as_bind_external;
+    Bind_Native as_bind_native;
     Include as_include;
     Assert as_assert;
     Error as_error;

@@ -2,11 +2,11 @@
 
 %const SDL_QUIT = 0x100
 
-%external SDL_Init
-%external SDL_Quit
-%external SDL_CreateWindow
-%external SDL_CreateRenderer
-%external SDL_PollEvent
-%external SDL_SetRenderDrawColor
-%external SDL_RenderClear
-%external SDL_RenderPresent
+%native SDL_Init
+%native SDL_Quit
+%native SDL_CreateWindow
+%native SDL_CreateRenderer
+%native SDL_PollEvent
+%native SDL_SetRenderDrawColor
+%native SDL_RenderClear
+%native SDL_RenderPresent
