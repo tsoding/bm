@@ -52,7 +52,7 @@ render_logo:
     ret
 %end
 
-;; TODO: log does not bounce off of the edge of the screen
+;; TODO(#279): logo does not bounce off of the edge of the screen
 update_logo:
 %scope
     push RECT + SDL_Rect_x
