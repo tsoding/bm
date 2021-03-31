@@ -23,6 +23,8 @@ void native_loader_add_object(Native_Loader *loader, const char *object_path)
     printf("INFO: successfully loaded object `%s`\n", object_path);
 #else
     // TODO: Dynamic loading of objects on Windows
+    (void) loader;
+    (void) object_path;
     fprintf(stderr, "ERROR: loading dynamic objects in an emulator is not implemented for Windows yet.\n");
     exit(1);
 #endif
@@ -37,6 +39,8 @@ void native_loader_unload_all(Native_Loader *loader)
             exit(1);
         }
     }
+#else
+    (void) loader;
 #endif
 }
 
@@ -51,6 +55,9 @@ Bm_Native native_loader_find_function(Native_Loader *loader, Arena *arena, const
         }
     }
 #else
+    (void) loader;
+    (void) arena;
+    (void) function_name;
     fprintf(stderr, "ERROR: loading dynamic objects in an emulator is not implemented for Windows yet.\n");
     exit(1);
 #endif
