@@ -21,6 +21,7 @@ void record_command(void);
 void fmt_command(void);
 void help_command(void);
 void lib_command(void);
+void wrappers_command(void);
 
 Command commands[] = {
     {
@@ -58,6 +59,11 @@ Command commands[] = {
         .description = "Build the BM library (experimental)",
         .run = lib_command,
     },
+    {
+        .name = "wrappers",
+        .description = "Build all the C library wrappers",
+        .run = wrappers_command,
+    }
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
 
@@ -90,6 +96,24 @@ void build_tool(const char *name)
         "-lbm",
         "-ldl");
 #endif // _WIN32
+}
+
+void wrappers_command(void)
+{
+    RM(PATH("build", "wrappers"));
+    MKDIRS("build", "wrappers");
+
+    CMD("cc", CFLAGS,
+        "-c", "-fpic",
+        "-I", PATH("src", "library"),
+        "-o", PATH("build", "wrappers", "bm_sdl.o"),
+        PATH("wrappers", "bm_sdl.c"));
+
+    CMD("cc", CFLAGS,
+        "-shared",
+        "-o", PATH("build", "wrappers", "libbm_sdl.so"),
+        PATH("build", "wrappers", "bm_sdl.o"),
+        "-lSDL2");
 }
 
 void tools_command(void)
