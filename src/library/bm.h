@@ -1,7 +1,7 @@
 #ifndef BM_H_
 #define BM_H_
 
-// TODO: bm does not enforce endianess at runtime
+// TODO(#267): bm does not enforce endianess at runtime
 
 #include <assert.h>
 #include <stdio.h>
