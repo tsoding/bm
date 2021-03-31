@@ -1,4 +1,4 @@
-%include "./examples/stdlib/natives.hasm"
+%include "std.hasm"
 
 %entry main:
 %scope

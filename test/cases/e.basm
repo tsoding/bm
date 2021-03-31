@@ -1,4 +1,4 @@
-%include "natives.hasm"
+%include "std.hasm"
 
 ; n+1.0
 ; n!*(n+1.0)

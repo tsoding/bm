@@ -1,0 +1,12 @@
+%const SDL_INIT_VIDEO = 0x00000020
+
+%const SDL_QUIT = 0x100
+
+%external SDL_Init
+%external SDL_Quit
+%external SDL_CreateWindow
+%external SDL_CreateRenderer
+%external SDL_PollEvent
+%external SDL_SetRenderDrawColor
+%external SDL_RenderClear
+%external SDL_RenderPresent

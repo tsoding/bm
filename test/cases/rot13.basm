@@ -1,4 +1,4 @@
-%include "natives.hasm"
+%include "std.hasm"
 
 ; only this string needs to be changed
 %const secret = "Uryyb, jbeyq! Sebz EBG13."
