@@ -13,7 +13,6 @@
 #define BASM_STRING_LENGTHS_CAPACITY 1024
 #define BASM_MAX_INCLUDE_LEVEL 69
 #define BASM_INCLUDE_PATHS_CAPACITY 1024
-#define BASM_EXTERNAL_NATIVES_CAPACITY 1024
 
 typedef enum {
     BINDING_CONST = 0,
@@ -95,11 +94,6 @@ void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kin
 void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_Location location);
 
 typedef struct {
-    String_View name;
-    uint64_t number;
-} External_Native;
-
-typedef struct {
     Scope *scope;
 
     Inst program[BM_PROGRAM_CAPACITY];
@@ -116,7 +110,7 @@ typedef struct {
     size_t memory_size;
     size_t memory_capacity;
 
-    External_Native external_natives[BASM_EXTERNAL_NATIVES_CAPACITY];
+    External_Native external_natives[BM_EXTERNAL_NATIVES_CAPACITY];
     size_t external_natives_size;
 
     Arena arena;
@@ -149,7 +143,6 @@ void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
-
 void basm_translate_block(Basm *basm, Block *block);
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location);

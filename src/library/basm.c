@@ -237,6 +237,7 @@ void basm_save_to_file(Basm *basm, const char *file_path)
         .program_size = basm->program_size,
         .memory_size = basm->memory_size,
         .memory_capacity = basm->memory_capacity,
+        .externals_size = basm->external_natives_size,
     };
 
     fwrite(&meta, sizeof(meta), 1, f);
@@ -254,6 +255,13 @@ void basm_save_to_file(Basm *basm, const char *file_path)
     }
 
     fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
+    if (ferror(f)) {
+        fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
+                file_path, strerror(errno));
+        exit(1);
+    }
+
+    fwrite(basm->external_natives, sizeof(basm->external_natives[0]), basm->external_natives_size, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
                 file_path, strerror(errno));
@@ -541,8 +549,19 @@ void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location 
 
 void basm_translate_bind_external(Basm *basm, Bind_External bind_external, File_Location location)
 {
-    basm->external_natives[basm->external_natives_size].name = bind_external.name;
-    basm->external_natives[basm->external_natives_size].number = basm->external_natives_size + 1;
+    if (bind_external.name.count >= EXTERNAL_NATIVE_NAME_CAPACITY - 1) {
+        fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for an external native function. The limit is %zu.\n", FL_Arg(location), (size_t) (EXTERNAL_NATIVE_NAME_CAPACITY - 1));
+        exit(1);
+    }
+
+    memset(basm->external_natives[basm->external_natives_size].name,
+           0,
+           EXTERNAL_NATIVE_NAME_CAPACITY);
+
+    memcpy(basm->external_natives[basm->external_natives_size].name,
+           bind_external.name.data,
+           bind_external.name.count);
+
     basm->external_natives_size += 1;
 
     basm_bind_value(basm,
