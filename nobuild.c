@@ -128,17 +128,34 @@ void wrappers_command(void)
     RM(PATH("build", "wrappers"));
     MKDIRS("build", "wrappers");
 
-    CMD("cc", CFLAGS,
-        "-c", "-fpic",
-        "-I", PATH("src", "library"),
-        "-o", PATH("build", "wrappers", "bm_sdl.o"),
-        PATH("wrappers", "bm_sdl.c"));
+    // SDL wrapper
+    {
+        CMD("cc", CFLAGS,
+            "-c", "-fpic",
+            "-I", PATH("src", "library"),
+            "-o", PATH("build", "wrappers", "bm_sdl.o"),
+            PATH("wrappers", "bm_sdl.c"));
 
-    CMD("cc", CFLAGS,
-        "-shared",
-        "-o", PATH("build", "wrappers", "libbm_sdl.so"),
-        PATH("build", "wrappers", "bm_sdl.o"),
-        "-lSDL2");
+        CMD("cc", CFLAGS,
+            "-shared",
+            "-o", PATH("build", "wrappers", "libbm_sdl.so"),
+            PATH("build", "wrappers", "bm_sdl.o"),
+            "-lSDL2");
+    }
+
+    // hello wrapper
+    {
+        CMD("cc", CFLAGS,
+            "-c", "-fpic",
+            "-I", PATH("src", "library"),
+            "-o", PATH("build", "wrappers", "bm_hello.o"),
+            PATH("wrappers", "bm_hello.c"));
+
+        CMD("cc", CFLAGS,
+            "-shared",
+            "-o", PATH("build", "wrappers", "libbm_hello.so"),
+            PATH("build", "wrappers", "bm_hello.o"));
+    }
 }
 
 void tools_command(void)
