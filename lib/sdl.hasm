@@ -1,5 +1,7 @@
 %const SDL_INIT_VIDEO = 0x00000020
 
+%const SDL_WINDOW_RESIZABLE = 0x00000020
+
 %const SDL_QUIT = 0x100
 
 %native SDL_Init

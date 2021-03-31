@@ -1,5 +1,7 @@
 %include "./sdl.hasm"
 
+%const SCREEN_WIDTH = 800
+%const SCREEN_HEIGHT = 600
 %const EVENT = byte_array(56, 0)
 
 %entry main:
@@ -7,7 +9,13 @@
     native SDL_Init
     drop
 
+    push 0 ;; x
+    push 0 ;; y
+    push SCREEN_WIDTH
+    push SCREEN_HEIGHT
+    push SDL_WINDOW_RESIZABLE
     native SDL_CreateWindow
+
     native SDL_CreateRenderer
 
     main_loop:
