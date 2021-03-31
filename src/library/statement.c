@@ -55,7 +55,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
     break;
 
     case STATEMENT_KIND_BIND_EXTERNAL: {
-        assert(false && "TODO: dumping Bind External statement is not implemented");
+        assert(false && "TODO(#269): dumping Bind External statement is not implemented");
         exit(1);
     }
     break;
