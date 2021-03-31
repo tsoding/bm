@@ -1,0 +1,47 @@
+%include "./sdl.hasm"
+
+%const EVENT = byte_array(56, 0)
+
+%entry main:
+    push SDL_INIT_VIDEO
+    native SDL_Init
+    drop
+
+    native SDL_CreateWindow
+    native SDL_CreateRenderer
+
+    main_loop:
+        loop:
+            push EVENT
+            native SDL_PollEvent
+
+            push EVENT
+            read32
+
+            push SDL_QUIT
+            equ
+            jmp_if end
+
+        jmp_if loop
+
+        ;; SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        dup 0
+        push 255
+        push 0
+        push 0
+        push 255
+        native SDL_SetRenderDrawColor
+        drop
+        
+        ;; SDL_RenderClear(renderer);
+        dup 0
+        native SDL_RenderClear
+        drop
+
+        ;; SDL_RenderPresent(renderer);
+        dup 0
+        native SDL_RenderPresent
+    jmp main_loop
+    end:
+    native SDL_Quit
+    halt
