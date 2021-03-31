@@ -54,6 +54,7 @@ Bm_Native native_loader_find_function(Native_Loader *loader, Arena *arena, const
             return result;
         }
     }
+    return NULL;
 #else
     (void) loader;
     (void) arena;
@@ -61,6 +62,4 @@ Bm_Native native_loader_find_function(Native_Loader *loader, Arena *arena, const
     fprintf(stderr, "ERROR: loading dynamic objects in an emulator is not implemented for Windows yet.\n");
     exit(1);
 #endif
-
-    return NULL;
 }
