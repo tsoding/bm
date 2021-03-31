@@ -32,7 +32,7 @@ Err bm_SDL_Quit(Bm *bm)
 
 Err bm_SDL_CreateWindow(Bm *bm)
 {
-    // TODO: title is hardcoded for bm_SDL_CreateWindow()
+    // TODO(#280): title is hardcoded for bm_SDL_CreateWindow()
     // It may require to introduce semantic changes to string literals
 
     if (bm->stack_size < 5) {
