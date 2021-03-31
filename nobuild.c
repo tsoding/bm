@@ -128,6 +128,7 @@ void wrappers_command(void)
     RM(PATH("build", "wrappers"));
     MKDIRS("build", "wrappers");
 
+#ifndef _WIN32
     // SDL wrapper
     {
         CMD("cc", CFLAGS,
@@ -156,6 +157,9 @@ void wrappers_command(void)
             "-o", PATH("build", "wrappers", "libbm_hello.so"),
             PATH("build", "wrappers", "bm_hello.o"));
     }
+#else
+    PANIC("TODO: build C wrappers is not implemented for Windows");
+#endif
 }
 
 void tools_command(void)
