@@ -919,12 +919,6 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     fclose(f);
 }
 
-void bm_load_standard_natives(Bm *bm)
-{
-    // TODO(#35): some sort of mechanism to load native functions from DLLs
-    bm_push_native(bm, native_write); // 0
-}
-
 Err native_write(Bm *bm)
 {
     if (bm->stack_size < 2) {

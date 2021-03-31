@@ -146,7 +146,6 @@ bool basm_resolve_include_file_path(Basm *basm,
 void basm_translate_block(Basm *basm, Block *block);
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location);
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location);
 void basm_translate_bind_external(Basm *basm, Bind_External bind_external, File_Location location);
 void basm_translate_if(Basm *basm, If eef, File_Location location);
 void basm_translate_include(Basm *basm, Include include, File_Location location);

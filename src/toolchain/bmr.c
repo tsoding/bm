@@ -180,6 +180,15 @@ int main(int argc, char *argv[])
 
     bm_load_program_from_file(&bm, program_file_path);
 
+    for (size_t i = 0; i < bm.externals_size; ++i) {
+        if (strcmp(bm.externals[i].name, "write") == 0) {
+            bm_push_native(&bm, bmr_write);
+        } else {
+            fprintf(stderr, "ERROR: bmr does not provide native function `%s`\n", bm.externals[i].name);
+            exit(1);
+        }
+    }
+
     bm_push_native(&bm, bmr_write); // 0
 
     Err err = bm_execute_program(&bm, -1);

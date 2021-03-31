@@ -74,16 +74,19 @@ int main(int argc, char **argv)
     }
 
     bm_load_program_from_file(&bm, input_file_path);
-    bm_load_standard_natives(&bm);
 
     for (size_t i = 0; i < bm.externals_size; ++i) {
-        Bm_Native native = native_loader_find_function(&native_loader, &arena, bm.externals[i].name);
-        if (native == NULL) {
-            fprintf(stderr, "ERROR: could not find external native function `%s`. Make sure you attached all the necessary dynamic libraries via the `-n` flag.\n", bm.externals[i].name);
-            exit(1);
-        }
+        if (strcmp(bm.externals[i].name, "write") == 0) {
+            bm_push_native(&bm, native_write);
+        } else {
+            Bm_Native native = native_loader_find_function(&native_loader, &arena, bm.externals[i].name);
+            if (native == NULL) {
+                fprintf(stderr, "ERROR: could not find external native function `%s`. Make sure you attached all the necessary dynamic libraries via the `-n` flag.\n", bm.externals[i].name);
+                exit(1);
+            }
 
-        bm_push_native(&bm, native);
+            bm_push_native(&bm, native);
+        }
     }
 
     Err err = bm_execute_program(&bm, limit);

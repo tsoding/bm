@@ -306,9 +306,6 @@ void basm_translate_block(Basm *basm, Block *block)
             case STATEMENT_KIND_BIND_CONST:
                 basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
                 break;
-            case STATEMENT_KIND_BIND_NATIVE:
-                basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
-                break;
             case STATEMENT_KIND_BIND_EXTERNAL:
                 basm_translate_bind_external(basm, statement.value.as_bind_external, statement.location);
                 break;
@@ -390,7 +387,6 @@ void basm_translate_block(Basm *basm, Block *block)
             case STATEMENT_KIND_ASSERT:
             case STATEMENT_KIND_INCLUDE:
             case STATEMENT_KIND_BIND_CONST:
-            case STATEMENT_KIND_BIND_NATIVE:
                 // NOTE: ignored at the second pass
                 break;
 
@@ -562,22 +558,13 @@ void basm_translate_bind_external(Basm *basm, Bind_External bind_external, File_
            bind_external.name.data,
            bind_external.name.count);
 
-    basm->external_natives_size += 1;
-
     basm_bind_value(basm,
                     bind_external.name,
                     word_u64(basm->external_natives_size),
                     BINDING_NATIVE,
                     location);
-}
 
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
-{
-    basm_bind_expr(basm,
-                   bind_native.name,
-                   bind_native.value,
-                   BINDING_NATIVE,
-                   location);
+    basm->external_natives_size += 1;
 }
 
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)
