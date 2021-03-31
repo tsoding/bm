@@ -1,6 +1,17 @@
 %const SDL_INIT_VIDEO = 0x00000020
 
+%const SDL_WINDOW_RESIZABLE = 0x00000020
+
 %const SDL_QUIT = 0x100
+
+;; NOTE: I'm not sure if these size are stable
+%const SDL_Event_size = 56
+
+%const SDL_Rect_size = 16
+%const SDL_Rect_x = 0
+%const SDL_Rect_y = 4
+%const SDL_Rect_w = 8
+%const SDL_Rect_h = 12
 
 %native SDL_Init
 %native SDL_Quit
@@ -10,3 +21,4 @@
 %native SDL_SetRenderDrawColor
 %native SDL_RenderClear
 %native SDL_RenderPresent
+%native SDL_RenderFillRect

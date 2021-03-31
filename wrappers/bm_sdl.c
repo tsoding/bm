@@ -9,6 +9,7 @@ Err bm_SDL_PollEvent(Bm *bm);
 Err bm_SDL_SetRenderDrawColor(Bm *bm);
 Err bm_SDL_RenderClear(Bm *bm);
 Err bm_SDL_RenderPresent(Bm *bm);
+Err bm_SDL_RenderFillRect(Bm *bm);
 
 Err bm_SDL_Init(Bm *bm)
 {
@@ -31,8 +32,20 @@ Err bm_SDL_Quit(Bm *bm)
 
 Err bm_SDL_CreateWindow(Bm *bm)
 {
-    // TODO(#271): window parameters are hardcoded in bm_SDL_CreateWindow()
-    void *window = SDL_CreateWindow("Hello BM", 0, 0, 800, 600, 0x00000020);
+    // TODO(#280): title is hardcoded for bm_SDL_CreateWindow()
+    // It may require to introduce semantic changes to string literals
+
+    if (bm->stack_size < 5) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    int x = (int) bm->stack[bm->stack_size - 5].as_i64;
+    int y = (int) bm->stack[bm->stack_size - 4].as_i64;
+    int w = (int) bm->stack[bm->stack_size - 3].as_i64;
+    int h = (int) bm->stack[bm->stack_size - 2].as_i64;
+    Uint32 flags = (Uint32) bm->stack[bm->stack_size - 1].as_u64;
+
+    void *window = SDL_CreateWindow("BM", x, y, w, h, flags);
 
     if (bm->stack_size >= BM_STACK_CAPACITY) {
         return ERR_STACK_OVERFLOW;
@@ -103,5 +116,21 @@ Err bm_SDL_RenderPresent(Bm *bm)
 
     SDL_RenderPresent(bm->stack[bm->stack_size - 1].as_ptr);
     bm->stack_size -= 1;
+    return ERR_OK;
+}
+
+Err bm_SDL_RenderFillRect(Bm *bm)
+{
+    if (bm->stack_size < 2) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    void *renderer = bm->stack[bm->stack_size - 2].as_ptr;
+    uint64_t rect_offset = bm->stack[bm->stack_size - 1].as_u64;
+    bm->stack_size -= 2;
+
+    bm->stack[bm->stack_size++].as_i64 =
+        SDL_RenderFillRect(renderer, (void*) (bm->memory + rect_offset));
+
     return ERR_OK;
 }

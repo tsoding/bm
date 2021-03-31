@@ -1,14 +1,94 @@
 %include "./sdl.hasm"
 
-%const EVENT = byte_array(56, 0)
+%const SCREEN_WIDTH  = 800
+%const SCREEN_HEIGHT = 600
+
+%const LOGO_WIDTH  = 69
+%const LOGO_HEIGHT = 69
+
+%const EVENT = byte_array(SDL_Event_size, 0)
+%const RECT  = byte_array(SDL_Rect_size, 0)
+
+init_logo:
+%scope
+    push RECT + SDL_Rect_x
+    push 100
+    write32
+
+    push RECT + SDL_Rect_y
+    push 100
+    write32
+
+    push RECT + SDL_Rect_w
+    push LOGO_WIDTH
+    write32
+
+    push RECT + SDL_Rect_h
+    push LOGO_HEIGHT
+    write32
+
+    ret
+%end
+
+render_logo:
+%scope
+    swap 1
+
+    dup 0
+    push 255
+    push 0
+    push 0
+    push 255
+    native SDL_SetRenderDrawColor
+    drop
+
+    dup 0
+    push RECT
+    native SDL_RenderFillRect
+    drop
+
+    drop
+
+    ret
+%end
+
+;; TODO(#279): logo does not bounce off of the edge of the screen
+update_logo:
+%scope
+    push RECT + SDL_Rect_x
+    read32
+    push 1
+    plusi
+    push RECT + SDL_Rect_x
+    swap 1
+    write32
+
+    push RECT + SDL_Rect_y
+    read32
+    push 1
+    plusi
+    push RECT + SDL_Rect_y
+    swap 1
+    write32
+
+    ret
+%end
 
 %entry main:
     push SDL_INIT_VIDEO
     native SDL_Init
     drop
 
+    push 0 ;; x
+    push 0 ;; y
+    push SCREEN_WIDTH
+    push SCREEN_HEIGHT
+    push SDL_WINDOW_RESIZABLE
     native SDL_CreateWindow
+
     native SDL_CreateRenderer
+
+    call init_logo
 
     main_loop:
         loop:
@@ -24,19 +104,24 @@
 
         jmp_if loop
 
+        call update_logo
+
         ;; SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         dup 0
-        push 255
-        push 0
-        push 0
+        push 0x18
+        push 0x18
+        push 0x18
         push 255
         native SDL_SetRenderDrawColor
         drop
-        
+
         ;; SDL_RenderClear(renderer);
         dup 0
         native SDL_RenderClear
         drop
+
+        dup 0
+        call render_logo
 
         ;; SDL_RenderPresent(renderer);
         dup 0
