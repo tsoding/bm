@@ -44,7 +44,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
     break;
 
     case STATEMENT_KIND_BIND_NATIVE: {
-        assert(false && "TODO: dumping Bind Native statement is not implemented");
+        assert(false && "TODO(#275): dumping Bind Native statement is not implemented");
         exit(1);
     }
     break;
