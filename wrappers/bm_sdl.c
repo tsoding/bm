@@ -63,7 +63,7 @@ Err bm_SDL_PollEvent(Bm *bm)
         return ERR_STACK_UNDERFLOW;
     }
 
-    // TODO: bm_SDL_PollEvent does not check if it's accessing valid memory (vulnerability)
+    // TODO(#273): bm_SDL_PollEvent does not check if it's accessing valid memory (vulnerability)
     bm->stack[bm->stack_size - 1].as_u64 = (uint64_t) SDL_PollEvent((void*) (bm->memory + bm->stack[bm->stack_size - 1].as_u64));
 
     return ERR_OK;
