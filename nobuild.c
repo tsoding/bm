@@ -133,12 +133,20 @@ void wrappers_command(void)
     {
         CMD("cc", CFLAGS,
             "-c", "-fpic",
+#ifdef __FreeBSD__
+            // NOTE: Technically, this should be determined by pkg-config
+            "-I/usr/local/include",
+#endif
             "-I", PATH("src", "library"),
             "-o", PATH("build", "wrappers", "bm_sdl.o"),
             PATH("wrappers", "bm_sdl.c"));
 
         CMD("cc", CFLAGS,
             "-shared",
+#ifdef __FreeBSD__
+            // NOTE: See above
+            "-L/usr/local/lib",
+#endif
             "-o", PATH("build", "wrappers", "libbm_sdl.so"),
             PATH("build", "wrappers", "bm_sdl.o"),
             "-lSDL2");

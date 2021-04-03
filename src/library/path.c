@@ -1,6 +1,8 @@
 #ifndef _WIN32
-#    define _DEFAULT_SOURCE
-#    define _POSIX_C_SOURCE 200112L
+#    ifdef __linux__
+#        define _DEFAULT_SOURCE
+#        define _POSIX_C_SOURCE 200112L
+#    endif
 #    include <sys/types.h>
 #    include <sys/stat.h>
 #    include <unistd.h>
