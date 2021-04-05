@@ -6,8 +6,28 @@
 %const LOGO_WIDTH  = 69
 %const LOGO_HEIGHT = 69
 
-%const EVENT = byte_array(SDL_Event_size, 0)
-%const RECT  = byte_array(SDL_Rect_size, 0)
+%const EVENT     = byte_array(SDL_Event_size, 0)
+%const RECT      = byte_array(SDL_Rect_size, 0)
+%const RGBA_COMP = 4
+
+split_colors:
+%scope
+    swap 1
+    %for i from 1 to RGBA_COMP
+        dup 0
+        push (i - 1) * 8
+        shr
+        push 0xFF
+        andb
+        swap 1
+    %end
+    drop
+    %for i from 1 to RGBA_COMP
+        swap i
+    %end
+    ret
+%end
+
 
 init_logo:
 %scope
@@ -35,10 +55,8 @@ render_logo:
     swap 1
 
     dup 0
-    push 255
-    push 0
-    push 0
-    push 255
+    push 0xFF0000FF
+    call split_colors
     native SDL_SetRenderDrawColor
     drop
 
@@ -108,10 +126,8 @@ update_logo:
 
         ;; SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         dup 0
-        push 0x18
-        push 0x18
-        push 0x18
-        push 255
+        push 0xFF181818
+        call split_colors
         native SDL_SetRenderDrawColor
         drop
 
