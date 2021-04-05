@@ -493,7 +493,7 @@ void basm_eval_deferred_entry(Basm *basm)
 
         Word entry = {0};
 
-        Eval_Status status = basm_binding_eval(basm, binding, basm->deferred_entry.location, &entry);
+        Eval_Status status = basm_binding_eval(basm, binding, &entry);
         assert(status.kind == EVAL_STATUS_KIND_OK);
 
         basm->entry = entry.as_u64;
@@ -746,12 +746,12 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
     basm_translate_block(basm, input_file_block);
 }
 
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, File_Location location, Word *output)
+Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output)
 {
     switch (binding->status) {
     case BINDING_UNEVALUATED: {
         binding->status = BINDING_EVALUATING;
-        Eval_Status status = basm_expr_eval(basm, binding->expr, location, output);
+        Eval_Status status = basm_expr_eval(basm, binding->expr, binding->location, output);
         binding->status = BINDING_EVALUATED;
         binding->value = *output;
         return status;
@@ -950,7 +950,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             exit(1);
         }
 
-        return basm_binding_eval(basm, binding, location, output);
+        return basm_binding_eval(basm, binding, output);
     }
     break;
 

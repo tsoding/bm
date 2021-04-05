@@ -144,7 +144,7 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
 Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output);
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, File_Location location, Word *output);
+Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output);
 void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
