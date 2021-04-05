@@ -379,16 +379,6 @@ void print_help(FILE *stream)
             "    ./nobuild build examples test\n");
 }
 
-int is_valid_command(const char *command_name)
-{
-    for (size_t i = 0; i < commands_size; ++i) {
-        if (strcmp(command_name, commands[i].name) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 void run_command_by_name(const char *command_name)
 {
     for (size_t i = 0; i < commands_size; ++i) {
@@ -413,17 +403,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    for (int i = 0; i < argc; ++i) {
-        if (!is_valid_command(argv[i])) {
-            print_help(stderr);
-            fprintf(stderr, "ERROR: `%s` is not a valid subcommand\n", argv[i]);
-            exit(1);
-        }
-    }
-
-    for (int i = 0; i < argc; ++i) {
-        run_command_by_name(argv[i]);
-    }
+    run_command_by_name(argv[0]);
 
     return 0;
 }
