@@ -117,14 +117,29 @@ void examples_command(int argc, char **argv)
             }
         });
     } else {
-        const char *example = argv[0];
-        CMD(PATH("build", "toolchain", "basm"),
-            "-I", "lib",
-            "-o", PATH("build", "examples", CONCAT(example, ".bm")),
-            PATH("examples", CONCAT(example, ".basm")));
-        CMD(PATH("build", "toolchain", "bme"),
-            "-n", PATH("build", "wrappers", "libbm_sdl.so"),
-            PATH("build", "examples", CONCAT(example, ".bm")));
+        const char *subcommand = shift_args(&argc, &argv);
+
+        if (strcmp(subcommand, "run") == 0) {
+            const char *example = shift_args(&argc, &argv);
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
+                PATH("examples", CONCAT(example, ".basm")));
+            CMD(PATH("build", "toolchain", "bme"),
+                "-n", PATH("build", "wrappers", "libbm_sdl.so"),
+                PATH("build", "examples", CONCAT(example, ".bm")));
+        } else if (strcmp(subcommand, "debasm") == 0) {
+            const char *example = shift_args(&argc, &argv);
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
+                PATH("examples", CONCAT(example, ".basm")));
+            CMD(PATH("build", "toolchain", "debasm"),
+                PATH("build", "examples", CONCAT(example, ".bm")));
+        } else {
+            fprintf(stderr, "ERROR: unknown subcommand `%s`\n", subcommand);
+            exit(1);
+        }
     }
 }
 
