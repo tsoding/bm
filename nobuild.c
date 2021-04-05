@@ -10,18 +10,18 @@
 typedef struct {
     const char *name;
     const char *description;
-    void (*run)(void);
+    void (*run)(int argc, char **argv);
 } Command;
 
-void tools_command(void);
-void cases_command(void);
-void test_command(void);
-void record_command(void);
-void fmt_command(void);
-void help_command(void);
-void lib_command(void);
-void wrappers_command(void);
-void examples_command(void);
+void tools_command(int argc, char **argv);
+void cases_command(int argc, char **argv);
+void test_command(int argc, char **argv);
+void record_command(int argc, char **argv);
+void fmt_command(int argc, char **argv);
+void help_command(int argc, char **argv);
+void lib_command(int argc, char **argv);
+void wrappers_command(int argc, char **argv);
+void examples_command(int argc, char **argv);
 
 Command commands[] = {
     {
@@ -98,10 +98,10 @@ void build_tool(const char *name)
 #endif // _WIN32
 }
 
-void examples_command(void)
+void examples_command(int argc, char **argv)
 {
-    tools_command();
-    wrappers_command();
+    tools_command(argc, argv);
+    wrappers_command(argc, argv);
 
     RM(PATH("build", "examples"));
     MKDIRS("build", "examples");
@@ -117,7 +117,7 @@ void examples_command(void)
     });
 }
 
-void wrappers_command(void)
+void wrappers_command(int argc, char **argv)
 {
     RM(PATH("build", "wrappers"));
     MKDIRS("build", "wrappers");
@@ -164,9 +164,9 @@ void wrappers_command(void)
 #endif
 }
 
-void tools_command(void)
+void tools_command(int argc, char **argv)
 {
-    lib_command();
+    lib_command(argc, argv);
 
     RM(PATH("build", "toolchain"));
     MKDIRS("build", "toolchain");
@@ -179,9 +179,9 @@ void tools_command(void)
     });
 }
 
-void cases_command(void)
+void cases_command(int argc, char **argv)
 {
-    tools_command();
+    tools_command(argc, argv);
 
     RM(PATH("build", "test", "cases"));
     MKDIRS("build", "test", "cases");
@@ -213,9 +213,9 @@ void build_x86_64_example(const char *example)
         PATH("build", "examples", CONCAT(example, ".o")));
 }
 
-void test_command(void)
+void test_command(int argc, char **argv)
 {
-    cases_command();
+    cases_command(argc, argv);
 
     FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
         if (ENDS_WITH(caze, ".basm"))
@@ -228,9 +228,9 @@ void test_command(void)
     });
 }
 
-void record_command(void)
+void record_command(int argc, char **argv)
 {
-    cases_command();
+    cases_command(argc, argv);
 
     FOREACH_FILE_IN_DIR(example, "examples", {
         if (ENDS_WITH(example, ".basm"))
@@ -243,7 +243,7 @@ void record_command(void)
     });
 }
 
-void fmt_command(void)
+void fmt_command(int argc, char **argv)
 {
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
@@ -272,7 +272,7 @@ void fmt_command(void)
 
 void print_help(FILE *stream);
 
-void help_command(void)
+void help_command(int argc, char **argv)
 {
     print_help(stdout);
 }
@@ -322,7 +322,7 @@ void link_lib_objects(Cstr *objects, size_t objects_count)
     cmd_run_sync(cmd);
 }
 
-void lib_command(void)
+void lib_command(int argc, char **argv)
 {
     MKDIRS("build", "library");
 
@@ -373,18 +373,15 @@ void print_help(FILE *stream)
             "    ./nobuild build examples test\n");
 }
 
-void run_command_by_name(const char *command_name)
+Command *find_command_by_name(const char *command_name)
 {
     for (size_t i = 0; i < commands_size; ++i) {
         if (strcmp(command_name, commands[i].name) == 0) {
-            commands[i].run();
-            return;
+            return &commands[i];
         }
     }
 
-    print_help(stderr);
-    fprintf(stderr, "Could not run command `%s`. Such command does not exist!\n", command_name);
-    exit(1);
+    return NULL;
 }
 
 int main(int argc, char **argv)
@@ -397,7 +394,16 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    run_command_by_name(argv[0]);
+    const char *command_name = shift_args(&argc, &argv);
+
+    Command *command = find_command_by_name(command_name);
+    if (command != NULL) {
+        command->run(argc, argv);
+    } else {
+        print_help(stderr);
+        fprintf(stderr, "ERROR: Command `%s` does not exist\n");
+        exit(1);
+    }
 
     return 0;
 }
