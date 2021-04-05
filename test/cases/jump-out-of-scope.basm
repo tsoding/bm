@@ -1,0 +1,12 @@
+%include "std.hasm"
+
+%entry main:
+%scope
+    jmp end
+    push 420
+    call dump_u64
+%end
+end:
+    push 69
+    call dump_u64
+    halt

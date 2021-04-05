@@ -117,14 +117,29 @@ void examples_command(int argc, char **argv)
             }
         });
     } else {
-        const char *example = argv[0];
-        CMD(PATH("build", "toolchain", "basm"),
-            "-I", "lib",
-            "-o", PATH("build", "examples", CONCAT(example, ".bm")),
-            PATH("examples", CONCAT(example, ".basm")));
-        CMD(PATH("build", "toolchain", "bme"),
-            "-n", PATH("build", "wrappers", "libbm_sdl.so"),
-            PATH("build", "examples", CONCAT(example, ".bm")));
+        const char *subcommand = shift_args(&argc, &argv);
+
+        if (strcmp(subcommand, "run") == 0) {
+            const char *example = shift_args(&argc, &argv);
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
+                PATH("examples", CONCAT(example, ".basm")));
+            CMD(PATH("build", "toolchain", "bme"),
+                "-n", PATH("build", "wrappers", "libbm_sdl.so"),
+                PATH("build", "examples", CONCAT(example, ".bm")));
+        } else if (strcmp(subcommand, "debasm") == 0) {
+            const char *example = shift_args(&argc, &argv);
+            CMD(PATH("build", "toolchain", "basm"),
+                "-I", "lib",
+                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
+                PATH("examples", CONCAT(example, ".basm")));
+            CMD(PATH("build", "toolchain", "debasm"),
+                PATH("build", "examples", CONCAT(example, ".bm")));
+        } else {
+            fprintf(stderr, "ERROR: unknown subcommand `%s`\n", subcommand);
+            exit(1);
+        }
     }
 }
 
@@ -243,13 +258,13 @@ void record_command(int argc, char **argv)
 {
     cases_command(argc, argv);
 
-    FOREACH_FILE_IN_DIR(example, "examples", {
-        if (ENDS_WITH(example, ".basm"))
+    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+        if (ENDS_WITH(caze, ".basm"))
         {
-            const char *example_base = NOEXT(example);
+            const char *case_base = NOEXT(caze);
             CMD(PATH("build", "toolchain", "bmr"),
-                "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
-                "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
+                "-p", PATH("build", "test", "cases", CONCAT(case_base, ".bm")),
+                "-ao", PATH("test", "outputs", CONCAT(case_base, ".expected.out")));
         }
     });
 }
