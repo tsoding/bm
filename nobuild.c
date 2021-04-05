@@ -243,13 +243,13 @@ void record_command(int argc, char **argv)
 {
     cases_command(argc, argv);
 
-    FOREACH_FILE_IN_DIR(example, "examples", {
-        if (ENDS_WITH(example, ".basm"))
+    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+        if (ENDS_WITH(caze, ".basm"))
         {
-            const char *example_base = NOEXT(example);
+            const char *case_base = NOEXT(caze);
             CMD(PATH("build", "toolchain", "bmr"),
-                "-p", PATH("build", "examples", CONCAT(example_base, ".bm")),
-                "-ao", PATH("test", "examples", CONCAT(example_base, ".expected.out")));
+                "-p", PATH("build", "test", "cases", CONCAT(case_base, ".bm")),
+                "-ao", PATH("test", "outputs", CONCAT(case_base, ".expected.out")));
         }
     });
 }
