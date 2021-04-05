@@ -392,10 +392,14 @@ void basm_translate_block(Basm *basm, Block *block)
 
 void basm_eval_deferred_asserts(Basm *basm)
 {
-    assert(basm->scope);
+    Scope *saved_basm_scope = basm->scope;
 
     for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
         Word value = {0};
+        assert(basm->deferred_asserts[i].scope);
+        basm->scope = basm->deferred_asserts[i].scope;
+        // TODO: make basm_expr_eval accept the scope in which you want to evaluate the expression
+        // So there is no need for that silly `saved_basm_scope` hack above
         Eval_Status status = basm_expr_eval(
                                  basm,
                                  basm->deferred_asserts[i].expr,
@@ -409,12 +413,17 @@ void basm_eval_deferred_asserts(Basm *basm)
             exit(1);
         }
     }
+
+    basm->scope = saved_basm_scope;
 }
 
 void basm_eval_deferred_operands(Basm *basm)
 {
-    assert(basm->scope);
+    Scope *saved_basm_scope = basm->scope;
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
+        assert(basm->deferred_operands[i].scope);
+        basm->scope = basm->deferred_operands[i].scope;
+
         Inst_Addr addr = basm->deferred_operands[i].addr;
         Expr expr = basm->deferred_operands[i].expr;
         File_Location location = basm->deferred_operands[i].location;
@@ -446,13 +455,17 @@ void basm_eval_deferred_operands(Basm *basm)
                                  &basm->program[addr].operand);
         assert(status.kind == EVAL_STATUS_KIND_OK);
     }
+
+    basm->scope = saved_basm_scope;
 }
 
 void basm_eval_deferred_entry(Basm *basm)
 {
-    assert(basm->scope);
-
+    Scope *saved_basm_scope = basm->scope;
     if (basm->deferred_entry.binding_name.count > 0) {
+        assert(basm->deferred_entry.scope);
+        basm->scope = basm->deferred_entry.scope;
+
         if (basm->has_entry) {
             fprintf(stderr,
                     FL_Fmt": ERROR: entry point has been already set!\n",
@@ -487,6 +500,8 @@ void basm_eval_deferred_entry(Basm *basm)
         basm->has_entry = true;
         basm->entry_location = basm->deferred_entry.location;
     }
+
+    basm->scope = saved_basm_scope;
 }
 
 void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
@@ -523,6 +538,7 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
     String_View label = entry.value.value.as_binding;
     basm->deferred_entry.binding_name = label;
     basm->deferred_entry.location = location;
+    basm->deferred_entry.scope = basm->scope;
 }
 
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location)
@@ -573,6 +589,7 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
     basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
         .expr = azzert.condition,
         .location = location,
+        .scope = basm->scope,
     };
 }
 
