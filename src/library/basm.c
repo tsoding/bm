@@ -461,11 +461,11 @@ void basm_eval_deferred_entry(Basm *basm)
 {
     assert(basm->scope);
 
-    if (basm->scope->deferred_entry_binding_name.count > 0) {
+    if (basm->scope->deferred_entry.binding_name.count > 0) {
         if (basm->has_entry) {
             fprintf(stderr,
                     FL_Fmt": ERROR: entry point has been already set!\n",
-                    FL_Arg(basm->scope->deferred_entry_location));
+                    FL_Arg(basm->scope->deferred_entry.location));
             fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
                     FL_Arg(basm->entry_location));
             exit(1);
@@ -474,27 +474,27 @@ void basm_eval_deferred_entry(Basm *basm)
 
         Binding *binding = basm_resolve_binding(
                                basm,
-                               basm->scope->deferred_entry_binding_name);
+                               basm->scope->deferred_entry.binding_name);
         if (binding == NULL) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->scope->deferred_entry_location),
-                    SV_Arg(basm->scope->deferred_entry_binding_name));
+                    FL_Arg(basm->scope->deferred_entry.location),
+                    SV_Arg(basm->scope->deferred_entry.binding_name));
             exit(1);
         }
 
         if (binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->scope->deferred_entry_location), binding_kind_as_cstr(binding->kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->scope->deferred_entry.location), binding_kind_as_cstr(binding->kind));
             exit(1);
         }
 
         Word entry = {0};
 
-        Eval_Status status = basm_binding_eval(basm, binding, basm->scope->deferred_entry_location, &entry);
+        Eval_Status status = basm_binding_eval(basm, binding, basm->scope->deferred_entry.location, &entry);
         assert(status.kind == EVAL_STATUS_KIND_OK);
 
         basm->entry = entry.as_u64;
         basm->has_entry = true;
-        basm->entry_location = basm->scope->deferred_entry_location;
+        basm->entry_location = basm->scope->deferred_entry.location;
     }
 }
 
@@ -514,12 +514,12 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
 {
     assert(basm->scope);
 
-    if (basm->scope->deferred_entry_binding_name.count > 0) {
+    if (basm->scope->deferred_entry.binding_name.count > 0) {
         fprintf(stderr,
                 FL_Fmt": ERROR: entry point has been already set within the same scope!\n",
                 FL_Arg(location));
         fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
-                FL_Arg(basm->scope->deferred_entry_location));
+                FL_Arg(basm->scope->deferred_entry.location));
         exit(1);
     }
 
@@ -530,8 +530,8 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
     }
 
     String_View label = entry.value.value.as_binding;
-    basm->scope->deferred_entry_binding_name = label;
-    basm->scope->deferred_entry_location = location;
+    basm->scope->deferred_entry.binding_name = label;
+    basm->scope->deferred_entry.location = location;
 }
 
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location)

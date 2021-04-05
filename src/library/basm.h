@@ -56,6 +56,11 @@ typedef struct {
     File_Location location;
 } Deferred_Assert;
 
+typedef struct {
+    String_View binding_name;
+    File_Location location;
+} Deferred_Entry;
+
 typedef enum {
     EVAL_STATUS_KIND_OK = 0,
     EVAL_STATUS_KIND_DEFERRED
@@ -83,8 +88,7 @@ struct Scope {
     Deferred_Assert deferred_asserts[BASM_DEFERRED_ASSERTS_CAPACITY];
     size_t deferred_asserts_size;
 
-    String_View deferred_entry_binding_name;
-    File_Location deferred_entry_location;
+    Deferred_Entry deferred_entry;
 };
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
