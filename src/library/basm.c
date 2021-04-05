@@ -398,7 +398,7 @@ void basm_eval_deferred_asserts(Basm *basm)
         Word value = {0};
         assert(basm->deferred_asserts[i].scope);
         basm->scope = basm->deferred_asserts[i].scope;
-        // TODO: make basm_expr_eval accept the scope in which you want to evaluate the expression
+        // TODO(#285): make basm_expr_eval accept the scope in which you want to evaluate the expression
         // So there is no need for that silly `saved_basm_scope` hack above
         Eval_Status status = basm_expr_eval(
                                  basm,
