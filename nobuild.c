@@ -427,7 +427,7 @@ int main(int argc, char **argv)
         command->run(argc, argv);
     } else {
         print_help(stderr);
-        fprintf(stderr, "ERROR: Command `%s` does not exist\n");
+        fprintf(stderr, "ERROR: Command `%s` does not exist\n", command_name);
         exit(1);
     }
 

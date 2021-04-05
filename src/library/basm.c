@@ -158,6 +158,26 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Loca
     };
 }
 
+Word basm_push_buffer_to_memory(Basm *basm, uint8_t *buffer, uint64_t buffer_size)
+{
+    assert(basm->memory_size + buffer_size <= BM_MEMORY_CAPACITY);
+
+    Word result = word_u64(basm->memory_size);
+    memcpy(basm->memory + basm->memory_size, buffer, buffer_size);
+    basm->memory_size += buffer_size;
+
+    if (basm->memory_size > basm->memory_capacity) {
+        basm->memory_capacity = basm->memory_size;
+    }
+
+    basm->string_lengths[basm->string_lengths_size++] = (String_Length) {
+        .addr = result.as_u64,
+        .length = buffer_size,
+    };
+
+    return result;
+}
+
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value)
 {
     assert(basm->memory_size + size <= BM_MEMORY_CAPACITY);
@@ -493,7 +513,7 @@ void basm_eval_deferred_entry(Basm *basm)
 
         Word entry = {0};
 
-        Eval_Status status = basm_binding_eval(basm, binding, basm->deferred_entry.location, &entry);
+        Eval_Status status = basm_binding_eval(basm, binding, &entry);
         assert(status.kind == EVAL_STATUS_KIND_OK);
 
         basm->entry = entry.as_u64;
@@ -746,12 +766,12 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
     basm_translate_block(basm, input_file_block);
 }
 
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, File_Location location, Word *output)
+Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output)
 {
     switch (binding->status) {
     case BINDING_UNEVALUATED: {
         binding->status = BINDING_EVALUATING;
-        Eval_Status status = basm_expr_eval(basm, binding->expr, location, output);
+        Eval_Status status = basm_expr_eval(basm, binding->expr, binding->location, output);
         binding->status = BINDING_EVALUATED;
         binding->value = *output;
         return status;
@@ -931,6 +951,30 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             }
 
             *output = basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
+        } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("int32"))) {
+            Funcall_Arg *args = expr.value.as_funcall->args;
+
+            const size_t actual_arity = funcall_args_len(expr.value.as_funcall->args);
+            if (actual_arity != 1) {
+                fprintf(stderr, FL_Fmt": ERROR: len() expects 1 argument but got %zu\n",
+                        FL_Arg(location), actual_arity);
+                exit(1);
+            }
+
+            Word init_value = {0};
+            {
+                Eval_Status status = basm_expr_eval(
+                                         basm,
+                                         args->value,
+                                         location,
+                                         &init_value);
+                if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
+                    return status;
+                }
+            }
+
+            uint32_t byte_array = (uint32_t) init_value.as_u64;
+            *output = basm_push_buffer_to_memory(basm, (uint8_t*) &byte_array, sizeof(byte_array));
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
@@ -950,7 +994,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             exit(1);
         }
 
-        return basm_binding_eval(basm, binding, location, output);
+        return basm_binding_eval(basm, binding, output);
     }
     break;
 
