@@ -40,11 +40,6 @@ void basm_push_new_scope(Basm *basm)
 void basm_pop_scope(Basm *basm)
 {
     assert(basm->scope != NULL);
-
-    basm_eval_deferred_asserts(basm);
-    basm_eval_deferred_operands(basm);
-    basm_eval_deferred_entry(basm);
-
     basm->scope = basm->scope->previous;
 }
 
@@ -152,19 +147,15 @@ void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, 
     scope_bind_expr(basm->scope, name, expr, kind, location);
 }
 
-void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_Location location)
-{
-    assert(scope->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
-    scope->deferred_operands[scope->deferred_operands_size++] =
-    (Deferred_Operand) {
-        .addr = addr, .expr = expr, .location = location
-    };
-}
-
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
 {
-    assert(basm->scope != NULL);
-    scope_push_deferred_operand(basm->scope, addr, expr, location);
+    assert(basm->deferred_operands_size < BASM_DEFERRED_OPERANDS_CAPACITY);
+    basm->deferred_operands[basm->deferred_operands_size++] = (Deferred_Operand) {
+        .addr = addr,
+        .expr = expr,
+        .location = location,
+        .scope = basm->scope,
+    };
 }
 
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value)
@@ -403,18 +394,18 @@ void basm_eval_deferred_asserts(Basm *basm)
 {
     assert(basm->scope);
 
-    for (size_t i = 0; i < basm->scope->deferred_asserts_size; ++i) {
+    for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
         Word value = {0};
         Eval_Status status = basm_expr_eval(
                                  basm,
-                                 basm->scope->deferred_asserts[i].expr,
-                                 basm->scope->deferred_asserts[i].location,
+                                 basm->deferred_asserts[i].expr,
+                                 basm->deferred_asserts[i].location,
                                  &value);
         assert(status.kind == EVAL_STATUS_KIND_OK);
 
         if (!value.as_u64) {
             fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
-                    FL_Arg(basm->scope->deferred_asserts[i].location));
+                    FL_Arg(basm->deferred_asserts[i].location));
             exit(1);
         }
     }
@@ -423,10 +414,10 @@ void basm_eval_deferred_asserts(Basm *basm)
 void basm_eval_deferred_operands(Basm *basm)
 {
     assert(basm->scope);
-    for (size_t i = 0; i < basm->scope->deferred_operands_size; ++i) {
-        Inst_Addr addr = basm->scope->deferred_operands[i].addr;
-        Expr expr = basm->scope->deferred_operands[i].expr;
-        File_Location location = basm->scope->deferred_operands[i].location;
+    for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
+        Inst_Addr addr = basm->deferred_operands[i].addr;
+        Expr expr = basm->deferred_operands[i].expr;
+        File_Location location = basm->deferred_operands[i].location;
 
         if (expr.kind == EXPR_KIND_BINDING) {
             String_View name = expr.value.as_binding;
@@ -434,18 +425,18 @@ void basm_eval_deferred_operands(Basm *basm)
             Binding *binding = basm_resolve_binding(basm, name);
             if (binding == NULL) {
                 fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                        FL_Arg(basm->scope->deferred_operands[i].location),
+                        FL_Arg(basm->deferred_operands[i].location),
                         SV_Arg(name));
                 exit(1);
             }
 
             if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->scope->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
                 exit(1);
             }
 
             if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` or `%%external` basm directives.\n", FL_Arg(basm->scope->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directives.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
                 exit(1);
             }
         }
@@ -461,11 +452,11 @@ void basm_eval_deferred_entry(Basm *basm)
 {
     assert(basm->scope);
 
-    if (basm->scope->deferred_entry.binding_name.count > 0) {
+    if (basm->deferred_entry.binding_name.count > 0) {
         if (basm->has_entry) {
             fprintf(stderr,
                     FL_Fmt": ERROR: entry point has been already set!\n",
-                    FL_Arg(basm->scope->deferred_entry.location));
+                    FL_Arg(basm->deferred_entry.location));
             fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
                     FL_Arg(basm->entry_location));
             exit(1);
@@ -474,27 +465,27 @@ void basm_eval_deferred_entry(Basm *basm)
 
         Binding *binding = basm_resolve_binding(
                                basm,
-                               basm->scope->deferred_entry.binding_name);
+                               basm->deferred_entry.binding_name);
         if (binding == NULL) {
             fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                    FL_Arg(basm->scope->deferred_entry.location),
-                    SV_Arg(basm->scope->deferred_entry.binding_name));
+                    FL_Arg(basm->deferred_entry.location),
+                    SV_Arg(basm->deferred_entry.binding_name));
             exit(1);
         }
 
         if (binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->scope->deferred_entry.location), binding_kind_as_cstr(binding->kind));
+            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->deferred_entry.location), binding_kind_as_cstr(binding->kind));
             exit(1);
         }
 
         Word entry = {0};
 
-        Eval_Status status = basm_binding_eval(basm, binding, basm->scope->deferred_entry.location, &entry);
+        Eval_Status status = basm_binding_eval(basm, binding, basm->deferred_entry.location, &entry);
         assert(status.kind == EVAL_STATUS_KIND_OK);
 
         basm->entry = entry.as_u64;
         basm->has_entry = true;
-        basm->entry_location = basm->scope->deferred_entry.location;
+        basm->entry_location = basm->deferred_entry.location;
     }
 }
 
@@ -514,12 +505,12 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
 {
     assert(basm->scope);
 
-    if (basm->scope->deferred_entry.binding_name.count > 0) {
+    if (basm->deferred_entry.binding_name.count > 0) {
         fprintf(stderr,
                 FL_Fmt": ERROR: entry point has been already set within the same scope!\n",
                 FL_Arg(location));
         fprintf(stderr, FL_Fmt": NOTE: the first entry point\n",
-                FL_Arg(basm->scope->deferred_entry.location));
+                FL_Arg(basm->deferred_entry.location));
         exit(1);
     }
 
@@ -530,8 +521,8 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
     }
 
     String_View label = entry.value.value.as_binding;
-    basm->scope->deferred_entry.binding_name = label;
-    basm->scope->deferred_entry.location = location;
+    basm->deferred_entry.binding_name = label;
+    basm->deferred_entry.location = location;
 }
 
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location)
@@ -579,7 +570,7 @@ void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location 
 void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
 {
     assert(basm->scope != NULL);
-    basm->scope->deferred_asserts[basm->scope->deferred_asserts_size++] = (Deferred_Assert) {
+    basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
         .expr = azzert.condition,
         .location = location,
     };
@@ -698,6 +689,10 @@ void basm_translate_root_source_file(Basm *basm, String_View input_file_path)
     basm_push_new_scope(basm);
     basm_translate_source_file(basm, input_file_path);
     basm_pop_scope(basm);
+
+    basm_eval_deferred_asserts(basm);
+    basm_eval_deferred_operands(basm);
+    basm_eval_deferred_entry(basm);
 
     if (!basm->has_entry) {
         fprintf(stderr, SV_Fmt": ERROR: entry point for a BM program is not provided. Use translation directive %%entry to provide the entry point.\n", SV_Arg(input_file_path));

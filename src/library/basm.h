@@ -42,24 +42,8 @@ typedef struct {
 
 typedef struct {
     Inst_Addr addr;
-    Expr expr;
-    File_Location location;
-} Deferred_Operand;
-
-typedef struct {
-    Inst_Addr addr;
     uint64_t length;
 } String_Length;
-
-typedef struct {
-    Expr expr;
-    File_Location location;
-} Deferred_Assert;
-
-typedef struct {
-    String_View binding_name;
-    File_Location location;
-} Deferred_Entry;
 
 typedef enum {
     EVAL_STATUS_KIND_OK = 0,
@@ -81,6 +65,32 @@ struct Scope {
 
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
+};
+
+typedef struct {
+    Inst_Addr addr;
+    Expr expr;
+    File_Location location;
+    Scope *scope;
+} Deferred_Operand;
+
+typedef struct {
+    Expr expr;
+    File_Location location;
+    Scope *scope;
+} Deferred_Assert;
+
+typedef struct {
+    String_View binding_name;
+    File_Location location;
+    Scope *scope;
+} Deferred_Entry;
+
+typedef struct {
+    Scope *scope;
+
+    Inst program[BM_PROGRAM_CAPACITY];
+    uint64_t program_size;
 
     Deferred_Operand deferred_operands[BASM_DEFERRED_OPERANDS_CAPACITY];
     size_t deferred_operands_size;
@@ -89,19 +99,6 @@ struct Scope {
     size_t deferred_asserts_size;
 
     Deferred_Entry deferred_entry;
-};
-
-Binding *scope_resolve_binding(Scope *scope, String_View name);
-void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);
-void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location);
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location);
-void scope_push_deferred_operand(Scope *scope, Inst_Addr addr, Expr expr, File_Location location);
-
-typedef struct {
-    Scope *scope;
-
-    Inst program[BM_PROGRAM_CAPACITY];
-    uint64_t program_size;
 
     Inst_Addr entry;
     bool has_entry;
@@ -125,6 +122,11 @@ typedef struct {
     String_View include_paths[BASM_INCLUDE_PATHS_CAPACITY];
     size_t include_paths_size;
 } Basm;
+
+Binding *scope_resolve_binding(Scope *scope, String_View name);
+void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);
+void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location);
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location);
 
 void basm_push_new_scope(Basm *basm);
 void basm_pop_scope(Basm *basm);
