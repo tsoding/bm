@@ -142,6 +142,7 @@ void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Loca
 void basm_save_to_file(Basm *basm, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
+Word basm_push_buffer_to_memory(Basm *basm, uint8_t *buffer, uint64_t buffer_size);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
 Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output);
 Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output);
