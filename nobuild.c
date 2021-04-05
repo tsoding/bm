@@ -100,21 +100,32 @@ void build_tool(const char *name)
 
 void examples_command(int argc, char **argv)
 {
-    tools_command(argc, argv);
-    wrappers_command(argc, argv);
+    if (argc <= 0) {
+        tools_command(argc, argv);
+        wrappers_command(argc, argv);
 
-    RM(PATH("build", "examples"));
-    MKDIRS("build", "examples");
+        RM(PATH("build", "examples"));
+        MKDIRS("build", "examples");
 
-    FOREACH_FILE_IN_DIR(example, "examples", {
-        if (ENDS_WITH(example, ".basm"))
-        {
-            CMD(PATH("build", "toolchain", "basm"),
-                "-I", "lib",
-                "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
-                PATH("examples", example));
-        }
-    });
+        FOREACH_FILE_IN_DIR(example, "examples", {
+            if (ENDS_WITH(example, ".basm"))
+            {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "lib",
+                    "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
+                    PATH("examples", example));
+            }
+        });
+    } else {
+        const char *example = argv[0];
+        CMD(PATH("build", "toolchain", "basm"),
+            "-I", "lib",
+            "-o", PATH("build", "examples", CONCAT(example, ".bm")),
+            PATH("examples", CONCAT(example, ".basm")));
+        CMD(PATH("build", "toolchain", "bme"),
+            "-n", PATH("build", "wrappers", "libbm_sdl.so"),
+            PATH("build", "examples", CONCAT(example, ".bm")));
+    }
 }
 
 void wrappers_command(int argc, char **argv)
