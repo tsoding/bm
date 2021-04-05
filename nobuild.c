@@ -13,7 +13,6 @@ typedef struct {
     void (*run)(void);
 } Command;
 
-void all_command(void);
 void tools_command(void);
 void cases_command(void);
 void test_command(void);
@@ -72,11 +71,6 @@ Command commands[] = {
     }
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
-
-
-const char *toolchain[] = {
-    "basm", "bme", "bmr", "debasm", "bdb", "basm2nasm", "expr2dot"
-};
 
 void build_tool(const char *name)
 {
