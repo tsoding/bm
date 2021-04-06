@@ -53,6 +53,7 @@ typedef enum {
     BINARY_OP_PLUS,
     BINARY_OP_MINUS,
     BINARY_OP_MULT,
+    BINARY_OP_DIV,
     BINARY_OP_GT,
     BINARY_OP_LT,
     BINARY_OP_EQUALS,

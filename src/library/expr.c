@@ -84,6 +84,11 @@ bool token_kind_as_binary_op_kind(Token_Kind token_kind, Binary_Op_Kind *binary_
         return true;
     }
 
+    if (token_kind == TOKEN_KIND_DIV) {
+        if (binary_op_kind) *binary_op_kind = BINARY_OP_DIV;
+        return true;
+    }
+
     if (token_kind == TOKEN_KIND_GT) {
         if (binary_op_kind) *binary_op_kind = BINARY_OP_GT;
         return true;
@@ -406,6 +411,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_DIV:
     case TOKEN_KIND_IF:
     case TOKEN_KIND_EQ:
     case TOKEN_KIND_MOD:
@@ -446,6 +452,7 @@ size_t binary_op_kind_precedence(Binary_Op_Kind kind)
         return 1;
     case BINARY_OP_MOD:
     case BINARY_OP_MULT:
+    case BINARY_OP_DIV:
         return 2;
     default:
         assert(false && "binary_op_kind_precedence: unreachable");
@@ -470,6 +477,8 @@ const char *binary_op_kind_name(Binary_Op_Kind kind)
         return "==";
     case BINARY_OP_MOD:
         return "%";
+    case BINARY_OP_DIV:
+        return "/";
     default:
         assert(false && "binary_op_kind_name: unreachable");
         exit(1);
@@ -487,6 +496,8 @@ const char *token_kind_name(Token_Kind kind)
         return "plus";
     case TOKEN_KIND_MINUS:
         return "minus";
+    case TOKEN_KIND_DIV:
+        return "div";
     case TOKEN_KIND_MULT:
         return "multiply";
     case TOKEN_KIND_NUMBER:
