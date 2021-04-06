@@ -22,3 +22,5 @@
 %native SDL_RenderClear
 %native SDL_RenderPresent
 %native SDL_RenderFillRect
+%native SDL_Delay
+%native SDL_GetWindowSize

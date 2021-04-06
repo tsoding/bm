@@ -41,7 +41,7 @@ rot13:
 
 loop:
     dup 0
-    read8
+    read8u
 
     upper_case:
         dup 0

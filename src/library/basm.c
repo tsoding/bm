@@ -835,6 +835,11 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
     break;
 
+    case BINARY_OP_DIV: {
+        *output = word_u64(left.as_u64 / right.as_u64);
+    }
+    break;
+
     case BINARY_OP_GT: {
         *output = word_u64(left.as_u64 > right.as_u64);
     }

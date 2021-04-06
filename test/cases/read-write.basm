@@ -1,0 +1,18 @@
+%include "std.hasm"
+
+%const SOME_MEMORY = byte_array(4, 0)
+
+%entry main:
+    push SOME_MEMORY
+    push -1
+    write32
+
+    push SOME_MEMORY
+    read32u
+    call dump_u64
+
+    push SOME_MEMORY
+    read32i
+    call dump_i64
+    
+    halt

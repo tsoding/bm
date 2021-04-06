@@ -1,24 +1,29 @@
+%include "./std.hasm"
 %include "./sdl.hasm"
+
+%const RGBA_SIZE = 4
+%const PTR_SIZE  = 8
 
 %const SCREEN_WIDTH  = 800
 %const SCREEN_HEIGHT = 600
+%const SCREEN_FPS    = 60
+%const DELAY_MS      = 1000 / SCREEN_FPS
 
-%const EVENT = byte_array(SDL_Event_size, 0)
+%const EVENT  = byte_array(SDL_Event_size, 0)
+%const WINDOW = byte_array(PTR_SIZE, 0)
 
 %const LOGO_WIDTH  = 69
 %const LOGO_HEIGHT = 69
 %const LOGO_RECT   = byte_array(SDL_Rect_size, 0)
-%const LOGO_SPEED  = 1
+%const LOGO_SPEED  = 5
 %const LOGO_DX     = int32(LOGO_SPEED)
 %const LOGO_DY     = int32(LOGO_SPEED)
 %const LOGO_COLOR  = 0xFF0000FF
 
-%const RGBA_COMP = 4
-
 split_colors:
 %scope
     swap 1
-    %for i from 1 to RGBA_COMP
+    %for i from 1 to RGBA_SIZE
         dup 0
         push (i - 1) * 8
         shr
@@ -27,7 +32,7 @@ split_colors:
         swap 1
     %end
     drop
-    %for i from 1 to RGBA_COMP
+    %for i from 1 to RGBA_SIZE
         swap i
     %end
     ret
@@ -78,53 +83,82 @@ render_logo:
 ;; TODO(#279): logo does not bounce off of the edge of the screen
 update_logo:
 %scope
+    push WINDOW
+    read64u
+    native SDL_GetWindowSize
+
     %scope
         push LOGO_RECT + SDL_Rect_y
-        read32
-        push SCREEN_HEIGHT
+        read32i
+
+        dup 1
+        push LOGO_HEIGHT
+        minusi
         lti
+
+        push LOGO_RECT + SDL_Rect_y
+        read32i
+
+        swap 0
+        push 0
+        gei
+        andb
+
         jmp_if skip
             push LOGO_DY
-            read32
+            read32i
             push -1
             multi
             push LOGO_DY
             swap 1
             write32
         skip:
+        drop
     %end
 
     %scope
         push LOGO_RECT + SDL_Rect_x
-        read32
-        push SCREEN_WIDTH
+        read32i
+
+        dup 1
+        push LOGO_WIDTH
+        minusi
         lti
+
+        push LOGO_RECT + SDL_Rect_x
+        read32i
+
+        swap 0
+        push 0
+        gei
+        andb
+
         jmp_if skip
             push LOGO_DX
-            read32
+            read32i
             push -1
             multi
             push LOGO_DX
             swap 1
             write32
         skip:
+        drop
     %end
 
     push LOGO_RECT + SDL_Rect_x
-    ;; TODO(#288): read32 (and others) don't read the signed numbers properly
-    ;; Because of that the example accedentally works without checking all of the "wall" cases. 
-    read32
+
+    read32i
     push LOGO_DX
-    read32
+    read32i
     plusi
     push LOGO_RECT + SDL_Rect_x
     swap 1
     write32
 
     push LOGO_RECT + SDL_Rect_y
-    read32
+    read32i
     push LOGO_DY
-    read32
+    read32i
     plusi
     push LOGO_RECT + SDL_Rect_y
     swap 1
@@ -145,6 +179,11 @@ update_logo:
     push SDL_WINDOW_RESIZABLE
     native SDL_CreateWindow
 
+    dup 0
+    push WINDOW
+    swap 1
+    write64
+
     native SDL_CreateRenderer
 
     call init_logo
@@ -155,7 +194,7 @@ update_logo:
             native SDL_PollEvent
 
             push EVENT
-            read32
+            read32u
 
             push SDL_QUIT
             equ
@@ -183,6 +222,9 @@ update_logo:
         ;; SDL_RenderPresent(renderer);
         dup 0
         native SDL_RenderPresent
+
+        push DELAY_MS
+        native SDL_Delay
     jmp main_loop
     end:
     native SDL_Quit
