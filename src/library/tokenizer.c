@@ -39,7 +39,8 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
     case '/': {
         token.kind = TOKEN_KIND_DIV;
         token.text = sv_chop_left(&tokenizer->source, 1);
-    } break;
+    }
+    break;
 
     case ')': {
         token.kind = TOKEN_KIND_CLOSING_PAREN;
