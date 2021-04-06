@@ -172,6 +172,7 @@ update_logo:
     native SDL_Init
     drop
 
+    push "Simple SDL Example\0"
     push 0 ;; x
     push 0 ;; y
     push SCREEN_WIDTH
