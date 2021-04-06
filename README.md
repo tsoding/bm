@@ -2,7 +2,7 @@
 
 ![birch](./assets/birch-296x328.png)
 
-Simple Virtual Machine with its own Bytecode and Assembly language.
+[Stack-Based](https://en.wikipedia.org/wiki/Stack-oriented_programming) Language with Powerful Meta-Programming.
 
 ## Build
 
