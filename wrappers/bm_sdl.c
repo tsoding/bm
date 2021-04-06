@@ -34,20 +34,19 @@ Err bm_SDL_Quit(Bm *bm)
 
 Err bm_SDL_CreateWindow(Bm *bm)
 {
-    // TODO(#280): title is hardcoded for bm_SDL_CreateWindow()
-    // It may require to introduce semantic changes to string literals
-
-    if (bm->stack_size < 5) {
+    if (bm->stack_size < 6) {
         return ERR_STACK_UNDERFLOW;
     }
 
+    uint64_t title_offset = bm->stack[bm->stack_size - 6].as_u64;
     int x = (int) bm->stack[bm->stack_size - 5].as_i64;
     int y = (int) bm->stack[bm->stack_size - 4].as_i64;
     int w = (int) bm->stack[bm->stack_size - 3].as_i64;
     int h = (int) bm->stack[bm->stack_size - 2].as_i64;
     Uint32 flags = (Uint32) bm->stack[bm->stack_size - 1].as_u64;
 
-    void *window = SDL_CreateWindow("BM", x, y, w, h, flags);
+    // TODO(#292): bm_SDL_CreateWindow does not check if it's accessing valid memory of a title (vulnerability)
+    void *window = SDL_CreateWindow((void*) (bm->memory + title_offset), x, y, w, h, flags);
 
     if (bm->stack_size >= BM_STACK_CAPACITY) {
         return ERR_STACK_OVERFLOW;
