@@ -320,9 +320,53 @@ static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Lo
     return result;
 }
 
-String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, File_Location location)
+String_View unescape_string_literal(Arena *arena, File_Location location, String_View str_lit)
 {
-    return expect_token_next(tokenizer, TOKEN_KIND_STR, location).text;
+    char *unescaped = arena_alloc(arena, str_lit.count);
+    size_t unescaped_size = 0;
+
+    for (size_t i = 0; i < str_lit.count; ) {
+        if (str_lit.data[i] == '\\') {
+            if (i + 1 >= str_lit.count) {
+                fprintf(stderr, FL_Fmt": ERROR: unfinished string literal escape sequence\n",
+                        FL_Arg(location));
+                exit(1);
+            }
+
+            switch (str_lit.data[i + 1]) {
+            case '0':
+                assert(unescaped_size < str_lit.count);
+                unescaped[unescaped_size++] = '\0';
+                break;
+
+            case 'n':
+                assert(unescaped_size < str_lit.count);
+                unescaped[unescaped_size++] = '\n';
+                break;
+
+            default:
+                fprintf(stderr, FL_Fmt": ERROR: unknown escape character `%c`",
+                        FL_Arg(location), str_lit.data[i + 1]);
+                exit(1);
+            }
+
+            i += 2;
+        } else {
+            assert(unescaped_size < str_lit.count);
+            unescaped[unescaped_size++] = str_lit.data[i];
+            i += 1;
+        }
+    }
+
+    return (String_View) {
+        .count = unescaped_size,
+        .data = unescaped,
+    };
+}
+
+String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, Arena *arena, File_Location location)
+{
+    return unescape_string_literal(arena, location, expect_token_next(tokenizer, TOKEN_KIND_STR, location).text);
 }
 
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location)
@@ -339,7 +383,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     case TOKEN_KIND_STR: {
         Expr result = {0};
         result.kind = EXPR_KIND_LIT_STR;
-        result.value.as_lit_str = parse_lit_str_from_tokens(tokenizer, location);
+        result.value.as_lit_str = parse_lit_str_from_tokens(tokenizer, arena, location);
         return result;
     }
     break;

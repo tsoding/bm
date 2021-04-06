@@ -578,7 +578,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         Statement statement = {0};
         statement.location = location;
         statement.kind = STATEMENT_KIND_ERROR;
-        statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, location);
+        statement.value.as_error.message = parse_lit_str_from_tokens(&tokenizer, arena, location);
         expect_no_tokens(&tokenizer, location);
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("if"))) {

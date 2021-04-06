@@ -1,21 +1,12 @@
 %include "std.hasm"
-%const hello = "Hello, World" ; message
 
-;; ---
-%assert len(hello) > 0
+%const hello = "Hello, World\n"
 
 %entry main:
-    push hello
-    push len(hello)
-    native write
-
-    push hello
-    push 10
-    write8
-
-    push hello
-    push 1
-    native write
-    
+    %for i from 1 to 5 do
+        push hello
+        push len(hello)
+        native write
+    %end
     halt
 
