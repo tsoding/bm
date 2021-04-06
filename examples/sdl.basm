@@ -2,13 +2,15 @@
 
 %const SCREEN_WIDTH  = 800
 %const SCREEN_HEIGHT = 600
+%const SCREEN_FPS    = 60
+%const DELAY_MS      = 1000 / SCREEN_FPS
 
 %const EVENT = byte_array(SDL_Event_size, 0)
 
 %const LOGO_WIDTH  = 69
 %const LOGO_HEIGHT = 69
 %const LOGO_RECT   = byte_array(SDL_Rect_size, 0)
-%const LOGO_SPEED  = 1
+%const LOGO_SPEED  = 5
 %const LOGO_DX     = int32(LOGO_SPEED)
 %const LOGO_DY     = int32(LOGO_SPEED)
 %const LOGO_COLOR  = 0xFF0000FF
@@ -202,6 +204,9 @@ update_logo:
         ;; SDL_RenderPresent(renderer);
         dup 0
         native SDL_RenderPresent
+
+        push DELAY_MS
+        native SDL_Delay
     jmp main_loop
     end:
     native SDL_Quit
