@@ -45,7 +45,7 @@ Err bm_SDL_CreateWindow(Bm *bm)
     int h = (int) bm->stack[bm->stack_size - 2].as_i64;
     Uint32 flags = (Uint32) bm->stack[bm->stack_size - 1].as_u64;
 
-    // TODO: bm_SDL_CreateWindow does not check if it's accessing valid memory of a title (vulnerability)
+    // TODO(#292): bm_SDL_CreateWindow does not check if it's accessing valid memory of a title (vulnerability)
     void *window = SDL_CreateWindow((void*) (bm->memory + title_offset), x, y, w, h, flags);
 
     if (bm->stack_size >= BM_STACK_CAPACITY) {
