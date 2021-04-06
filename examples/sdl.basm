@@ -3,11 +3,16 @@
 %const SCREEN_WIDTH  = 800
 %const SCREEN_HEIGHT = 600
 
+%const EVENT = byte_array(SDL_Event_size, 0)
+
 %const LOGO_WIDTH  = 69
 %const LOGO_HEIGHT = 69
+%const LOGO_RECT   = byte_array(SDL_Rect_size, 0)
+%const LOGO_SPEED  = 1
+%const LOGO_DX     = int32(LOGO_SPEED)
+%const LOGO_DY     = int32(LOGO_SPEED)
+%const LOGO_COLOR  = 0xFF0000FF
 
-%const EVENT     = byte_array(SDL_Event_size, 0)
-%const RECT      = byte_array(SDL_Rect_size, 0)
 %const RGBA_COMP = 4
 
 split_colors:
@@ -31,19 +36,19 @@ split_colors:
 
 init_logo:
 %scope
-    push RECT + SDL_Rect_x
+    push LOGO_RECT + SDL_Rect_x
     push 100
     write32
 
-    push RECT + SDL_Rect_y
+    push LOGO_RECT + SDL_Rect_y
     push 100
     write32
 
-    push RECT + SDL_Rect_w
+    push LOGO_RECT + SDL_Rect_w
     push LOGO_WIDTH
     write32
 
-    push RECT + SDL_Rect_h
+    push LOGO_RECT + SDL_Rect_h
     push LOGO_HEIGHT
     write32
 
@@ -55,13 +60,13 @@ render_logo:
     swap 1
 
     dup 0
-    push 0xFF0000FF
+    push LOGO_COLOR
     call split_colors
     native SDL_SetRenderDrawColor
     drop
 
     dup 0
-    push RECT
+    push LOGO_RECT
     native SDL_RenderFillRect
     drop
 
@@ -73,19 +78,53 @@ render_logo:
 ;; TODO(#279): logo does not bounce off of the edge of the screen
 update_logo:
 %scope
-    push RECT + SDL_Rect_x
+    %scope
+        push LOGO_RECT + SDL_Rect_y
+        read32
+        push SCREEN_HEIGHT
+        lti
+        jmp_if skip
+            push LOGO_DY
+            read32
+            push -1
+            multi
+            push LOGO_DY
+            swap 1
+            write32
+        skip:
+    %end
+
+    %scope
+        push LOGO_RECT + SDL_Rect_x
+        read32
+        push SCREEN_WIDTH
+        lti
+        jmp_if skip
+            push LOGO_DX
+            read32
+            push -1
+            multi
+            push LOGO_DX
+            swap 1
+            write32
+        skip:
+    %end
+
+    push LOGO_RECT + SDL_Rect_x
     read32
-    push 1
+    push LOGO_DX
+    read32
     plusi
-    push RECT + SDL_Rect_x
+    push LOGO_RECT + SDL_Rect_x
     swap 1
     write32
 
-    push RECT + SDL_Rect_y
+    push LOGO_RECT + SDL_Rect_y
     read32
-    push 1
+    push LOGO_DY
+    read32
     plusi
-    push RECT + SDL_Rect_y
+    push LOGO_RECT + SDL_Rect_y
     swap 1
     write32
 
