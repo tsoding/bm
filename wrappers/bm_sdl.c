@@ -1,17 +1,17 @@
 #include <SDL2/SDL.h>
 #include "./bm.h"
 
-Err bm_SDL_Init(Bm *bm);
-Err bm_SDL_Quit(Bm *bm);
-Err bm_SDL_CreateWindow(Bm *bm);
-Err bm_SDL_CreateRenderer(Bm *bm);
-Err bm_SDL_PollEvent(Bm *bm);
-Err bm_SDL_SetRenderDrawColor(Bm *bm);
-Err bm_SDL_RenderClear(Bm *bm);
-Err bm_SDL_RenderPresent(Bm *bm);
-Err bm_SDL_RenderFillRect(Bm *bm);
-Err bm_SDL_Delay(Bm *bm);
-Err bm_SDL_GetWindowSize(Bm *bm);
+EXPORT Err bm_SDL_Init(Bm *bm);
+EXPORT Err bm_SDL_Quit(Bm *bm);
+EXPORT Err bm_SDL_CreateWindow(Bm *bm);
+EXPORT Err bm_SDL_CreateRenderer(Bm *bm);
+EXPORT Err bm_SDL_PollEvent(Bm *bm);
+EXPORT Err bm_SDL_SetRenderDrawColor(Bm *bm);
+EXPORT Err bm_SDL_RenderClear(Bm *bm);
+EXPORT Err bm_SDL_RenderPresent(Bm *bm);
+EXPORT Err bm_SDL_RenderFillRect(Bm *bm);
+EXPORT Err bm_SDL_Delay(Bm *bm);
+EXPORT Err bm_SDL_GetWindowSize(Bm *bm);
 
 Err bm_SDL_Init(Bm *bm)
 {

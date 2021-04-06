@@ -186,7 +186,31 @@ void wrappers_command(int argc, char **argv)
             PATH("build", "wrappers", "bm_hello.o"));
     }
 #else
-    PANIC("TODO: build C wrappers is not implemented for Windows");
+    // SDL wrapper
+    {
+        CMD("cl.exe", CFLAGS,
+            "/I", PATH("vendor", "sdl2", "include"),
+            "/I", PATH("src", "library"),
+            PATH("wrappers", "bm_sdl.c"),
+            "/link", PATH("vendor", "sdl2", "lib", "SDL2.lib"),
+            "/DLL",
+            CONCAT("/out:", PATH("build", "wrappers", "libbm_sdl.dll")),
+            "/NOENTRY"
+            );
+    }
+
+    // hello wrapper
+    {
+        CMD("cl.exe", CFLAGS,
+            "/I", PATH("src", "library"),
+            PATH("wrappers", "bm_hello.c"),
+            "/link",
+            "/DLL",
+            "libucrt.lib",
+            CONCAT("/out:", PATH("build", "wrappers", "libbm_hello.dll")),
+            "/NOENTRY"
+            );
+    }
 #endif
 }
 

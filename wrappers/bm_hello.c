@@ -2,7 +2,7 @@
 
 #include "bm.h"
 
-Err bm_hello(Bm *bm);
+EXPORT Err bm_hello(Bm *bm);
 
 Err bm_hello(Bm *bm)
 {
