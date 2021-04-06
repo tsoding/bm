@@ -111,6 +111,8 @@ update_logo:
     %end
 
     push LOGO_RECT + SDL_Rect_x
+    ;; TODO: read32 (and others) don't read the signed numbers properly
+    ;; Because of that the example accedentally works without checking all of the "wall" cases. 
     read32
     push LOGO_DX
     read32
