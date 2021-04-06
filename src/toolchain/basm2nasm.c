@@ -415,6 +415,14 @@ int main(int argc, char *argv[])
             assert(false && "SHL is not implemented");
         case INST_NOTB:
             assert(false && "NOTB is not implemented");
+        case INST_READ8I:
+            assert(false && "READ8I is not implemented");
+        case INST_READ16I:
+            assert(false && "READ16I is not implemented");
+        case INST_READ32I:
+            assert(false && "READ32I is not implemented");
+        case INST_READ64I:
+            assert(false && "READ64I is not implemented");
         case INST_READ8U: {
             fprintf(output, "    ;; read8\n");
             fprintf(output, "    mov r11, [stack_top]\n");

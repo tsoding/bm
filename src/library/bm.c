@@ -138,6 +138,16 @@ bool inst_has_operand(Inst_Type type)
         return false;
     case INST_READ64U:
         return false;
+
+    case INST_READ8I:
+        return false;
+    case INST_READ16I:
+        return false;
+    case INST_READ32I:
+        return false;
+    case INST_READ64I:
+        return false;
+
     case INST_WRITE8:
         return false;
     case INST_WRITE16:
@@ -275,6 +285,7 @@ const char *inst_name(Inst_Type type)
         return "shl";
     case INST_NOTB:
         return "notb";
+
     case INST_READ8U:
         return "read8u";
     case INST_READ16U:
@@ -283,6 +294,16 @@ const char *inst_name(Inst_Type type)
         return "read32u";
     case INST_READ64U:
         return "read64u";
+
+    case INST_READ8I:
+        return "read8i";
+    case INST_READ16I:
+        return "read16i";
+    case INST_READ32I:
+        return "read32i";
+    case INST_READ64I:
+        return "read64i";
+
     case INST_WRITE8:
         return "write8";
     case INST_WRITE16:
@@ -291,6 +312,7 @@ const char *inst_name(Inst_Type type)
         return "write32";
     case INST_WRITE64:
         return "write64";
+
     case INST_I2F:
         return "i2f";
     case INST_U2F:
@@ -347,6 +369,19 @@ Err bm_execute_program(Bm *bm, int limit)
 
     return ERR_OK;
 }
+
+#define READ_OP(bm, type, out) \
+    do { \
+        if ((bm)->stack_size < 1) { \
+            return ERR_STACK_UNDERFLOW; \
+        } \
+        const Memory_Addr addr = (bm)->stack[(bm)->stack_size - 1].as_u64; \
+        if (addr >= BM_MEMORY_CAPACITY) { \
+            return ERR_ILLEGAL_MEMORY_ACCESS; \
+        } \
+        (bm)->stack[(bm)->stack_size - 1].as_##out = *(type*)&(bm)->memory[addr]; \
+        (bm)->ip += 1; \
+    } while(false)
 
 #define BINARY_OP(bm, in, out, op)                                      \
     do {                                                                \
@@ -658,57 +693,37 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_READ8U: {
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        const Memory_Addr addr = bm->stack[bm->stack_size - 1].as_u64;
-        if (addr >= BM_MEMORY_CAPACITY) {
-            return ERR_ILLEGAL_MEMORY_ACCESS;
-        }
-        bm->stack[bm->stack_size - 1].as_u64 = bm->memory[addr];
-        bm->ip += 1;
-    }
-    break;
+    case INST_READ8U:
+        READ_OP(bm, uint8_t, u64);
+        break;
 
-    case INST_READ16U: {
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        const Memory_Addr addr = bm->stack[bm->stack_size - 1].as_u64;
-        if (addr >= BM_MEMORY_CAPACITY - 1) {
-            return ERR_ILLEGAL_MEMORY_ACCESS;
-        }
-        bm->stack[bm->stack_size - 1].as_u64 = *(uint16_t*)&bm->memory[addr];
-        bm->ip += 1;
-    }
-    break;
+    case INST_READ16U:
+        READ_OP(bm, uint16_t, u64);
+        break;
 
-    case INST_READ32U: {
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        const Memory_Addr addr = bm->stack[bm->stack_size - 1].as_u64;
-        if (addr >= BM_MEMORY_CAPACITY - 3) {
-            return ERR_ILLEGAL_MEMORY_ACCESS;
-        }
-        bm->stack[bm->stack_size - 1].as_u64 = *(uint32_t*)&bm->memory[addr];
-        bm->ip += 1;
-    }
-    break;
+    case INST_READ32U:
+        READ_OP(bm, uint32_t, u64);
+        break;
 
-    case INST_READ64U: {
-        if (bm->stack_size < 1) {
-            return ERR_STACK_UNDERFLOW;
-        }
-        const Memory_Addr addr = bm->stack[bm->stack_size - 1].as_u64;
-        if (addr >= BM_MEMORY_CAPACITY - 7) {
-            return ERR_ILLEGAL_MEMORY_ACCESS;
-        }
-        bm->stack[bm->stack_size - 1].as_u64 = *(uint64_t*)&bm->memory[addr];
-        bm->ip += 1;
-    }
-    break;
+    case INST_READ64U:
+        READ_OP(bm, uint64_t, u64);
+        break;
+
+    case INST_READ8I:
+        READ_OP(bm, int8_t, i64);
+        break;
+
+    case INST_READ16I:
+        READ_OP(bm, int16_t, i64);
+        break;
+
+    case INST_READ32I:
+        READ_OP(bm, int32_t, i64);
+        break;
+
+    case INST_READ64I:
+        READ_OP(bm, int64_t, i64);
+        break;
 
     case INST_WRITE8: {
         if (bm->stack_size < 2) {
