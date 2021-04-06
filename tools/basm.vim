@@ -23,7 +23,7 @@ syntax keyword basmKeywords equ geu gtu leu ltu neu
 syntax keyword basmKeywords eqf gef gtf lef ltf nef
 syntax keyword basmKeywords ret call native
 syntax keyword basmKeywords andb orb xor shr shl notb
-syntax keyword basmKeywords read8 read16 read32 read64
+syntax keyword basmKeywords read8u read16u read32u read64u
 syntax keyword basmKeywords write8 write16 write32 write64
 syntax keyword basmKeywords i2f u2f f2i f2u
 

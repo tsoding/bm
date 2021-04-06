@@ -130,13 +130,13 @@ bool inst_has_operand(Inst_Type type)
         return false;
     case INST_NOTB:
         return false;
-    case INST_READ8:
+    case INST_READ8U:
         return false;
-    case INST_READ16:
+    case INST_READ16U:
         return false;
-    case INST_READ32:
+    case INST_READ32U:
         return false;
-    case INST_READ64:
+    case INST_READ64U:
         return false;
     case INST_WRITE8:
         return false;
@@ -275,14 +275,14 @@ const char *inst_name(Inst_Type type)
         return "shl";
     case INST_NOTB:
         return "notb";
-    case INST_READ8:
-        return "read8";
-    case INST_READ16:
-        return "read16";
-    case INST_READ32:
-        return "read32";
-    case INST_READ64:
-        return "read64";
+    case INST_READ8U:
+        return "read8u";
+    case INST_READ16U:
+        return "read16u";
+    case INST_READ32U:
+        return "read32u";
+    case INST_READ64U:
+        return "read64u";
     case INST_WRITE8:
         return "write8";
     case INST_WRITE16:
@@ -658,7 +658,7 @@ Err bm_execute_inst(Bm *bm)
         bm->ip += 1;
         break;
 
-    case INST_READ8: {
+    case INST_READ8U: {
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -671,7 +671,7 @@ Err bm_execute_inst(Bm *bm)
     }
     break;
 
-    case INST_READ16: {
+    case INST_READ16U: {
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -684,7 +684,7 @@ Err bm_execute_inst(Bm *bm)
     }
     break;
 
-    case INST_READ32: {
+    case INST_READ32U: {
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
@@ -697,7 +697,7 @@ Err bm_execute_inst(Bm *bm)
     }
     break;
 
-    case INST_READ64: {
+    case INST_READ64U: {
         if (bm->stack_size < 1) {
             return ERR_STACK_UNDERFLOW;
         }
