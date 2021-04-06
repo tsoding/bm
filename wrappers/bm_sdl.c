@@ -10,6 +10,7 @@ Err bm_SDL_SetRenderDrawColor(Bm *bm);
 Err bm_SDL_RenderClear(Bm *bm);
 Err bm_SDL_RenderPresent(Bm *bm);
 Err bm_SDL_RenderFillRect(Bm *bm);
+Err bm_SDL_Delay(Bm *bm);
 
 Err bm_SDL_Init(Bm *bm)
 {
@@ -131,6 +132,18 @@ Err bm_SDL_RenderFillRect(Bm *bm)
 
     bm->stack[bm->stack_size++].as_i64 =
         SDL_RenderFillRect(renderer, (void*) (bm->memory + rect_offset));
+
+    return ERR_OK;
+}
+
+Err bm_SDL_Delay(Bm *bm)
+{
+    if (bm->stack_size < 1) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    SDL_Delay((Uint32) bm->stack[bm->stack_size - 1].as_u64);
+    bm->stack_size -= 1;
 
     return ERR_OK;
 }
