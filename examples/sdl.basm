@@ -81,8 +81,18 @@ update_logo:
     %scope
         push LOGO_RECT + SDL_Rect_y
         read32i
+
         push SCREEN_HEIGHT
         lti
+
+        push LOGO_RECT + SDL_Rect_y
+        read32i
+
+        swap 0
+        push 0
+        gei
+        andb
+
         jmp_if skip
             push LOGO_DY
             read32i
@@ -97,8 +107,18 @@ update_logo:
     %scope
         push LOGO_RECT + SDL_Rect_x
         read32i
+
         push SCREEN_WIDTH
         lti
+
+        push LOGO_RECT + SDL_Rect_x
+        read32i
+
+        swap 0
+        push 0
+        gei
+        andb
+
         jmp_if skip
             push LOGO_DX
             read32i
