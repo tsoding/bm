@@ -24,6 +24,7 @@ syntax keyword basmKeywords eqf gef gtf lef ltf nef
 syntax keyword basmKeywords ret call native
 syntax keyword basmKeywords andb orb xor shr shl notb
 syntax keyword basmKeywords read8u read16u read32u read64u
+syntax keyword basmKeywords read8i read16i read32i read64i
 syntax keyword basmKeywords write8 write16 write32 write64
 syntax keyword basmKeywords i2f u2f f2i f2u
 

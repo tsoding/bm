@@ -52,6 +52,7 @@
       "ret" "call" "native"
       "andb" "orb" "xor" "shr" "shl" "notb"
       "read8u" "read16u" "read32u" "read64u"
+      "read8i" "read16i" "read32i" "read64i"
       "write8" "write16" "write32" "write64"
       "i2f" "u2f" "f2i" "f2u")))
 

@@ -80,12 +80,12 @@ update_logo:
 %scope
     %scope
         push LOGO_RECT + SDL_Rect_y
-        read32u
+        read32i
         push SCREEN_HEIGHT
         lti
         jmp_if skip
             push LOGO_DY
-            read32u
+            read32i
             push -1
             multi
             push LOGO_DY
@@ -96,12 +96,12 @@ update_logo:
 
     %scope
         push LOGO_RECT + SDL_Rect_x
-        read32u
+        read32i
         push SCREEN_WIDTH
         lti
         jmp_if skip
             push LOGO_DX
-            read32u
+            read32i
             push -1
             multi
             push LOGO_DX
@@ -111,20 +111,19 @@ update_logo:
     %end
 
     push LOGO_RECT + SDL_Rect_x
-    ;; TODO(#288): read32 (and others) don't read the signed numbers properly
-    ;; Because of that the example accedentally works without checking all of the "wall" cases. 
-    read32u
+
+    read32i
     push LOGO_DX
-    read32u
+    read32i
     plusi
     push LOGO_RECT + SDL_Rect_x
     swap 1
     write32
 
     push LOGO_RECT + SDL_Rect_y
-    read32u
+    read32i
     push LOGO_DY
-    read32u
+    read32i
     plusi
     push LOGO_RECT + SDL_Rect_y
     swap 1
