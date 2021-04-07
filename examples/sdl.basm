@@ -12,13 +12,21 @@
 %const EVENT  = byte_array(SDL_Event_size, 0)
 %const WINDOW = byte_array(PTR_SIZE, 0)
 
-%const LOGO_WIDTH  = 69
-%const LOGO_HEIGHT = 69
-%const LOGO_RECT   = byte_array(SDL_Rect_size, 0)
-%const LOGO_SPEED  = 5
-%const LOGO_DX     = int32(LOGO_SPEED)
-%const LOGO_DY     = int32(LOGO_SPEED)
-%const LOGO_COLOR  = 0xFF0000FF
+;; TODO: we need some sort of include path functionality for the file() static memory allocator
+%const IMAGE_PIXELS = file("./assets/tsodinW.raw")
+%const IMAGE_WIDTH  = 112
+%const IMAGE_HEIGHT = 112
+%const IMAGE_DEPTH  = 32
+%const IMAGE_PTR    = byte_array(PTR_SIZE, 0) 
+
+%const LOGO_WIDTH   = IMAGE_WIDTH
+%const LOGO_HEIGHT  = IMAGE_HEIGHT
+%const LOGO_SRCRECT = byte_array(SDL_Rect_size, 0)
+%const LOGO_DSTRECT = byte_array(SDL_Rect_size, 0)
+%const LOGO_SPEED   = 5
+%const LOGO_DX      = int32(LOGO_SPEED)
+%const LOGO_DY      = int32(LOGO_SPEED)
+%const LOGO_COLOR   = 0xFF0000FF
 
 ;; TODO(#293): Use an actual image in the SDL example
 ;; ---
@@ -42,24 +50,45 @@ split_colors:
     ret
 %end
 
-
 init_logo:
 %scope
-    push LOGO_RECT + SDL_Rect_x
-    push 100
-    write32
+    ;; Initialize LOGO_SRCRECT
+    %scope
+        push LOGO_SRCRECT + SDL_Rect_x
+        push 0
+        write32
+        
+        push LOGO_SRCRECT + SDL_Rect_y
+        push 0
+        write32
+        
+        push LOGO_SRCRECT + SDL_Rect_w
+        push LOGO_WIDTH
+        write32
+        
+        push LOGO_SRCRECT + SDL_Rect_h
+        push LOGO_HEIGHT
+        write32
+    %end
 
-    push LOGO_RECT + SDL_Rect_y
-    push 100
-    write32
-
-    push LOGO_RECT + SDL_Rect_w
-    push LOGO_WIDTH
-    write32
-
-    push LOGO_RECT + SDL_Rect_h
-    push LOGO_HEIGHT
-    write32
+    ;; Initialize LOGO_DSTRECT
+    %scope
+        push LOGO_DSTRECT + SDL_Rect_x
+        push 100
+        write32
+    
+        push LOGO_DSTRECT + SDL_Rect_y
+        push 100
+        write32
+    
+        push LOGO_DSTRECT + SDL_Rect_w
+        push LOGO_WIDTH
+        write32
+    
+        push LOGO_DSTRECT + SDL_Rect_h
+        push LOGO_HEIGHT
+        write32
+    %end
 
     ret
 %end
@@ -69,14 +98,11 @@ render_logo:
     swap 1
 
     dup 0
-    push LOGO_COLOR
-    call split_colors
-    native SDL_SetRenderDrawColor
-    drop
-
-    dup 0
-    push LOGO_RECT
-    native SDL_RenderFillRect
+    push IMAGE_PTR
+    read64u
+    push LOGO_SRCRECT
+    push LOGO_DSTRECT
+    native SDL_RenderCopy
     drop
 
     drop
@@ -92,7 +118,7 @@ update_logo:
     native SDL_GetWindowSize
 
     %scope
-        push LOGO_RECT + SDL_Rect_y
+        push LOGO_DSTRECT + SDL_Rect_y
         read32i
 
         dup 1
@@ -100,7 +126,7 @@ update_logo:
         minusi
         lti
 
-        push LOGO_RECT + SDL_Rect_y
+        push LOGO_DSTRECT + SDL_Rect_y
         read32i
 
         swap 0
@@ -121,7 +147,7 @@ update_logo:
     %end
 
     %scope
-        push LOGO_RECT + SDL_Rect_x
+        push LOGO_DSTRECT + SDL_Rect_x
         read32i
 
         dup 1
@@ -129,7 +155,7 @@ update_logo:
         minusi
         lti
 
-        push LOGO_RECT + SDL_Rect_x
+        push LOGO_DSTRECT + SDL_Rect_x
         read32i
 
         swap 0
@@ -149,22 +175,22 @@ update_logo:
         drop
     %end
 
-    push LOGO_RECT + SDL_Rect_x
+    push LOGO_DSTRECT + SDL_Rect_x
 
     read32i
     push LOGO_DX
     read32i
     plusi
-    push LOGO_RECT + SDL_Rect_x
+    push LOGO_DSTRECT + SDL_Rect_x
     swap 1
     write32
 
-    push LOGO_RECT + SDL_Rect_y
+    push LOGO_DSTRECT + SDL_Rect_y
     read32i
     push LOGO_DY
     read32i
     plusi
-    push LOGO_RECT + SDL_Rect_y
+    push LOGO_DSTRECT + SDL_Rect_y
     swap 1
     write32
 
@@ -190,6 +216,22 @@ update_logo:
     write64
 
     native SDL_CreateRenderer
+
+    dup 0
+    push IMAGE_PIXELS
+    push IMAGE_WIDTH
+    push IMAGE_HEIGHT
+    push IMAGE_DEPTH
+    push IMAGE_WIDTH * 4
+    push 0x000000FF
+    push 0x0000FF00
+    push 0x00FF0000
+    push 0xFF000000
+    native SDL_CreateRGBSurfaceFrom
+    native SDL_CreateTextureFromSurface
+    push IMAGE_PTR
+    swap 1
+    write64
 
     call init_logo
 
