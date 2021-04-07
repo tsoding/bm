@@ -12,7 +12,7 @@
 %const EVENT  = byte_array(SDL_Event_size, 0)
 %const WINDOW = byte_array(PTR_SIZE, 0)
 
-;; TODO: we need some sort of include path functionality for the file() static memory allocator
+;; TODO(#298): we need some sort of include path functionality for the file() static memory allocator
 %const IMAGE_PIXELS = file("./assets/tsodinW.raw")
 %const IMAGE_WIDTH  = 112
 %const IMAGE_HEIGHT = 112
