@@ -189,7 +189,7 @@ Err bm_SDL_CreateRGBSurfaceFrom(Bm *bm)
 
     bm->stack_size -= 9;
 
-    // TODO: bm_SDL_CreateRGBSurfaceFrom does not validate pixels memory from the virtual machine
+    // TODO(#299): bm_SDL_CreateRGBSurfaceFrom does not validate pixels memory from the virtual machine
     SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
                                bm->memory + pixels_offset,
                                width,
