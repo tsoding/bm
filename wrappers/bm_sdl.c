@@ -233,7 +233,7 @@ Err bm_SDL_RenderCopy(Bm *bm)
     uint64_t dstrect_offset = bm->stack[bm->stack_size - 1].as_u64;
     bm->stack_size -= 4;
 
-    // TODO: bm_SDL_RenderCopy does not validate pixels memory from the virtual machine
+    // TODO(#300): bm_SDL_RenderCopy does not validate pixels memory from the virtual machine
     bm->stack[bm->stack_size++].as_i64 =
         SDL_RenderCopy(renderer,
                        texture,
