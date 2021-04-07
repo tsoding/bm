@@ -186,6 +186,9 @@ void wrappers_command(int argc, char **argv)
             PATH("build", "wrappers", "bm_hello.o"));
     }
 #else
+    // TODO(#295): consider adding the SDL binary dependency to the repo
+    // It is actually quite common for Windows C/C++ project to have binary blobs in the repos. So there is nothing to be ashamed about.
+
     // SDL wrapper
     {
         CMD("cl.exe", CFLAGS,
@@ -196,7 +199,7 @@ void wrappers_command(int argc, char **argv)
             "/DLL",
             CONCAT("/out:", PATH("build", "wrappers", "libbm_sdl.dll")),
             "/NOENTRY"
-            );
+           );
     }
 
     // hello wrapper
@@ -209,7 +212,7 @@ void wrappers_command(int argc, char **argv)
             "libucrt.lib",
             CONCAT("/out:", PATH("build", "wrappers", "libbm_hello.dll")),
             "/NOENTRY"
-            );
+           );
     }
 #endif
 }
