@@ -24,3 +24,6 @@
 %native SDL_RenderFillRect
 %native SDL_Delay
 %native SDL_GetWindowSize
+%native SDL_CreateRGBSurfaceFrom
+%native SDL_CreateTextureFromSurface
+%native SDL_RenderCopy

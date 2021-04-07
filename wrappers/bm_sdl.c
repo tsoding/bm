@@ -12,6 +12,9 @@ EXPORT Err bm_SDL_RenderPresent(Bm *bm);
 EXPORT Err bm_SDL_RenderFillRect(Bm *bm);
 EXPORT Err bm_SDL_Delay(Bm *bm);
 EXPORT Err bm_SDL_GetWindowSize(Bm *bm);
+EXPORT Err bm_SDL_CreateRGBSurfaceFrom(Bm *bm);
+EXPORT Err bm_SDL_CreateTextureFromSurface(Bm *bm);
+EXPORT Err bm_SDL_RenderCopy(Bm *bm);
 
 Err bm_SDL_Init(Bm *bm)
 {
@@ -164,6 +167,78 @@ Err bm_SDL_GetWindowSize(Bm *bm)
 
     bm->stack[bm->stack_size++].as_i64 = w;
     bm->stack[bm->stack_size++].as_i64 = h;
+
+    return ERR_OK;
+}
+
+Err bm_SDL_CreateRGBSurfaceFrom(Bm *bm)
+{
+    if (bm->stack_size < 9) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    uint64_t pixels_offset = bm->stack[bm->stack_size - 9].as_u64;
+    int width  = (int) bm->stack[bm->stack_size - 8].as_i64;
+    int height = (int) bm->stack[bm->stack_size - 7].as_i64;
+    int depth  = (int) bm->stack[bm->stack_size - 6].as_i64;
+    int pitch  = (int) bm->stack[bm->stack_size - 5].as_i64;
+    Uint32 rmask = (Uint32) bm->stack[bm->stack_size - 4].as_i64;
+    Uint32 gmask = (Uint32) bm->stack[bm->stack_size - 3].as_i64;
+    Uint32 bmask = (Uint32) bm->stack[bm->stack_size - 2].as_i64;
+    Uint32 amask = (Uint32) bm->stack[bm->stack_size - 1].as_i64;
+
+    bm->stack_size -= 9;
+
+    // TODO(#299): bm_SDL_CreateRGBSurfaceFrom does not validate pixels memory from the virtual machine
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+                               bm->memory + pixels_offset,
+                               width,
+                               height,
+                               depth,
+                               pitch,
+                               rmask,
+                               gmask,
+                               bmask,
+                               amask);
+
+    bm->stack[bm->stack_size++].as_ptr = surface;
+
+    return ERR_OK;
+}
+
+Err bm_SDL_CreateTextureFromSurface(Bm *bm)
+{
+    if (bm->stack_size < 2) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    void *renderer = bm->stack[bm->stack_size - 2].as_ptr;
+    void *surface = bm->stack[bm->stack_size - 1].as_ptr;
+    bm->stack_size -= 2;
+
+    bm->stack[bm->stack_size++].as_ptr = SDL_CreateTextureFromSurface(renderer, surface);
+
+    return ERR_OK;
+}
+
+Err bm_SDL_RenderCopy(Bm *bm)
+{
+    if (bm->stack_size < 4) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    void *renderer = bm->stack[bm->stack_size - 4].as_ptr;
+    void *texture = bm->stack[bm->stack_size - 3].as_ptr;
+    uint64_t srcrect_offset = bm->stack[bm->stack_size - 2].as_u64;
+    uint64_t dstrect_offset = bm->stack[bm->stack_size - 1].as_u64;
+    bm->stack_size -= 4;
+
+    // TODO(#300): bm_SDL_RenderCopy does not validate pixels memory from the virtual machine
+    bm->stack[bm->stack_size++].as_i64 =
+        SDL_RenderCopy(renderer,
+                       texture,
+                       (void*) (bm->memory + srcrect_offset),
+                       (void*) (bm->memory + dstrect_offset));
 
     return ERR_OK;
 }

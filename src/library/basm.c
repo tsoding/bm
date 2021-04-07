@@ -869,6 +869,19 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     return eval_status_ok();
 }
 
+static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
+{
+    const size_t actual_arity = funcall_args_len(funcall->args);
+    if (actual_arity != expected_arity) {
+        fprintf(stderr, FL_Fmt": ERROR: "SV_Fmt"() expects %zu but got %zu",
+                FL_Arg(location),
+                SV_Arg(funcall->name),
+                expected_arity,
+                actual_arity);
+        exit(1);
+    }
+}
+
 Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output)
 {
     switch (expr.kind) {
@@ -898,12 +911,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
 
     case EXPR_KIND_FUNCALL: {
         if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("len"))) {
-            const size_t actual_arity = funcall_args_len(expr.value.as_funcall->args);
-            if (actual_arity != 1) {
-                fprintf(stderr, FL_Fmt": ERROR: len() expects 1 argument but got %zu\n",
-                        FL_Arg(location), actual_arity);
-                exit(1);
-            }
+            funcall_expect_arity(expr.value.as_funcall, 1, location);
 
             Word addr = {0};
             {
@@ -925,15 +933,9 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
 
             *output = length;
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
+            funcall_expect_arity(expr.value.as_funcall, 2, location);
+
             Funcall_Arg *args = expr.value.as_funcall->args;
-
-            const size_t actual_arity = funcall_args_len(args);
-            if (actual_arity != 2) {
-                fprintf(stderr, FL_Fmt": ERROR: byte_array() expects 2 argument but got %zu\n",
-                        FL_Arg(location), actual_arity);
-                exit(1);
-            }
-
             Word size = {0};
             {
                 Eval_Status status = basm_expr_eval(
@@ -959,12 +961,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("int32"))) {
             Funcall_Arg *args = expr.value.as_funcall->args;
 
-            const size_t actual_arity = funcall_args_len(expr.value.as_funcall->args);
-            if (actual_arity != 1) {
-                fprintf(stderr, FL_Fmt": ERROR: len() expects 1 argument but got %zu\n",
-                        FL_Arg(location), actual_arity);
-                exit(1);
-            }
+            funcall_expect_arity(expr.value.as_funcall, 1, location);
 
             Word init_value = {0};
             {
@@ -980,6 +977,28 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
 
             uint32_t byte_array = (uint32_t) init_value.as_u64;
             *output = basm_push_buffer_to_memory(basm, (uint8_t*) &byte_array, sizeof(byte_array));
+        } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("file"))) {
+            funcall_expect_arity(expr.value.as_funcall, 1, location);
+
+            Funcall_Arg *args = expr.value.as_funcall->args;
+
+            if (args->value.kind != EXPR_KIND_LIT_STR) {
+                fprintf(stderr, FL_Fmt": ERROR: the first argument of file() is expected to be a string\n",
+                        FL_Arg(location));
+                exit(1);
+            }
+
+            String_View file_path = args->value.value.as_lit_str;
+            String_View file_content = {0};
+            if (arena_slurp_file(&basm->arena, file_path, &file_content) != 0) {
+                fprintf(stderr, FL_Fmt": ERROR: could not read the file `"SV_Fmt"`: %s\n",
+                        FL_Arg(location),
+                        SV_Arg(file_path),
+                        strerror(errno));
+                exit(1);
+            }
+
+            *output = basm_push_string_to_memory(basm, file_content);
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
