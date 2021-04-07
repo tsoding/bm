@@ -19,8 +19,10 @@
 // NOTE: Stolen from https://stackoverflow.com/a/3312896
 #if defined(__GNUC__) || defined(__clang__)
 #  define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#  define EXPORT
 #elif defined(_MSC_VER)
 #  define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#  define EXPORT __declspec(dllexport)
 #else
 #  error "Packed attributes for struct is not implemented for this compiler. This may result in a program working incorrectly. Feel free to fix that and submit a Pull Request to https://github.com/tsoding/bm"
 #endif

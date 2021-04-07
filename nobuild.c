@@ -186,7 +186,34 @@ void wrappers_command(int argc, char **argv)
             PATH("build", "wrappers", "bm_hello.o"));
     }
 #else
-    PANIC("TODO: build C wrappers is not implemented for Windows");
+    // TODO(#295): consider adding the SDL binary dependency to the repo
+    // It is actually quite common for Windows C/C++ project to have binary blobs in the repos. So there is nothing to be ashamed about.
+
+    // SDL wrapper
+    {
+        CMD("cl.exe", CFLAGS,
+            "/I", PATH("vendor", "sdl2", "include"),
+            "/I", PATH("src", "library"),
+            PATH("wrappers", "bm_sdl.c"),
+            "/link", PATH("vendor", "sdl2", "lib", "SDL2.lib"),
+            "/DLL",
+            CONCAT("/out:", PATH("build", "wrappers", "libbm_sdl.dll")),
+            "/NOENTRY"
+           );
+    }
+
+    // hello wrapper
+    {
+        CMD("cl.exe", CFLAGS,
+            "/I", PATH("src", "library"),
+            PATH("wrappers", "bm_hello.c"),
+            "/link",
+            "/DLL",
+            "libucrt.lib",
+            CONCAT("/out:", PATH("build", "wrappers", "libbm_hello.dll")),
+            "/NOENTRY"
+           );
+    }
 #endif
 }
 
