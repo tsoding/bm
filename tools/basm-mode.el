@@ -56,10 +56,15 @@
       "write8" "write16" "write32" "write64"
       "i2f" "u2f" "f2i" "f2u")))
 
+(eval-and-compile
+  (defconst basm-keywords
+    '("from" "to")))
+
 (defconst basm-highlights
   `(("%[[:word:]_]+" . font-lock-preprocessor-face)
     ("[[:word:]_]+\\:" . font-lock-constant-face)
-    (,(regexp-opt basm-instructions 'symbols) . font-lock-keyword-face)))
+    (,(regexp-opt basm-instructions 'symbols) . font-lock-keyword-face)
+    (,(regexp-opt basm-keywords 'symbols) . font-lock-preprocessor-face)))
 
 ;;;###autoload
 (define-derived-mode basm-mode fundamental-mode "basm"
