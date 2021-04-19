@@ -3,7 +3,7 @@
 %const hello = "Hello, World\n"
 
 %entry main:
-    %for i from 1 to 5 do
+    %for i from 1 to 5
         push hello
         push len(hello)
         native write
