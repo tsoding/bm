@@ -679,11 +679,11 @@ void basm_translate_for(Basm *basm, For phor, File_Location location)
         }
     }
 
-    for (uint64_t var_value = from.as_u64;
-            var_value <= to.as_u64;
+    for (int64_t var_value = from.as_i64;
+            var_value <= to.as_i64;
             ++var_value) {
         basm_push_new_scope(basm);
-        basm_bind_value(basm, phor.var, word_u64(var_value), BINDING_CONST, location);
+        basm_bind_value(basm, phor.var, word_i64(var_value), BINDING_CONST, location);
         basm_translate_block(basm, phor.body);
         basm_pop_scope(basm);
     }
