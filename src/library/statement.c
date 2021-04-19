@@ -115,13 +115,13 @@ void dump_statement(FILE *stream, Statement statement, int level)
     break;
 
     case STATEMENT_KIND_MACROCALL: {
-        assert(false && "TODO: Dumping macro calls is not implemented");
+        assert(false && "Dumping macro calls is not implemented");
         exit(1);
     }
     break;
 
     case STATEMENT_KIND_MACRODEF: {
-        assert(false && "TODO: Dumping macro definitions is not implemented");
+        assert(false && "Dumping macro definitions is not implemented");
         exit(1);
     }
     break;
