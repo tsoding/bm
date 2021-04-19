@@ -116,7 +116,7 @@ int arena_slurp_file(Arena *arena, String_View file_path, String_View *content)
 {
     const char *file_path_cstr = arena_sv_to_cstr(arena, file_path);
 
-    FILE *f = fopen(file_path_cstr, "r");
+    FILE *f = fopen(file_path_cstr, "rb");
     if (f == NULL) {
         return -1;
     }
