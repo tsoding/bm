@@ -136,6 +136,13 @@ void examples_command(int argc, char **argv)
                 PATH("examples", CONCAT(example, ".basm")));
             CMD(PATH("build", "toolchain", "debasm"),
                 PATH("build", "examples", CONCAT(example, ".bm")));
+        } else if (strcmp(subcommand, "ast2svg") == 0) {
+            MKDIRS("build", "svg");
+            const char *example = shift_args(&argc, &argv);
+            CHAIN(CHAIN_CMD(PATH("build", "toolchain", "basm2dot"),
+                            PATH("examples", CONCAT(example, ".basm"))),
+                  CHAIN_CMD("dot", "-Tsvg"),
+                  OUT(PATH("build", "svg", CONCAT(example, ".svg"))));
         } else {
             fprintf(stderr, "ERROR: unknown subcommand `%s`\n", subcommand);
             exit(1);
