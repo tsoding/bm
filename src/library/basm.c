@@ -340,6 +340,10 @@ void basm_translate_block(Basm *basm, Block *block)
                 assert(false && "TODO: translating macro calls is not implemented");
                 break;
 
+            case STATEMENT_KIND_MACRODEF:
+                assert(false && "TODO: translating macro definitions is not implemented");
+                break;
+
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
@@ -395,7 +399,11 @@ void basm_translate_block(Basm *basm, Block *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                assert(false && "TODO: translating macro calls is not implemented");
+                assert(false && "translating macro calls is not implemented");
+                break;
+
+            case STATEMENT_KIND_MACRODEF:
+                assert(false && "translating macro definitions is not implemented");
                 break;
 
             case STATEMENT_KIND_BIND_NATIVE:

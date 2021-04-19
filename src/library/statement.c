@@ -119,6 +119,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
         exit(1);
     }
     break;
+
+    case STATEMENT_KIND_MACRODEF: {
+        assert(false && "TODO: Dumping macro definitions is not implemented");
+        exit(1);
+    }
+    break;
     }
 }
 
@@ -395,6 +401,23 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
 
         int args_id = dump_funcall_args_as_dot_edges(stream, statement.value.as_macrocall.args, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, args_id);
+
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_MACRODEF: {
+        int id = (*counter)++;
+
+        fprintf(stream, "Expr_%d [shape=box label=\"Macrodef: "SV_Fmt"\"]\n",
+                id, SV_Arg(statement.value.as_macrodef.name));
+
+        int args_id = dump_funcall_args_as_dot_edges(stream, statement.value.as_macrodef.args, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, args_id);
+
+
+        int body_id = dump_block_as_dot_edges(stream, statement.value.as_macrodef.body, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, body_id);
 
         return id;
     }
@@ -693,7 +716,48 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         block_list_push(arena, output, statement);
     } else if (sv_eq(name, SV("end"))) {
         assert(false && "parse_directive_from_line: unreachable. %%end should not be handled here");
+    } else if (sv_eq(name, SV("macro"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_MACRODEF;
+
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Token token = expect_token_next(&tokenizer, TOKEN_KIND_NAME, location);
+
+        statement.value.as_macrodef.name = token.text;
+        statement.value.as_macrodef.args = parse_funcall_args(arena, &tokenizer, location);
+        expect_no_tokens(&tokenizer, location);
+
+        statement.value.as_macrodef.body = parse_block_from_lines(arena, linizer);
+
+        if (!linizer_next(linizer, &line) ||
+                line.kind != LINE_KIND_DIRECTIVE ||
+                !sv_eq(line.value.as_directive.name, SV("end"))) {
+            fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%macro` block\n",
+                    FL_Arg(linizer->location));
+            fprintf(stderr, FL_Fmt": NOTE: the %%macro block starts here\n",
+                    FL_Arg(statement.location));
+            exit(1);
+        }
+
+        block_list_push(arena, output, statement);
     } else {
+        // TODO: unknown directive error message is really confusing after introducing macrocall syntax
+        // ### Steps to Reproduce
+        // ```nasm
+        // %entry main:
+        //    %foo
+        //    halt
+        // ```
+        //
+        // ### Observed
+        // ```
+        // examples/bug.basm:2: ERROR: expected token `open paren`
+        // [ERRO] command exited with exit code 1
+        // ```
+        //
+        // ### Expected
+        // Something that makes it more obvious that `%foo` is neither correct directive nor correct macro call.
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Statement statement = {0};
         statement.location = location;
