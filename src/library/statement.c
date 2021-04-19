@@ -430,7 +430,7 @@ Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
     if (!linizer_next(linizer, &line) || line.kind != LINE_KIND_DIRECTIVE) {
         fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` or `%%elif` after `%%if`\n",
                 FL_Arg(linizer->location));
-        fprintf(stderr, FL_Fmt": NOTE: %%if is here",
+        fprintf(stderr, FL_Fmt": NOTE: %%if is here\n",
                 FL_Arg(statement.location));
         exit(1);
     }
@@ -443,7 +443,7 @@ Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
                 !sv_eq(line.value.as_directive.name, SV("end"))) {
             fprintf(stderr, FL_Fmt": ERROR: expected `%%end` after `%%else`\n",
                     FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: %%else is here",
+            fprintf(stderr, FL_Fmt": NOTE: %%else is here\n",
                     FL_Arg(else_location));
             exit(1);
         }
@@ -458,7 +458,7 @@ Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
         fprintf(stderr, FL_Fmt": ERROR: expected `%%end` or `%%else` after `%%if`, but got `"SV_Fmt"`\n",
                 FL_Arg(linizer->location),
                 SV_Arg(line.value.as_directive.name));
-        fprintf(stderr, FL_Fmt": NOTE: %%if is here",
+        fprintf(stderr, FL_Fmt": NOTE: %%if is here\n",
                 FL_Arg(statement.location));
         exit(1);
     }
@@ -597,7 +597,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                 !sv_eq(line.value.as_directive.name, SV("end"))) {
             fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%scope` block\n",
                     FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: the %%scope block starts here",
+            fprintf(stderr, FL_Fmt": NOTE: the %%scope block starts here\n",
                     FL_Arg(statement.location));
             exit(1);
         }
@@ -611,20 +611,20 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         Token token = {0};
 
         if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_NAME) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_NAME));
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_NAME));
             exit(1);
         }
         statement.value.as_for.var = token.text;
 
         if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_FROM) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_FROM));
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_FROM));
             exit(1);
         }
 
         statement.value.as_for.from = parse_primary_from_tokens(arena, &tokenizer, location);
 
         if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_TO) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`", FL_Arg(location), token_kind_name(TOKEN_KIND_TO));
+            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_TO));
             exit(1);
         }
 
@@ -637,7 +637,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                 !sv_eq(line.value.as_directive.name, SV("end"))) {
             fprintf(stderr, FL_Fmt": ERROR: expected `%%end` directive at the end of the `%%for` block\n",
                     FL_Arg(linizer->location));
-            fprintf(stderr, FL_Fmt": NOTE: the %%for block starts here",
+            fprintf(stderr, FL_Fmt": NOTE: the %%for block starts here\n",
                     FL_Arg(statement.location));
             exit(1);
         }
