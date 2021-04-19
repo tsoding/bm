@@ -415,3 +415,18 @@ dump_u64:
 
     ret
 %end
+
+modulo:
+%scope
+    swap 2
+    dup 1
+    modi
+    dup 1
+    plusi
+    dup 1
+    modi
+    swap 1
+    drop
+    swap 1
+    ret
+%end
