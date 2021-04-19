@@ -336,6 +336,10 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
+            case STATEMENT_KIND_MACROCALL:
+                assert(false && "TODO: translating macro calls is not implemented");
+                break;
+
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
@@ -389,6 +393,10 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_for(basm, statement.value.as_for, statement.location);
             }
             break;
+
+            case STATEMENT_KIND_MACROCALL:
+                assert(false && "TODO: translating macro calls is not implemented");
+                break;
 
             case STATEMENT_KIND_BIND_NATIVE:
             case STATEMENT_KIND_FUNCDEF:

@@ -197,6 +197,20 @@ void dump_expr(FILE *stream, Expr expr, int level)
     }
 }
 
+int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter)
+{
+    int id = (*counter)++;
+
+    fprintf(stream, "Expr_%d [shape=box label=\"Args\"]\n", id);
+
+    for (Funcall_Arg *arg = args; arg != NULL; arg = arg->next) {
+        int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
+    }
+
+    return id;
+}
+
 int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
 {
     int id = (*counter)++;
@@ -242,12 +256,8 @@ int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter)
         fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
                 id, SV_Arg(expr.value.as_funcall->name));
 
-        for (Funcall_Arg *arg = expr.value.as_funcall->args;
-                arg != NULL;
-                arg = arg->next) {
-            int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
-            fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
-        }
+        int args_id = dump_funcall_args_as_dot_edges(stream, expr.value.as_funcall->args, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, args_id);
     }
     break;
     }

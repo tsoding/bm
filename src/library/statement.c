@@ -113,6 +113,12 @@ void dump_statement(FILE *stream, Statement statement, int level)
         exit(1);
     }
     break;
+
+    case STATEMENT_KIND_MACROCALL: {
+        assert(false && "TODO: Dumping macro calls is not implemented");
+        exit(1);
+    }
+    break;
     }
 }
 
@@ -159,7 +165,7 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     case STATEMENT_KIND_BIND_LABEL: {
         int id = (*counter)++;
         String_View name = statement.value.as_bind_label.name;
-        fprintf(stream, "Expr_%d [shape=diamond label=\""SV_Fmt"\"]\n",
+        fprintf(stream, "Expr_%d [shape=diamond label=\"Label: "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
         return id;
     }
@@ -377,6 +383,18 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
             int expr_id = dump_expr_as_dot_edges(stream, statement.value.as_fundef.body, counter);
             fprintf(stream, "Expr_%d -> Expr_%d\n", body_id, expr_id);
         }
+
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_MACROCALL: {
+        int id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\"Macrocall: "SV_Fmt"\"]\n",
+                id, SV_Arg(statement.value.as_macrocall.name));
+
+        int args_id = dump_funcall_args_as_dot_edges(stream, statement.value.as_macrocall.args, counter);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, args_id);
 
         return id;
     }
@@ -676,9 +694,14 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, SV("end"))) {
         assert(false && "parse_directive_from_line: unreachable. %%end should not be handled here");
     } else {
-        fprintf(stderr, FL_Fmt": ERROR: unknown directive `"SV_Fmt"`\n",
-                FL_Arg(line.location), SV_Arg(name));
-        exit(1);
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_MACROCALL;
+        statement.value.as_macrocall.name = name;
+        statement.value.as_macrocall.args = parse_funcall_args(arena, &tokenizer, location);
+        expect_no_tokens(&tokenizer, location);
+        block_list_push(arena, output, statement);
     }
 }
 
