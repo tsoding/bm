@@ -4,7 +4,7 @@
 " Usage Instructions
 " Put this file in .vim/syntax/basm.vim
 " and add in your .vimrc file the next line:
-" autocmd BufRead,BufNewFile *.basm set filetype=basm
+" autocmd BufRead,BufNewFile *.basm,*.hasm set filetype=basm
 
 if exists("b:current_syntax")
   finish
@@ -28,9 +28,13 @@ syntax keyword basmKeywords read8i read16i read32i read64i
 syntax keyword basmKeywords write8 write16 write32 write64
 syntax keyword basmKeywords i2f u2f f2i f2u
 
+syntax keyword basmLoopKeywords from to do
+
 " Comments
 syntax region basmCommentLine start=";" end="$"   contains=basmTodos
 syntax region basmDirective start="%" end=" "
+
+syntax match basmLabel		"[a-z_][a-z0-9_]*:"he=e-1
 
 " Numbers
 syntax match basmDecInt display "\<[0-9][0-9_]*"
@@ -43,12 +47,14 @@ syntax region basmString start=/\v'/ skip=/\v\\./ end=/\v'/
 
 " Set highlights
 highlight default link basmTodos Todo
-highlight default link basmKeywords Keyword
+highlight default link basmKeywords Identifier
 highlight default link basmCommentLine Comment
 highlight default link basmDirective PreProc
+highlight default link basmLoopKeywords PreProc
 highlight default link basmDecInt Number
 highlight default link basmHexInt Number
 highlight default link basmFloat Float
 highlight default link basmString String
+highlight default link basmLabel Label
 
 let b:current_syntax = "basm"
