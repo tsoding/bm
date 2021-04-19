@@ -28,6 +28,8 @@ syntax keyword basmKeywords read8i read16i read32i read64i
 syntax keyword basmKeywords write8 write16 write32 write64
 syntax keyword basmKeywords i2f u2f f2i f2u
 
+syntax keyword basmLoopKeywords from to do
+
 " Comments
 syntax region basmCommentLine start=";" end="$"   contains=basmTodos
 syntax region basmDirective start="%" end=" "
@@ -48,6 +50,7 @@ highlight default link basmTodos Todo
 highlight default link basmKeywords Identifier
 highlight default link basmCommentLine Comment
 highlight default link basmDirective PreProc
+highlight default link basmLoopKeywords PreProc
 highlight default link basmDecInt Number
 highlight default link basmHexInt Number
 highlight default link basmFloat Float
