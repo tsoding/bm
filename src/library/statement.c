@@ -742,20 +742,18 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
 
         block_list_push(arena, output, statement);
     } else {
-        // TODO: unknown directive error message is really confusing after introducing macrocall syntax
+        // TODO(#311): unknown directive error message is really confusing after introducing macrocall syntax
         // ### Steps to Reproduce
         // ```nasm
         // %entry main:
         //    %foo
         //    halt
         // ```
-        //
         // ### Observed
         // ```
         // examples/bug.basm:2: ERROR: expected token `open paren`
         // [ERRO] command exited with exit code 1
         // ```
-        //
         // ### Expected
         // Something that makes it more obvious that `%foo` is neither correct directive nor correct macro call.
         Tokenizer tokenizer = tokenizer_from_sv(body);
