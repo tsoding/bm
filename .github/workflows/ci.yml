@@ -46,6 +46,10 @@ jobs:
   build-windows-msvc:
     runs-on: windows-2019
     steps:
+      - name: force LF
+        shell: cmd
+        run: |
+          git config --global core.autocrlf input
       - uses: actions/checkout@v1
         # this runs vcvarsall for us, so we get the MSVC toolchain in PATH.
       - uses: seanmiddleditch/gha-setup-vsdevenv@master
