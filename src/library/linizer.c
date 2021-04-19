@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "./linizer.h"
+#include "./tokenizer.h"
 
 const char *line_kind_name(Line_Kind kind)
 {
@@ -82,7 +83,7 @@ bool linizer_peek(Linizer *linizer, Line *output)
     if (sv_starts_with(line, sv_from_cstr("%"))) {
         sv_chop_left(&line, 1);
         result.kind = LINE_KIND_DIRECTIVE;
-        result.value.as_directive.name = sv_trim(sv_chop_by_delim(&line, ' '));
+        result.value.as_directive.name = sv_trim(sv_chop_left_while(&line, is_name));
         result.value.as_directive.body = sv_trim(line);
     } else if (sv_ends_with(line, sv_from_cstr(":"))) {
         result.kind = LINE_KIND_LABEL;
