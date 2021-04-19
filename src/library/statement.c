@@ -614,9 +614,9 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.value.as_for.var = token.text;
 
         expect_token_next(&tokenizer, TOKEN_KIND_FROM, location);
-        statement.value.as_for.from = parse_primary_from_tokens(arena, &tokenizer, location);
+        statement.value.as_for.from = parse_expr_from_tokens(arena, &tokenizer, location);
         expect_token_next(&tokenizer, TOKEN_KIND_TO, location);
-        statement.value.as_for.to = parse_primary_from_tokens(arena, &tokenizer, location);
+        statement.value.as_for.to = parse_expr_from_tokens(arena, &tokenizer, location);
 
         statement.value.as_for.body = parse_block_from_lines(arena, linizer);
 
