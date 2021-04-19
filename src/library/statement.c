@@ -610,25 +610,13 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Token token = {0};
 
-        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_NAME) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_NAME));
-            exit(1);
-        }
+        token = expect_token_next(&tokenizer, TOKEN_KIND_NAME, location);
         statement.value.as_for.var = token.text;
 
-        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_FROM) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_FROM));
-            exit(1);
-        }
-
-        statement.value.as_for.from = parse_primary_from_tokens(arena, &tokenizer, location);
-
-        if (!tokenizer_next(&tokenizer, &token, location) || token.kind != TOKEN_KIND_TO) {
-            fprintf(stderr, FL_Fmt": ERROR: expected token `%s`\n", FL_Arg(location), token_kind_name(TOKEN_KIND_TO));
-            exit(1);
-        }
-
-        statement.value.as_for.to = parse_primary_from_tokens(arena, &tokenizer, location);
+        expect_token_next(&tokenizer, TOKEN_KIND_FROM, location);
+        statement.value.as_for.from = parse_expr_from_tokens(arena, &tokenizer, location);
+        expect_token_next(&tokenizer, TOKEN_KIND_TO, location);
+        statement.value.as_for.to = parse_expr_from_tokens(arena, &tokenizer, location);
 
         statement.value.as_for.body = parse_block_from_lines(arena, linizer);
 

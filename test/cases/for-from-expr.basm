@@ -1,0 +1,9 @@
+%include "std.hasm"
+
+%const N = 5
+%entry main:
+    %for i from 0 to N - 1
+        push i
+        call dump_u64
+    %end
+    halt
