@@ -571,7 +571,7 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
     basm->deferred_entry.scope = basm->scope;
 }
 
-void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location)
+void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location)
 {
     basm_bind_expr(basm,
                    bind_const.name,

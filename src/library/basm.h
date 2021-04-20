@@ -169,7 +169,7 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
 void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
 void basm_translate_block(Basm *basm, Block *block);
-void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
+void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location);
 void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location);
 void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location);
 void basm_translate_if(Basm *basm, If eef, File_Location location);
