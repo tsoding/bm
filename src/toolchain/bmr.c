@@ -3,11 +3,51 @@
 
 #include <stdarg.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <tlhelp32.h>
+#endif
+
 typedef struct {
     size_t size;
     size_t capacity;
     char *data;
 } Buffer;
+
+#ifdef _WIN32
+void kill_parent_process_and_exit(int exit_code)
+{
+    HANDLE hSnapshot;
+    PROCESSENTRY32 pe32;
+    DWORD ppid = 0, pid = GetCurrentProcessId();
+
+    hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    __try {
+        if (hSnapshot == INVALID_HANDLE_VALUE)
+            __leave;
+
+        ZeroMemory(&pe32, sizeof(pe32));
+        pe32.dwSize = sizeof(pe32);
+        if (!Process32First(hSnapshot, &pe32))
+            __leave;
+
+        do {
+            if (pe32.th32ProcessID == pid) {
+                ppid = pe32.th32ParentProcessID;
+                break;
+            }
+        } while (Process32Next(hSnapshot, &pe32));
+    } __finally {
+        if (hSnapshot != INVALID_HANDLE_VALUE)
+            CloseHandle(hSnapshot);
+    }
+
+    HANDLE nobuild = OpenProcess(PROCESS_ALL_ACCESS, 0, ppid);
+    TerminateProcess(nobuild, exit_code);
+    CloseHandle(nobuild);
+    exit(exit_code);
+}
+#endif
 
 static void buffer_resize(Buffer *buffer, size_t new_capacity)
 {
@@ -130,7 +170,11 @@ static void compare_outputs(const char *file_path, String_View expected, String_
                     SV_Arg(expected_line));
             fprintf(stderr, "    Actual   line: `"SV_Fmt"`\n",
                     SV_Arg(actual_line));
+#ifdef _WIN32
+            kill_parent_process_and_exit(1);
+#else
             exit(1);
+#endif
         }
     }
 
