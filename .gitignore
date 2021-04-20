@@ -12,7 +12,6 @@ debasm
 bdb
 basm2nasm
 build/
-vendor/
 nobuild
 
 *.orig
