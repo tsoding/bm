@@ -396,13 +396,10 @@ void basm_translate_block(Basm *basm, Block *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                assert(false && "translating macro calls is not implemented");
+                assert(false && "TODO: translating macro calls is not implemented");
                 break;
 
             case STATEMENT_KIND_MACRODEF:
-                assert(false && "translating macro definitions is not implemented");
-                break;
-
             case STATEMENT_KIND_BIND_NATIVE:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
@@ -1122,4 +1119,18 @@ void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_s
     macrodef.body = macrodef_statement.body;
     macrodef.location = location;
     scope_add_macrodef(basm->scope, macrodef);
+}
+
+Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
+{
+    for (Scope *scope = basm->scope;
+            scope != NULL;
+            scope = scope->previous) {
+        Macrodef *macrodef = scope_resolve_macrodef(scope, name);
+        if (macrodef) {
+            return macrodef;
+        }
+    }
+
+    return NULL;
 }

@@ -164,6 +164,7 @@ void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
+Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
 void basm_translate_block(Basm *basm, Block *block);
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
