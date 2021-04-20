@@ -24,11 +24,47 @@ void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
 
 Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
-    (void) arena;
-    (void) tokenizer;
-    (void) location;
-    assert(false && "TODO: parse_fundef_args is not implemented");
-    return NULL;
+    Token token = {0};
+
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, location);
+
+    if (tokenizer_peek(tokenizer, &token, location) && token.kind == TOKEN_KIND_CLOSING_PAREN) {
+        tokenizer_next(tokenizer, NULL, location);
+        return NULL;
+    }
+
+    Fundef_Arg *first = NULL;
+    Fundef_Arg *last = NULL;
+
+    do {
+        Fundef_Arg *arg = arena_alloc(arena, sizeof(*arg));
+        arg->name = expect_token_next(tokenizer, TOKEN_KIND_NAME, location).text;
+
+        if (first == NULL) {
+            first = arg;
+            last = arg;
+        } else {
+            last->next = arg;
+            last = arg;
+        }
+
+        if (!tokenizer_next(tokenizer, &token, location)) {
+            fprintf(stderr, FL_Fmt": ERROR: expected %s or %s\n",
+                    FL_Arg(location),
+                    token_kind_name(TOKEN_KIND_CLOSING_PAREN),
+                    token_kind_name(TOKEN_KIND_COMMA));
+            exit(1);
+        }
+    } while (token.kind == TOKEN_KIND_COMMA);
+
+    if (token.kind != TOKEN_KIND_CLOSING_PAREN) {
+        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
+                FL_Arg(location),
+                token_kind_name(TOKEN_KIND_CLOSING_PAREN));
+        exit(1);
+    }
+
+    return first;
 }
 
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
