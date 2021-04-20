@@ -336,16 +336,11 @@ void basm_translate_block(Basm *basm, Block *block)
                 basm_translate_block(basm, statement.value.as_block);
                 break;
 
-            // TODO(#310): translating macros is not implemented
+            case STATEMENT_KIND_MACRODEF:
+                basm_translate_macrodef(basm, statement.value.as_macrodef, statement.location);
+                break;
 
             case STATEMENT_KIND_MACROCALL:
-                assert(false && "translating macro calls is not implemented");
-                break;
-
-            case STATEMENT_KIND_MACRODEF:
-                assert(false && "translating macro definitions is not implemented");
-                break;
-
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
             case STATEMENT_KIND_SCOPE:
@@ -1090,4 +1085,27 @@ bool basm_resolve_include_file_path(Basm *basm,
     }
 
     return false;
+}
+
+Macrodef *scope_resolve_macrodef(Scope *scope, String_View name)
+{
+    (void) scope;
+    (void) name;
+    assert(false && "TODO: scope_resolve_macrodef is not implemented");
+    return NULL;
+}
+
+void scope_add_macrodef(Scope *scope, Macrodef macrodef)
+{
+    (void) scope;
+    (void) macrodef;
+    assert(false && "TODO: scope_add_macrodef is not implemented");
+}
+
+void basm_translate_macrodef(Basm *basm, Macrodef macrodef, File_Location location)
+{
+    (void) basm;
+    (void) macrodef;
+    (void) location;
+    assert(false && "TODO: basm_translate_macrodef is not implemented");
 }
