@@ -396,7 +396,7 @@ void basm_translate_block(Basm *basm, Block *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                assert(false && "TODO(#318): translating macro calls is not implemented");
+                basm_translate_macro_call(basm, statement.value.as_macrocall, statement.location);
                 break;
 
             case STATEMENT_KIND_MACRODEF:
@@ -1111,6 +1111,80 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
     scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
+void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location)
+{
+    // TODO(#322): no support for recursive macros
+    Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);
+    if (!macrodef) {
+        fprintf(stderr, FL_Fmt": ERROR: macro `"SV_Fmt"` is not defined\n",
+                FL_Arg(location), SV_Arg(macrocall.name));
+        exit(1);
+    }
+
+    Scope *saved_scope = basm->scope;
+    basm->scope = macrodef->scope;
+    basm_push_new_scope(basm);
+
+    Funcall_Arg *call_args = macrocall.args;
+    Fundef_Arg *def_args = macrodef->args;
+
+    size_t arity = 0;
+    while (call_args && def_args) {
+        // TODO(#323): Scope leaking into a macro through a macro call
+        // ### Source to reproduce
+        // ```nasm
+        // %macro push123(a, b, c)
+        //     push a
+        //     push b
+        //     push c
+        // %end
+        // %entry main:
+        //     %for i from 0 to 5
+        //         %push123(i + 1, i + 2, i + 3)
+        //     %end
+        //     halt
+        // ```
+        // ### Observed
+        // ```
+        // examples/macro.basm:1: ERROR: could find binding `i`.
+        // ```
+        // ### Expected
+        // Problem compiles successfully and has the intended behaviour.
+        basm_bind_expr(basm, def_args->name,
+                       call_args->value,
+                       BINDING_CONST,
+                       macrodef->location);
+        call_args = call_args->next;
+        def_args = def_args->next;
+        arity += 1;
+    }
+
+    if (call_args || def_args) {
+        size_t call_arity = arity;
+        while (call_args) {
+            call_args = call_args->next;
+            call_arity += 1;
+        }
+
+        size_t def_arity = arity;
+        while (def_args) {
+            def_args = def_args->next;
+            def_arity += 1;
+        }
+
+        fprintf(stderr, FL_Fmt": ERROR: provided %zu arguments to the `"SV_Fmt"` macro call\n",
+                FL_Arg(location), call_arity, SV_Arg(macrocall.name));
+        fprintf(stderr, FL_Fmt": ERROR: but the macro definition of `"SV_Fmt"` expected %zu arguments\n",
+                FL_Arg(macrodef->location), SV_Arg(macrodef->name), def_arity);
+        exit(1);
+    }
+
+    basm_translate_block(basm, macrodef->body);
+
+    basm_pop_scope(basm);
+    basm->scope = saved_scope;
+}
+
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_statement, File_Location location)
 {
     Macrodef macrodef = {0};
@@ -1118,6 +1192,7 @@ void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_s
     macrodef.args = macrodef_statement.args;
     macrodef.body = macrodef_statement.body;
     macrodef.location = location;
+    macrodef.scope = basm->scope;
     scope_add_macrodef(basm->scope, macrodef);
 }
 

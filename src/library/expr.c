@@ -22,6 +22,51 @@ void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
     }
 }
 
+Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
+{
+    Token token = {0};
+
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, location);
+
+    if (tokenizer_peek(tokenizer, &token, location) && token.kind == TOKEN_KIND_CLOSING_PAREN) {
+        tokenizer_next(tokenizer, NULL, location);
+        return NULL;
+    }
+
+    Fundef_Arg *first = NULL;
+    Fundef_Arg *last = NULL;
+
+    do {
+        Fundef_Arg *arg = arena_alloc(arena, sizeof(*arg));
+        arg->name = expect_token_next(tokenizer, TOKEN_KIND_NAME, location).text;
+
+        if (first == NULL) {
+            first = arg;
+            last = arg;
+        } else {
+            last->next = arg;
+            last = arg;
+        }
+
+        if (!tokenizer_next(tokenizer, &token, location)) {
+            fprintf(stderr, FL_Fmt": ERROR: expected %s or %s\n",
+                    FL_Arg(location),
+                    token_kind_name(TOKEN_KIND_CLOSING_PAREN),
+                    token_kind_name(TOKEN_KIND_COMMA));
+            exit(1);
+        }
+    } while (token.kind == TOKEN_KIND_COMMA);
+
+    if (token.kind != TOKEN_KIND_CLOSING_PAREN) {
+        fprintf(stderr, FL_Fmt": ERROR: expected %s\n",
+                FL_Arg(location),
+                token_kind_name(TOKEN_KIND_CLOSING_PAREN));
+        exit(1);
+    }
+
+    return first;
+}
+
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
     Token token = {0};
@@ -195,6 +240,15 @@ void dump_expr(FILE *stream, Expr expr, int level)
         dump_funcall_args(stream, expr.value.as_funcall->args, level + 1);
         break;
     }
+}
+
+int dump_fundef_args_as_dot_edges(FILE *stream, Fundef_Arg *args, int *counter)
+{
+    (void) stream;
+    (void) args;
+    (void) counter;
+    assert(false && "TODO(#324): dump_fundef_args_as_dot_edges is not implemented");
+    return 0;
 }
 
 int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter)

@@ -19,6 +19,7 @@ typedef enum {
 typedef struct Binary_Op Binary_Op;
 typedef struct Funcall Funcall;
 typedef struct Funcall_Arg Funcall_Arg;
+typedef struct Fundef_Arg Fundef_Arg;
 
 size_t funcall_args_len(Funcall_Arg *args);
 
@@ -45,6 +46,7 @@ typedef struct {
 } Expr;
 
 void dump_expr(FILE *stream, Expr expr, int level);
+int dump_fundef_args_as_dot_edges(FILE *stream, Fundef_Arg *args, int *counter);
 int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter);
 int dump_expr_as_dot_edges(FILE *stream, Expr expr, int *counter);
 void dump_expr_as_dot(FILE *stream, Expr expr);
@@ -73,6 +75,11 @@ struct Binary_Op {
     Expr right;
 };
 
+struct Fundef_Arg {
+    Fundef_Arg *next;
+    String_View name;
+};
+
 struct Funcall_Arg {
     Funcall_Arg *next;
     Expr value;
@@ -87,6 +94,7 @@ String_View unescape_string_literal(Arena *arena, File_Location location, String
 
 void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location);
+Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location location);
 Expr parse_binary_op_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location, size_t precedence);
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location);
 String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, Arena *arena, File_Location location);
