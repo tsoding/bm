@@ -23,6 +23,8 @@ typedef enum {
     STATEMENT_KIND_SCOPE,
     STATEMENT_KIND_FOR,
     STATEMENT_KIND_FUNCDEF,
+    STATEMENT_KIND_MACROCALL,
+    STATEMENT_KIND_MACRODEF
 } Statement_Kind;
 
 typedef struct {
@@ -79,6 +81,17 @@ struct Fundef {
     Expr body;
 };
 
+typedef struct {
+    String_View name;
+    Funcall_Arg *args;
+} Macrocall;
+
+typedef struct {
+    String_View name;
+    Funcall_Arg *args;
+    Block *body;
+} Macrodef;
+
 typedef union {
     Emit_Inst as_emit_inst;
     Bind_Label as_bind_label;
@@ -93,6 +106,8 @@ typedef union {
     Block *as_scope;
     For as_for;
     Fundef as_fundef;
+    Macrocall as_macrocall;
+    Macrodef as_macrodef;
 } Statement_Value;
 
 struct Statement {

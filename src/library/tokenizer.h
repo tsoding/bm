@@ -42,6 +42,9 @@ typedef struct {
     bool peek_buffer_full;
 } Tokenizer;
 
+bool is_name(char x);
+bool is_number(char x);
+
 void expect_no_tokens(Tokenizer *tokenizer, File_Location location);
 Token expect_token_next(Tokenizer *tokenizer, Token_Kind expected_kind, File_Location location);
 

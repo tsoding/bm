@@ -3,12 +3,12 @@
 #include <ctype.h>
 #include "./tokenizer.h"
 
-static bool is_name(char x)
+bool is_name(char x)
 {
     return isalnum(x) || x == '_';
 }
 
-static bool is_number(char x)
+bool is_number(char x)
 {
     return isalnum(x) || x == '.';
 }
