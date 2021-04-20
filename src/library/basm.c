@@ -396,7 +396,7 @@ void basm_translate_block(Basm *basm, Block *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                assert(false && "TODO(#318): translating macro calls is not implemented");
+                basm_translate_macro_call(basm, statement.value.as_macrocall, statement.location);
                 break;
 
             case STATEMENT_KIND_MACRODEF:
@@ -1111,6 +1111,18 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
     scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
+void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location)
+{
+    Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);
+    if (!macrodef) {
+        fprintf(stderr, FL_Fmt": ERROR: macro `"SV_Fmt"` is not defined\n",
+                FL_Arg(location), SV_Arg(macrocall.name));
+        exit(1);
+    }
+
+    assert(false && "TODO: basm_translate_macro_call is not implemented");
+}
+
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_statement, File_Location location)
 {
     Macrodef macrodef = {0};
@@ -1118,6 +1130,7 @@ void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_s
     macrodef.args = macrodef_statement.args;
     macrodef.body = macrodef_statement.body;
     macrodef.location = location;
+    macrodef.scope = basm->scope;
     scope_add_macrodef(basm->scope, macrodef);
 }
 
