@@ -76,7 +76,7 @@ typedef struct {
 
 struct Fundef {
     String_View name;
-    Funcall_Arg *args;
+    Fundef_Arg *args;
     Expr *guard;
     Expr body;
 };

@@ -93,6 +93,7 @@ String_View unescape_string_literal(Arena *arena, File_Location location, String
 
 void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level);
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location);
+Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location location);
 Expr parse_binary_op_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location, size_t precedence);
 Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location location);
 String_View parse_lit_str_from_tokens(Tokenizer *tokenizer, Arena *arena, File_Location location);

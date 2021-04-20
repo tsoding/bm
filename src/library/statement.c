@@ -362,10 +362,12 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
                     name_id, SV_Arg(statement.value.as_fundef.name));
             fprintf(stream, "Expr_%d -> Expr_%d\n", id, name_id);
 
-            for (Funcall_Arg *arg = statement.value.as_fundef.args;
+            for (Fundef_Arg *arg = statement.value.as_fundef.args;
                     arg != NULL;
                     arg = arg->next) {
-                int child_id = dump_expr_as_dot_edges(stream, arg->value, counter);
+                int child_id = (*counter)++;
+                fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]",
+                        child_id, SV_Arg(arg->name));
                 fprintf(stream, "Expr_%d -> Expr_%d\n", name_id, child_id);
             }
         }
@@ -681,18 +683,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         statement.location = location;
         statement.kind = STATEMENT_KIND_FUNCDEF;
         statement.value.as_fundef.name = token.text;
-        statement.value.as_fundef.args = parse_funcall_args(arena, &tokenizer, location);
-
-        for (Funcall_Arg *iter = statement.value.as_fundef.args;
-                iter != NULL;
-                iter = iter->next) {
-            if (iter->value.kind != EXPR_KIND_BINDING) {
-                fprintf(stderr, FL_Fmt": ERROR: only binding names are allowed in arguments of a function definition\n",
-                        FL_Arg(location));
-                exit(1);
-            }
-        }
-
+        statement.value.as_fundef.args = parse_fundef_args(arena, &tokenizer, location);
 
         if (tokenizer_peek(&tokenizer, &token, location) &&
                 token.kind == TOKEN_KIND_IF) {

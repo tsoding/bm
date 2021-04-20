@@ -22,6 +22,15 @@ void dump_funcall_args(FILE *stream, Funcall_Arg *args, int level)
     }
 }
 
+Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
+{
+    (void) arena;
+    (void) tokenizer;
+    (void) location;
+    assert(false && "TODO: parse_fundef_args is not implemented");
+    return NULL;
+}
+
 Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Location location)
 {
     Token token = {0};
