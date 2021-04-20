@@ -30,7 +30,7 @@ typedef enum {
 typedef struct {
     Inst_Type type;
     Expr operand;
-} Emit_Inst;
+} Emit_Inst_Statement;
 
 typedef struct {
     String_View name;
@@ -93,7 +93,7 @@ typedef struct {
 } Macrodef_Statement;
 
 typedef union {
-    Emit_Inst as_emit_inst;
+    Emit_Inst_Statement as_emit_inst;
     Bind_Label as_bind_label;
     Bind_Const as_bind_const;
     Bind_Native as_bind_native;

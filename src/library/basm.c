@@ -534,7 +534,7 @@ void basm_eval_deferred_entry(Basm *basm)
     basm->scope = saved_basm_scope;
 }
 
-void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
+void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location)
 {
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
     basm->program[basm->program_size].type = emit_inst.type;
