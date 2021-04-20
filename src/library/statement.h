@@ -34,7 +34,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-} Bind_Label;
+} Bind_Label_Statement;
 
 typedef struct {
     String_View name;
@@ -94,7 +94,7 @@ typedef struct {
 
 typedef union {
     Emit_Inst_Statement as_emit_inst;
-    Bind_Label as_bind_label;
+    Bind_Label_Statement as_bind_label;
     Bind_Const as_bind_const;
     Bind_Native as_bind_native;
     Include as_include;

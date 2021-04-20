@@ -604,7 +604,7 @@ void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Locati
     basm->external_natives_size += 1;
 }
 
-void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)
+void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location)
 {
     basm_bind_value(basm,
                     bind_label.name,
