@@ -247,7 +247,7 @@ int dump_fundef_args_as_dot_edges(FILE *stream, Fundef_Arg *args, int *counter)
     (void) stream;
     (void) args;
     (void) counter;
-    assert(false && "TODO: dump_fundef_args_as_dot_edges is not implemented");
+    assert(false && "TODO(#324): dump_fundef_args_as_dot_edges is not implemented");
     return 0;
 }
 
