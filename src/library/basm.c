@@ -1087,7 +1087,7 @@ bool basm_resolve_include_file_path(Basm *basm,
     return false;
 }
 
-Macrodef *scope_resolve_macrodef(Scope *scope, String_View name)
+Macrodef_Statement *scope_resolve_macrodef(Scope *scope, String_View name)
 {
     (void) scope;
     (void) name;
@@ -1095,14 +1095,14 @@ Macrodef *scope_resolve_macrodef(Scope *scope, String_View name)
     return NULL;
 }
 
-void scope_add_macrodef(Scope *scope, Macrodef macrodef)
+void scope_add_macrodef(Scope *scope, Macrodef_Statement macrodef)
 {
     (void) scope;
     (void) macrodef;
     assert(false && "TODO: scope_add_macrodef is not implemented");
 }
 
-void basm_translate_macrodef(Basm *basm, Macrodef macrodef, File_Location location)
+void basm_translate_macrodef(Basm *basm, Macrodef_Statement macrodef, File_Location location)
 {
     (void) basm;
     (void) macrodef;

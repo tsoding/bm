@@ -67,7 +67,7 @@ struct Scope {
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
-    Macrodef macrodefs[BASM_MACRODEFS_CAPACITY];
+    Macrodef_Statement macrodefs[BASM_MACRODEFS_CAPACITY];
     size_t macrodefs_size;
 };
 
@@ -127,8 +127,8 @@ typedef struct {
     size_t include_paths_size;
 } Basm;
 
-Macrodef *scope_resolve_macrodef(Scope *scope, String_View name);
-void scope_add_macrodef(Scope *scope, Macrodef macrodef);
+Macrodef_Statement *scope_resolve_macrodef(Scope *scope, String_View name);
+void scope_add_macrodef(Scope *scope, Macrodef_Statement macrodef);
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
 void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);
@@ -157,7 +157,7 @@ void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
-void basm_translate_macrodef(Basm *basm, Macrodef macrodef, File_Location location);
+void basm_translate_macrodef(Basm *basm, Macrodef_Statement macrodef, File_Location location);
 void basm_translate_block(Basm *basm, Block *block);
 void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
 void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location);
