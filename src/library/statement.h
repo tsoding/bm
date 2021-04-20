@@ -107,7 +107,7 @@ typedef union {
     For as_for;
     Fundef as_fundef;
     Macrocall as_macrocall;
-    // TODO: all of the Statement kind types should have the `_Statement` suffix
+    // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
     // Not only Macrodef_Statement.
     Macrodef_Statement as_macrodef;
 } Statement_Value;
