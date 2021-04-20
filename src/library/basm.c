@@ -337,7 +337,7 @@ void basm_translate_block(Basm *basm, Block *block)
                 break;
 
             case STATEMENT_KIND_MACRODEF:
-                basm_translate_macrodef(basm, statement.value.as_macrodef, statement.location);
+                basm_translate_macrodef_statement(basm, statement.value.as_macrodef, statement.location);
                 break;
 
             case STATEMENT_KIND_MACROCALL:
@@ -1089,23 +1089,37 @@ bool basm_resolve_include_file_path(Basm *basm,
 
 Macrodef *scope_resolve_macrodef(Scope *scope, String_View name)
 {
-    (void) scope;
-    (void) name;
-    assert(false && "TODO: scope_resolve_macrodef is not implemented");
+    for (size_t i = 0; i < scope->macrodefs_size; ++i) {
+        if (sv_eq(scope->macrodefs[i].name, name)) {
+            return &scope->macrodefs[i];
+        }
+    }
+
     return NULL;
 }
 
 void scope_add_macrodef(Scope *scope, Macrodef macrodef)
 {
-    (void) scope;
-    (void) macrodef;
-    assert(false && "TODO: scope_add_macrodef is not implemented");
+    Macrodef *existing_macrodef = scope_resolve_macrodef(scope, macrodef.name);
+
+    if (existing_macrodef) {
+        fprintf(stderr, FL_Fmt": ERROR: macro with the name `"SV_Fmt"` is already defined\n",
+                FL_Arg(macrodef.location), SV_Arg(macrodef.name));
+        fprintf(stderr, FL_Fmt": NOTE: the macro is defined here\n",
+                FL_Arg(existing_macrodef->location));
+        exit(1);
+    }
+
+    assert(scope->macrodefs_size < BASM_MACRODEFS_CAPACITY);
+    scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
-void basm_translate_macrodef(Basm *basm, Macrodef_Statement macrodef, File_Location location)
+void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef_statement, File_Location location)
 {
-    (void) basm;
-    (void) macrodef;
-    (void) location;
-    assert(false && "TODO: basm_translate_macrodef is not implemented");
+    Macrodef macrodef = {0};
+    macrodef.name = macrodef_statement.name;
+    macrodef.args = macrodef_statement.args;
+    macrodef.body = macrodef_statement.body;
+    macrodef.location = location;
+    scope_add_macrodef(basm->scope, macrodef);
 }
