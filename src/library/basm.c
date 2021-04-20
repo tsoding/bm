@@ -1113,7 +1113,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
 
 void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location)
 {
-    // TODO: no support for recursive macros
+    // TODO(#322): no support for recursive macros
     Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);
     if (!macrodef) {
         fprintf(stderr, FL_Fmt": ERROR: macro `"SV_Fmt"` is not defined\n",
