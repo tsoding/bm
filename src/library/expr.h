@@ -19,6 +19,7 @@ typedef enum {
 typedef struct Binary_Op Binary_Op;
 typedef struct Funcall Funcall;
 typedef struct Funcall_Arg Funcall_Arg;
+typedef struct Fundef_Arg Fundef_Arg;
 
 size_t funcall_args_len(Funcall_Arg *args);
 
@@ -71,6 +72,11 @@ struct Binary_Op {
     Binary_Op_Kind kind;
     Expr left;
     Expr right;
+};
+
+struct Fundef_Arg {
+    Fundef_Arg *next;
+    String_View name;
 };
 
 struct Funcall_Arg {
