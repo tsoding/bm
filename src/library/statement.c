@@ -414,7 +414,7 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         fprintf(stream, "Expr_%d [shape=box label=\"Macrodef: "SV_Fmt"\"]\n",
                 id, SV_Arg(statement.value.as_macrodef.name));
 
-        int args_id = dump_funcall_args_as_dot_edges(stream, statement.value.as_macrodef.args, counter);
+        int args_id = dump_fundef_args_as_dot_edges(stream, statement.value.as_macrodef.args, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, args_id);
 
 
@@ -716,7 +716,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         Token token = expect_token_next(&tokenizer, TOKEN_KIND_NAME, location);
 
         statement.value.as_macrodef.name = token.text;
-        statement.value.as_macrodef.args = parse_funcall_args(arena, &tokenizer, location);
+        statement.value.as_macrodef.args = parse_fundef_args(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
 
         statement.value.as_macrodef.body = parse_block_from_lines(arena, linizer);
