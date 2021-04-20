@@ -90,7 +90,7 @@ typedef struct {
     String_View name;
     Funcall_Arg *args;
     Block *body;
-} Macrodef;
+} Macrodef_Statement;
 
 typedef union {
     Emit_Inst as_emit_inst;
@@ -107,7 +107,9 @@ typedef union {
     For as_for;
     Fundef as_fundef;
     Macrocall as_macrocall;
-    Macrodef as_macrodef;
+    // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
+    // Not only Macrodef_Statement.
+    Macrodef_Statement as_macrodef;
 } Statement_Value;
 
 struct Statement {
