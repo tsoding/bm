@@ -61,13 +61,20 @@ Eval_Status eval_status_deferred(Binding *deferred_binding);
 
 typedef struct Scope Scope;
 
+typedef struct {
+    String_View name;
+    Funcall_Arg *args;
+    Block *body;
+    File_Location location;
+} Macrodef;
+
 struct Scope {
     Scope *previous;
 
     Binding bindings[BASM_BINDINGS_CAPACITY];
     size_t bindings_size;
 
-    Macrodef_Statement macrodefs[BASM_MACRODEFS_CAPACITY];
+    Macrodef macrodefs[BASM_MACRODEFS_CAPACITY];
     size_t macrodefs_size;
 };
 
@@ -127,8 +134,8 @@ typedef struct {
     size_t include_paths_size;
 } Basm;
 
-Macrodef_Statement *scope_resolve_macrodef(Scope *scope, String_View name);
-void scope_add_macrodef(Scope *scope, Macrodef_Statement macrodef);
+Macrodef *scope_resolve_macrodef(Scope *scope, String_View name);
+void scope_add_macrodef(Scope *scope, Macrodef macrodef);
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
 void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);

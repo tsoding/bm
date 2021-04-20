@@ -1087,7 +1087,7 @@ bool basm_resolve_include_file_path(Basm *basm,
     return false;
 }
 
-Macrodef_Statement *scope_resolve_macrodef(Scope *scope, String_View name)
+Macrodef *scope_resolve_macrodef(Scope *scope, String_View name)
 {
     (void) scope;
     (void) name;
@@ -1095,7 +1095,7 @@ Macrodef_Statement *scope_resolve_macrodef(Scope *scope, String_View name)
     return NULL;
 }
 
-void scope_add_macrodef(Scope *scope, Macrodef_Statement macrodef)
+void scope_add_macrodef(Scope *scope, Macrodef macrodef)
 {
     (void) scope;
     (void) macrodef;
