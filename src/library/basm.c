@@ -1138,7 +1138,6 @@ void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location lo
         //     push b
         //     push c
         // %end
-        // 
         // %entry main:
         //     %for i from 0 to 5
         //         %push123(i + 1, i + 2, i + 3)
