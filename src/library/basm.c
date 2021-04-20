@@ -1130,7 +1130,7 @@ void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location lo
 
     size_t arity = 0;
     while (call_args && def_args) {
-        // TODO: Scope leaking into a macro through a macro call
+        // TODO(#323): Scope leaking into a macro through a macro call
         // ### Source to reproduce
         // ```nasm
         // %macro push123(a, b, c)
