@@ -1111,7 +1111,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
     scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
-void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location)
+void basm_translate_macro_call(Basm *basm, Macrocall_Statement macrocall, File_Location location)
 {
     // TODO(#322): no support for recursive macros
     Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);

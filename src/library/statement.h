@@ -84,7 +84,7 @@ struct Fundef_Statement {
 typedef struct {
     String_View name;
     Funcall_Arg *args;
-} Macrocall;
+} Macrocall_Statement;
 
 typedef struct {
     String_View name;
@@ -106,7 +106,7 @@ typedef union {
     Block_Statement *as_scope;
     For_Statement as_for;
     Fundef_Statement as_fundef;
-    Macrocall as_macrocall;
+    Macrocall_Statement as_macrocall;
     // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
     // Not only Macrodef_Statement.
     Macrodef_Statement as_macrodef;
