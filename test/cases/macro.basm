@@ -9,6 +9,7 @@
     call dump_u64
 %end
 
+;; uwu
 %entry main:
 %scope
     %for i from 0 to 4
