@@ -1,0 +1,18 @@
+%include "std.hasm"
+
+%macro push123(a, b, c)
+    push a
+    call dump_u64
+    push b
+    call dump_u64
+    push c
+    call dump_u64
+%end
+
+%entry main:
+%scope
+    %for i from 0 to 4
+        %push123(i + 1, i + 2, i + 3)
+    %end
+    halt
+%end

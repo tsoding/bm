@@ -143,6 +143,7 @@ void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind k
 void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location);
 void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location);
 
+void basm_push_scope(Basm *basm, Scope *scope);
 void basm_push_new_scope(Basm *basm);
 void basm_pop_scope(Basm *basm);
 
