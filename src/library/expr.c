@@ -242,13 +242,21 @@ void dump_expr(FILE *stream, Expr expr, int level)
     }
 }
 
-int dump_fundef_args_as_dot_edges(FILE *stream, Fundef_Arg *args, int *counter)
+int dump_fundef_args_as_dot_edges(FILE *stream, Fundef_Arg *args,
+                                  int *counter)
 {
-    (void) stream;
-    (void) args;
-    (void) counter;
-    assert(false && "TODO(#324): dump_fundef_args_as_dot_edges is not implemented");
-    return 0;
+    int id = (*counter)++;
+
+    fprintf(stream, "Expr_%d [shape=box label=\"Args\"]\n", id);
+
+    for (Fundef_Arg *arg = args; arg != NULL; arg = arg->next) {
+        int child_id = (*counter)++;
+        fprintf(stream, "Expr_%d [shape=box label=\""SV_Fmt"\"]\n",
+                child_id, SV_Arg(arg->name));
+        fprintf(stream, "Expr_%d -> Expr_%d\n", id, child_id);
+    }
+
+    return id;
 }
 
 int dump_funcall_args_as_dot_edges(FILE *stream, Funcall_Arg *args, int *counter)
