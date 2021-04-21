@@ -28,7 +28,6 @@
 %const LOGO_DY      = int32(LOGO_SPEED)
 %const LOGO_COLOR   = 0xFF0000FF
 
-;; TODO(#293): Use an actual image in the SDL example
 ;; ---
 ;; %const IMAGE = file("./image.bin")
 
