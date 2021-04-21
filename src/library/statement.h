@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
     String_View message;
-} Error;
+} Error_Statement;
 
 typedef struct {
     Expr value;
@@ -99,7 +99,7 @@ typedef union {
     Bind_Native_Statement as_bind_native;
     Include_Statement as_include;
     Assert_Statement as_assert;
-    Error as_error;
+    Error_Statement as_error;
     Entry as_entry;
     Block *as_block;
     If as_if;

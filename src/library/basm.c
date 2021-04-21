@@ -623,7 +623,7 @@ void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location lo
     };
 }
 
-void basm_translate_error(Error error, File_Location location)
+void basm_translate_error(Error_Statement error, File_Location location)
 {
     fprintf(stderr, FL_Fmt": ERROR: "SV_Fmt"\n",
             FL_Arg(location), SV_Arg(error.message));
