@@ -72,7 +72,7 @@ typedef struct {
     Expr from;
     Expr to;
     Block_Statement *body;
-} For;
+} For_Statement;
 
 struct Fundef {
     String_View name;
@@ -104,7 +104,7 @@ typedef union {
     Block_Statement *as_block;
     If_Statement as_if;
     Block_Statement *as_scope;
-    For as_for;
+    For_Statement as_for;
     Fundef as_fundef;
     Macrocall as_macrocall;
     // TODO(#319): all of the Statement kind types should have the `_Statement` suffix

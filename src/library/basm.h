@@ -178,7 +178,7 @@ void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location lo
 void basm_translate_error(Error_Statement error, File_Location location);
 void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location);
 void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location);
-void basm_translate_for(Basm *basm, For phor, File_Location location);
+void basm_translate_for(Basm *basm, For_Statement phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
 

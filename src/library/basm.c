@@ -649,7 +649,7 @@ void basm_translate_include(Basm *basm, Include_Statement include, File_Location
     }
 }
 
-void basm_translate_for(Basm *basm, For phor, File_Location location)
+void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
 {
     Word from = {0};
     {
