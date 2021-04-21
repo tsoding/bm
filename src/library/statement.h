@@ -7,7 +7,7 @@
 
 typedef struct Statement Statement;
 typedef struct Block_Statement Block_Statement;
-typedef struct Fundef Fundef;
+typedef struct Fundef_Statement Fundef_Statement;
 
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
@@ -74,7 +74,7 @@ typedef struct {
     Block_Statement *body;
 } For_Statement;
 
-struct Fundef {
+struct Fundef_Statement {
     String_View name;
     Fundef_Arg *args;
     Expr *guard;
@@ -105,7 +105,7 @@ typedef union {
     If_Statement as_if;
     Block_Statement *as_scope;
     For_Statement as_for;
-    Fundef as_fundef;
+    Fundef_Statement as_fundef;
     Macrocall as_macrocall;
     // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
     // Not only Macrodef_Statement.
