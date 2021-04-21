@@ -94,6 +94,7 @@ typedef struct {
 
 typedef union {
     Emit_Inst_Statement as_emit_inst;
+    // TODO: Remove redundant prefix `bind` from *_Statement types
     Bind_Label_Statement as_bind_label;
     Bind_Const_Statement as_bind_const;
     Bind_Native_Statement as_bind_native;
@@ -107,8 +108,6 @@ typedef union {
     For_Statement as_for;
     Fundef_Statement as_fundef;
     Macrocall_Statement as_macrocall;
-    // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
-    // Not only Macrodef_Statement.
     Macrodef_Statement as_macrodef;
 } Statement_Value;
 
