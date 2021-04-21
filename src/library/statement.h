@@ -6,7 +6,7 @@
 #include "./linizer.h"
 
 typedef struct Statement Statement;
-typedef struct Block Block;
+typedef struct Block_Statement Block_Statement;
 typedef struct Fundef Fundef;
 
 typedef enum {
@@ -63,15 +63,15 @@ typedef struct {
 
 typedef struct {
     Expr condition;
-    Block *then;
-    Block *elze;
+    Block_Statement *then;
+    Block_Statement *elze;
 } If;
 
 typedef struct {
     String_View var;
     Expr from;
     Expr to;
-    Block *body;
+    Block_Statement *body;
 } For;
 
 struct Fundef {
@@ -89,7 +89,7 @@ typedef struct {
 typedef struct {
     String_View name;
     Fundef_Arg *args;
-    Block *body;
+    Block_Statement *body;
 } Macrodef_Statement;
 
 typedef union {
@@ -101,9 +101,9 @@ typedef union {
     Assert_Statement as_assert;
     Error_Statement as_error;
     Entry_Statement as_entry;
-    Block *as_block;
+    Block_Statement *as_block;
     If as_if;
-    Block *as_scope;
+    Block_Statement *as_scope;
     For as_for;
     Fundef as_fundef;
     Macrocall as_macrocall;
@@ -118,27 +118,27 @@ struct Statement {
     File_Location location;
 };
 
-struct Block {
+struct Block_Statement {
     Statement statement;
-    Block *next;
+    Block_Statement *next;
 };
 
 typedef struct {
-    Block *begin;
-    Block *end;
+    Block_Statement *begin;
+    Block_Statement *end;
 } Block_List;
 
 void block_list_push(Arena *arena, Block_List *list, Statement statement);
 
-void dump_block(FILE *stream, Block *block, int level);
+void dump_block(FILE *stream, Block_Statement *block, int level);
 void dump_statement(FILE *stream, Statement statement, int level);
-int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter);
+int dump_block_as_dot_edges(FILE *stream, Block_Statement *block, int *counter);
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
 void dump_statement_as_dot(FILE *stream, Statement statement);
 
 Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
                                         Expr condition, File_Location location);
 void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *output);
-Block *parse_block_from_lines(Arena *arena, Linizer *linizer);
+Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer);
 
 #endif // STATEMENT_H_

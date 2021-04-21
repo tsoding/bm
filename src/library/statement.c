@@ -1,6 +1,6 @@
 #include "./statement.h"
 
-void dump_block(FILE *stream, Block *block, int level)
+void dump_block(FILE *stream, Block_Statement *block, int level)
 {
     fprintf(stream, "%*sBlock:\n", level * 2, "");
     while (block != NULL) {
@@ -128,7 +128,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
 }
 
-int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter)
+int dump_block_as_dot_edges(FILE *stream, Block_Statement *block, int *counter)
 {
     int id = (*counter)++;
 
@@ -446,13 +446,13 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement)
 
     if (list->end == NULL) {
         assert(list->begin == NULL);
-        Block *block = arena_alloc(arena, sizeof(Block));
+        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement));
         block->statement = statement;
         list->begin = block;
         list->end = block;
     } else {
         assert(list->begin != NULL);
-        Block *block = arena_alloc(arena, sizeof(Block));
+        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement));
         block->statement = statement;
         list->end->next = block;
         list->end = block;
@@ -765,7 +765,7 @@ static bool is_block_stop_directive(Line_Directive directive)
            || sv_eq(directive.name, SV("elif"));
 }
 
-Block *parse_block_from_lines(Arena *arena, Linizer *linizer)
+Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer)
 {
     Block_List result = {0};
 

@@ -64,7 +64,7 @@ typedef struct Scope Scope;
 typedef struct {
     String_View name;
     Fundef_Arg *args;
-    Block *body;
+    Block_Statement *body;
     File_Location location;
     Scope *scope;
 } Macrodef;
@@ -168,7 +168,7 @@ bool basm_resolve_include_file_path(Basm *basm,
 Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
 void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
-void basm_translate_block(Basm *basm, Block *block);
+void basm_translate_block(Basm *basm, Block_Statement *block);
 void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location);
 void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location);
 void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location);
