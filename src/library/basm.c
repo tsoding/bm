@@ -30,11 +30,16 @@ Binding *scope_resolve_binding(Scope *scope, String_View name)
     return NULL;
 }
 
-void basm_push_new_scope(Basm *basm)
+void basm_push_scope(Basm *basm, Scope *scope)
 {
-    Scope *scope = arena_alloc(&basm->arena, sizeof(*basm->scope));
+    assert(scope->previous == NULL);
     scope->previous = basm->scope;
     basm->scope = scope;
+}
+
+void basm_push_new_scope(Basm *basm)
+{
+    basm_push_scope(basm, arena_alloc(&basm->arena, sizeof(*basm->scope)));
 }
 
 void basm_pop_scope(Basm *basm)
@@ -1121,39 +1126,36 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
         exit(1);
     }
 
-    Scope *saved_scope = basm->scope;
-    basm->scope = macrodef->scope;
-    basm_push_new_scope(basm);
+    Scope *args_scope = arena_alloc(&basm->arena, sizeof(*args_scope));
 
     Funcall_Arg *call_args = macrocall.args;
     Fundef_Arg *def_args = macrodef->args;
 
     size_t arity = 0;
     while (call_args && def_args) {
-        // TODO(#323): Scope leaking into a macro through a macro call
-        // ### Source to reproduce
-        // ```nasm
-        // %macro push123(a, b, c)
-        //     push a
-        //     push b
-        //     push c
-        // %end
-        // %entry main:
-        //     %for i from 0 to 5
-        //         %push123(i + 1, i + 2, i + 3)
-        //     %end
-        //     halt
-        // ```
-        // ### Observed
-        // ```
-        // examples/macro.basm:1: ERROR: could find binding `i`.
-        // ```
-        // ### Expected
-        // Problem compiles successfully and has the intended behaviour.
-        basm_bind_expr(basm, def_args->name,
-                       call_args->value,
-                       BINDING_CONST,
-                       macrodef->location);
+        Word value = {0};
+        Eval_Status status = basm_expr_eval(basm, call_args->value, location, &value);
+        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            assert(status.deferred_binding->kind == BINDING_LABEL);
+
+            fprintf(stderr, FL_Fmt": ERROR: the macro call `"SV_Fmt"` depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the macro call itself when it's expanded.\n",
+                    FL_Arg(location),
+                    SV_Arg(macrocall.name),
+                    SV_Arg(status.deferred_binding->name));
+            fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the macro call `"SV_Fmt"` defined above it.\n",
+                    FL_Arg(status.deferred_binding->location),
+                    SV_Arg(status.deferred_binding->name),
+                    SV_Arg(macrocall.name));
+            fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the macro call that depends on it.\n");
+            exit(1);
+        }
+        assert(status.kind == EVAL_STATUS_KIND_OK);
+
+        scope_bind_value(args_scope,
+                         def_args->name,
+                         value,
+                         BINDING_CONST,
+                         macrodef->location);
         call_args = call_args->next;
         def_args = def_args->next;
         arity += 1;
@@ -1179,9 +1181,10 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
         exit(1);
     }
 
+    Scope *saved_scope = basm->scope;
+    basm->scope = macrodef->scope;
+    basm_push_scope(basm, args_scope);
     basm_translate_block(basm, macrodef->body);
-
-    basm_pop_scope(basm);
     basm->scope = saved_scope;
 }
 

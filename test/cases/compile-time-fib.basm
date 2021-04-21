@@ -1,0 +1,15 @@
+%include "std.hasm"
+
+%macro fib(a, b, N)
+    %if a < N
+        push a
+        call dump_u64
+        %fib(b, a + b, N)
+    %end
+%end
+
+%entry main:
+%scope
+    %fib(0, 1, 100)
+    halt
+%end
