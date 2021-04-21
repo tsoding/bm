@@ -32,11 +32,11 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
-    case STATEMENT_KIND_BIND_CONST: {
-        String_View name = statement.value.as_bind_const.name;
-        Expr value = statement.value.as_bind_const.value;
+    case STATEMENT_KIND_CONST: {
+        String_View name = statement.value.as_const.name;
+        Expr value = statement.value.as_const.value;
 
-        fprintf(stream, "%*sBind Const:\n", level * 2, "");
+        fprintf(stream, "%*sConst:\n", level * 2, "");
         fprintf(stream, "%*sName: "SV_Fmt"\n", (level + 1) * 2, "", SV_Arg(name));
         fprintf(stream, "%*sValue:\n", (level + 1) * 2, "");
         dump_expr(stream, value, level + 2);
@@ -177,10 +177,10 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
-    case STATEMENT_KIND_BIND_CONST: {
+    case STATEMENT_KIND_CONST: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_const.name;
-        Expr value = statement.value.as_bind_const.value;
+        String_View name = statement.value.as_const.name;
+        Expr value = statement.value.as_const.value;
 
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%const "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
@@ -542,7 +542,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, sv_from_cstr("const"))) {
         Statement statement = {0};
         statement.location = location;
-        statement.kind = STATEMENT_KIND_BIND_CONST;
+        statement.kind = STATEMENT_KIND_CONST;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
@@ -551,11 +551,11 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_const.name = binding_name.value.as_binding;
+        statement.value.as_const.name = binding_name.value.as_binding;
 
         expect_token_next(&tokenizer, TOKEN_KIND_EQ, location);
 
-        statement.value.as_bind_const.value =
+        statement.value.as_const.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
 

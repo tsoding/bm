@@ -319,8 +319,8 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
                                    statement.location);
             }
             break;
-            case STATEMENT_KIND_BIND_CONST:
-                basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
+            case STATEMENT_KIND_CONST:
+                basm_translate_const(basm, statement.value.as_const, statement.location);
                 break;
             case STATEMENT_KIND_BIND_NATIVE:
                 basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
@@ -412,7 +412,7 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             case STATEMENT_KIND_ERROR:
             case STATEMENT_KIND_ASSERT:
             case STATEMENT_KIND_INCLUDE:
-            case STATEMENT_KIND_BIND_CONST:
+            case STATEMENT_KIND_CONST:
                 // NOTE: ignored at the second pass
                 break;
 
@@ -576,11 +576,11 @@ void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location locat
     basm->deferred_entry.scope = basm->scope;
 }
 
-void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location)
+void basm_translate_const(Basm *basm, Const_Statement konst, File_Location location)
 {
     basm_bind_expr(basm,
-                   bind_const.name,
-                   bind_const.value,
+                   konst.name,
+                   konst.value,
                    BINDING_CONST,
                    location);
 }
