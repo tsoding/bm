@@ -300,11 +300,11 @@ const char *binding_status_as_cstr(Binding_Status status)
     }
 }
 
-void basm_translate_block(Basm *basm, Block *block)
+void basm_translate_block(Basm *basm, Block_Statement *block)
 {
     // first pass begin
     {
-        for (Block *iter = block; iter != NULL; iter = iter->next) {
+        for (Block_Statement *iter = block; iter != NULL; iter = iter->next) {
             Statement statement = iter->statement;
             switch (statement.kind) {
             case STATEMENT_KIND_BIND_LABEL: {
@@ -359,7 +359,7 @@ void basm_translate_block(Basm *basm, Block *block)
 
     // second pass begin
     {
-        for (Block *iter = block; iter != NULL; iter = iter->next) {
+        for (Block_Statement *iter = block; iter != NULL; iter = iter->next) {
             Statement statement = iter->statement;
             switch (statement.kind) {
             case STATEMENT_KIND_EMIT_INST: {
@@ -396,7 +396,7 @@ void basm_translate_block(Basm *basm, Block *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                basm_translate_macro_call(basm, statement.value.as_macrocall, statement.location);
+                basm_translate_macrocall_statement(basm, statement.value.as_macrocall, statement.location);
                 break;
 
             case STATEMENT_KIND_MACRODEF:
@@ -534,7 +534,7 @@ void basm_eval_deferred_entry(Basm *basm)
     basm->scope = saved_basm_scope;
 }
 
-void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location)
+void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location)
 {
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
     basm->program[basm->program_size].type = emit_inst.type;
@@ -546,7 +546,7 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location loc
     basm->program_size += 1;
 }
 
-void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
+void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location)
 {
     assert(basm->scope);
 
@@ -571,7 +571,7 @@ void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
     basm->deferred_entry.scope = basm->scope;
 }
 
-void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location)
+void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location)
 {
     basm_bind_expr(basm,
                    bind_const.name,
@@ -580,7 +580,7 @@ void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location 
                    location);
 }
 
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
+void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location)
 {
     if (bind_native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
@@ -604,7 +604,7 @@ void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Locati
     basm->external_natives_size += 1;
 }
 
-void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location)
+void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location)
 {
     basm_bind_value(basm,
                     bind_label.name,
@@ -613,7 +613,7 @@ void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location 
                     location);
 }
 
-void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
+void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location)
 {
     assert(basm->scope != NULL);
     basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
@@ -623,14 +623,14 @@ void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
     };
 }
 
-void basm_translate_error(Error error, File_Location location)
+void basm_translate_error(Error_Statement error, File_Location location)
 {
     fprintf(stderr, FL_Fmt": ERROR: "SV_Fmt"\n",
             FL_Arg(location), SV_Arg(error.message));
     exit(1);
 }
 
-void basm_translate_include(Basm *basm, Include include, File_Location location)
+void basm_translate_include(Basm *basm, Include_Statement include, File_Location location)
 {
     {
         String_View resolved_path = SV_NULL;
@@ -649,7 +649,7 @@ void basm_translate_include(Basm *basm, Include include, File_Location location)
     }
 }
 
-void basm_translate_for(Basm *basm, For phor, File_Location location)
+void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
 {
     Word from = {0};
     {
@@ -699,7 +699,7 @@ void basm_translate_for(Basm *basm, For phor, File_Location location)
     }
 }
 
-void basm_translate_if(Basm *basm, If eef, File_Location location)
+void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
 {
     Word condition = {0};
     Eval_Status status = basm_expr_eval(basm, eef.condition, location, &condition);
@@ -771,7 +771,7 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
         exit(1);
     }
 
-    Block *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
+    Block_Statement *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
     expect_no_lines(&linizer);
     basm_translate_block(basm, input_file_block);
 }
@@ -1111,7 +1111,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
     scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
-void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location)
+void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocall, File_Location location)
 {
     // TODO(#322): no support for recursive macros
     Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);

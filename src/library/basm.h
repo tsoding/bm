@@ -64,7 +64,7 @@ typedef struct Scope Scope;
 typedef struct {
     String_View name;
     Fundef_Arg *args;
-    Block *body;
+    Block_Statement *body;
     File_Location location;
     Scope *scope;
 } Macrodef;
@@ -166,19 +166,21 @@ bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
                                     String_View *resolved_path);
 Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
-void basm_translate_macro_call(Basm *basm, Macrocall macrocall, File_Location location);
+// TODO(#326): all the `basm_translate_*` functions that translate statements should have the name `basm_translate_<statement-type-in-lower-case>`
+// Like `basm_translate_macrocall_statement` or `basm_translate_macrodef_statement`
+void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocall, File_Location location);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
-void basm_translate_block(Basm *basm, Block *block);
-void basm_translate_bind_const(Basm *basm, Bind_Const bind_const, File_Location location);
-void basm_translate_bind_label(Basm *basm, Bind_Label bind_label, File_Location location);
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location);
-void basm_translate_if(Basm *basm, If eef, File_Location location);
-void basm_translate_include(Basm *basm, Include include, File_Location location);
-void basm_translate_assert(Basm *basm, Assert azzert, File_Location location);
-void basm_translate_error(Error error, File_Location location);
-void basm_translate_entry(Basm *basm, Entry entry, File_Location location);
-void basm_translate_emit_inst(Basm *basm, Emit_Inst emit_inst, File_Location location);
-void basm_translate_for(Basm *basm, For phor, File_Location location);
+void basm_translate_block(Basm *basm, Block_Statement *block);
+void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location);
+void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location);
+void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location);
+void basm_translate_if(Basm *basm, If_Statement eef, File_Location location);
+void basm_translate_include(Basm *basm, Include_Statement include, File_Location location);
+void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location);
+void basm_translate_error(Error_Statement error, File_Location location);
+void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location);
+void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location);
+void basm_translate_for(Basm *basm, For_Statement phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
 

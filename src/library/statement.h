@@ -6,8 +6,8 @@
 #include "./linizer.h"
 
 typedef struct Statement Statement;
-typedef struct Block Block;
-typedef struct Fundef Fundef;
+typedef struct Block_Statement Block_Statement;
+typedef struct Fundef_Statement Fundef_Statement;
 
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
@@ -30,51 +30,51 @@ typedef enum {
 typedef struct {
     Inst_Type type;
     Expr operand;
-} Emit_Inst;
+} Emit_Inst_Statement;
 
 typedef struct {
     String_View name;
-} Bind_Label;
+} Bind_Label_Statement;
 
 typedef struct {
     String_View name;
     Expr value;
-} Bind_Const;
+} Bind_Const_Statement;
 
 typedef struct {
     String_View name;
-} Bind_Native;
+} Bind_Native_Statement;
 
 typedef struct {
     String_View path;
-} Include;
+} Include_Statement;
 
 typedef struct {
     Expr condition;
-} Assert;
+} Assert_Statement;
 
 typedef struct {
     String_View message;
-} Error;
+} Error_Statement;
 
 typedef struct {
     Expr value;
-} Entry;
+} Entry_Statement;
 
 typedef struct {
     Expr condition;
-    Block *then;
-    Block *elze;
-} If;
+    Block_Statement *then;
+    Block_Statement *elze;
+} If_Statement;
 
 typedef struct {
     String_View var;
     Expr from;
     Expr to;
-    Block *body;
-} For;
+    Block_Statement *body;
+} For_Statement;
 
-struct Fundef {
+struct Fundef_Statement {
     String_View name;
     Fundef_Arg *args;
     Expr *guard;
@@ -84,31 +84,30 @@ struct Fundef {
 typedef struct {
     String_View name;
     Funcall_Arg *args;
-} Macrocall;
+} Macrocall_Statement;
 
 typedef struct {
     String_View name;
     Fundef_Arg *args;
-    Block *body;
+    Block_Statement *body;
 } Macrodef_Statement;
 
 typedef union {
-    Emit_Inst as_emit_inst;
-    Bind_Label as_bind_label;
-    Bind_Const as_bind_const;
-    Bind_Native as_bind_native;
-    Include as_include;
-    Assert as_assert;
-    Error as_error;
-    Entry as_entry;
-    Block *as_block;
-    If as_if;
-    Block *as_scope;
-    For as_for;
-    Fundef as_fundef;
-    Macrocall as_macrocall;
-    // TODO(#319): all of the Statement kind types should have the `_Statement` suffix
-    // Not only Macrodef_Statement.
+    Emit_Inst_Statement as_emit_inst;
+    // TODO(#327): Remove redundant prefix `bind` from *_Statement types
+    Bind_Label_Statement as_bind_label;
+    Bind_Const_Statement as_bind_const;
+    Bind_Native_Statement as_bind_native;
+    Include_Statement as_include;
+    Assert_Statement as_assert;
+    Error_Statement as_error;
+    Entry_Statement as_entry;
+    Block_Statement *as_block;
+    If_Statement as_if;
+    Block_Statement *as_scope;
+    For_Statement as_for;
+    Fundef_Statement as_fundef;
+    Macrocall_Statement as_macrocall;
     Macrodef_Statement as_macrodef;
 } Statement_Value;
 
@@ -118,27 +117,27 @@ struct Statement {
     File_Location location;
 };
 
-struct Block {
+struct Block_Statement {
     Statement statement;
-    Block *next;
+    Block_Statement *next;
 };
 
 typedef struct {
-    Block *begin;
-    Block *end;
+    Block_Statement *begin;
+    Block_Statement *end;
 } Block_List;
 
 void block_list_push(Arena *arena, Block_List *list, Statement statement);
 
-void dump_block(FILE *stream, Block *block, int level);
+void dump_block(FILE *stream, Block_Statement *block, int level);
 void dump_statement(FILE *stream, Statement statement, int level);
-int dump_block_as_dot_edges(FILE *stream, Block *block, int *counter);
+int dump_block_as_dot_edges(FILE *stream, Block_Statement *block, int *counter);
 int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter);
 void dump_statement_as_dot(FILE *stream, Statement statement);
 
 Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
                                         Expr condition, File_Location location);
 void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *output);
-Block *parse_block_from_lines(Arena *arena, Linizer *linizer);
+Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer);
 
 #endif // STATEMENT_H_
