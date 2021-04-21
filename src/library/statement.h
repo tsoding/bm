@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
     Expr value;
-} Entry;
+} Entry_Statement;
 
 typedef struct {
     Expr condition;
@@ -100,7 +100,7 @@ typedef union {
     Include_Statement as_include;
     Assert_Statement as_assert;
     Error_Statement as_error;
-    Entry as_entry;
+    Entry_Statement as_entry;
     Block *as_block;
     If as_if;
     Block *as_scope;

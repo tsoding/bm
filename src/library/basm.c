@@ -546,7 +546,7 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Lo
     basm->program_size += 1;
 }
 
-void basm_translate_entry(Basm *basm, Entry entry, File_Location location)
+void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location)
 {
     assert(basm->scope);
 
