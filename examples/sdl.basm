@@ -110,7 +110,6 @@ render_logo:
     ret
 %end
 
-;; TODO(#279): logo does not bounce off of the edge of the screen
 update_logo:
 %scope
     push WINDOW
