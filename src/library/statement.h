@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-} Bind_Native;
+} Bind_Native_Statement;
 
 typedef struct {
     String_View path;
@@ -96,7 +96,7 @@ typedef union {
     Emit_Inst_Statement as_emit_inst;
     Bind_Label_Statement as_bind_label;
     Bind_Const_Statement as_bind_const;
-    Bind_Native as_bind_native;
+    Bind_Native_Statement as_bind_native;
     Include as_include;
     Assert as_assert;
     Error as_error;

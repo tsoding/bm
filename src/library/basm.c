@@ -580,7 +580,7 @@ void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File
                    location);
 }
 
-void basm_translate_bind_native(Basm *basm, Bind_Native bind_native, File_Location location)
+void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location)
 {
     if (bind_native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
