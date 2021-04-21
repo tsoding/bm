@@ -65,7 +65,7 @@ typedef struct {
     Expr condition;
     Block_Statement *then;
     Block_Statement *elze;
-} If;
+} If_Statement;
 
 typedef struct {
     String_View var;
@@ -102,7 +102,7 @@ typedef union {
     Error_Statement as_error;
     Entry_Statement as_entry;
     Block_Statement *as_block;
-    If as_if;
+    If_Statement as_if;
     Block_Statement *as_scope;
     For as_for;
     Fundef as_fundef;

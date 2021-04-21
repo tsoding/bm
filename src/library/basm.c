@@ -699,7 +699,7 @@ void basm_translate_for(Basm *basm, For phor, File_Location location)
     }
 }
 
-void basm_translate_if(Basm *basm, If eef, File_Location location)
+void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
 {
     Word condition = {0};
     Eval_Status status = basm_expr_eval(basm, eef.condition, location, &condition);
