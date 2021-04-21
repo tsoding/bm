@@ -11,7 +11,7 @@ typedef struct Fundef_Statement Fundef_Statement;
 
 typedef enum {
     STATEMENT_KIND_EMIT_INST,
-    STATEMENT_KIND_BIND_LABEL,
+    STATEMENT_KIND_LABEL,
     STATEMENT_KIND_CONST,
     STATEMENT_KIND_BIND_NATIVE,
     STATEMENT_KIND_INCLUDE,
@@ -34,7 +34,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-} Bind_Label_Statement;
+} Label_Statement;
 
 typedef struct {
     String_View name;
@@ -95,7 +95,7 @@ typedef struct {
 typedef union {
     Emit_Inst_Statement as_emit_inst;
     // TODO(#327): Remove redundant prefix `bind` from *_Statement types
-    Bind_Label_Statement as_bind_label;
+    Label_Statement as_label;
     Const_Statement as_const;
     Bind_Native_Statement as_bind_native;
     Include_Statement as_include;

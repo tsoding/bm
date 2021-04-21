@@ -312,9 +312,9 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
         for (Block_Statement *iter = block; iter != NULL; iter = iter->next) {
             Statement statement = iter->statement;
             switch (statement.kind) {
-            case STATEMENT_KIND_BIND_LABEL: {
+            case STATEMENT_KIND_LABEL: {
                 basm_defer_binding(basm,
-                                   statement.value.as_bind_label.name,
+                                   statement.value.as_label.name,
                                    BINDING_LABEL,
                                    statement.location);
             }
@@ -372,8 +372,8 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             }
             break;
 
-            case STATEMENT_KIND_BIND_LABEL: {
-                Binding *binding = basm_resolve_binding(basm, statement.value.as_bind_label.name);
+            case STATEMENT_KIND_LABEL: {
+                Binding *binding = basm_resolve_binding(basm, statement.value.as_label.name);
                 assert(binding != NULL);
                 assert(binding->kind == BINDING_LABEL);
                 assert(binding->status == BINDING_DEFERRED);
@@ -609,10 +609,10 @@ void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, F
     basm->external_natives_size += 1;
 }
 
-void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location)
+void basm_translate_bind_label(Basm *basm, Label_Statement label, File_Location location)
 {
     basm_bind_value(basm,
-                    bind_label.name,
+                    label.name,
                     word_u64(basm->program_size),
                     BINDING_LABEL,
                     location);

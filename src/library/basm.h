@@ -173,7 +173,7 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
 void basm_translate_block(Basm *basm, Block_Statement *block);
 void basm_translate_const(Basm *basm, Const_Statement konst, File_Location location);
-void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location);
+void basm_translate_label(Basm *basm, Label_Statement label, File_Location location);
 void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location);
 void basm_translate_if(Basm *basm, If_Statement eef, File_Location location);
 void basm_translate_include(Basm *basm, Include_Statement include, File_Location location);
