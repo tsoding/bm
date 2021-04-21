@@ -613,7 +613,7 @@ void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File
                     location);
 }
 
-void basm_translate_assert(Basm *basm, Assert azzert, File_Location location)
+void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location)
 {
     assert(basm->scope != NULL);
     basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {

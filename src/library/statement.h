@@ -51,7 +51,7 @@ typedef struct {
 
 typedef struct {
     Expr condition;
-} Assert;
+} Assert_Statement;
 
 typedef struct {
     String_View message;
@@ -98,7 +98,7 @@ typedef union {
     Bind_Const_Statement as_bind_const;
     Bind_Native_Statement as_bind_native;
     Include_Statement as_include;
-    Assert as_assert;
+    Assert_Statement as_assert;
     Error as_error;
     Entry as_entry;
     Block *as_block;

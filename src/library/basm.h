@@ -174,7 +174,7 @@ void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File
 void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location);
 void basm_translate_if(Basm *basm, If eef, File_Location location);
 void basm_translate_include(Basm *basm, Include_Statement include, File_Location location);
-void basm_translate_assert(Basm *basm, Assert azzert, File_Location location);
+void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location);
 void basm_translate_error(Error error, File_Location location);
 void basm_translate_entry(Basm *basm, Entry entry, File_Location location);
 void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location);
