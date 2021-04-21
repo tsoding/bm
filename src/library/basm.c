@@ -322,8 +322,8 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             case STATEMENT_KIND_CONST:
                 basm_translate_const(basm, statement.value.as_const, statement.location);
                 break;
-            case STATEMENT_KIND_BIND_NATIVE:
-                basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
+            case STATEMENT_KIND_NATIVE:
+                basm_translate_native(basm, statement.value.as_native, statement.location);
                 break;
             case STATEMENT_KIND_INCLUDE:
                 basm_translate_include(basm, statement.value.as_include, statement.location);
@@ -405,7 +405,7 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
                 break;
 
             case STATEMENT_KIND_MACRODEF:
-            case STATEMENT_KIND_BIND_NATIVE:
+            case STATEMENT_KIND_NATIVE:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
@@ -585,9 +585,9 @@ void basm_translate_const(Basm *basm, Const_Statement konst, File_Location locat
                    location);
 }
 
-void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location)
+void basm_translate_native(Basm *basm, Native_Statement native, File_Location location)
 {
-    if (bind_native.name.count >= NATIVE_NAME_CAPACITY - 1) {
+    if (native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
         exit(1);
     }
@@ -597,11 +597,11 @@ void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, F
            NATIVE_NAME_CAPACITY);
 
     memcpy(basm->external_natives[basm->external_natives_size].name,
-           bind_native.name.data,
-           bind_native.name.count);
+           native.name.data,
+           native.name.count);
 
     basm_bind_value(basm,
-                    bind_native.name,
+                    native.name,
                     word_u64(basm->external_natives_size),
                     BINDING_NATIVE,
                     location);

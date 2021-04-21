@@ -13,7 +13,7 @@ typedef enum {
     STATEMENT_KIND_EMIT_INST,
     STATEMENT_KIND_LABEL,
     STATEMENT_KIND_CONST,
-    STATEMENT_KIND_BIND_NATIVE,
+    STATEMENT_KIND_NATIVE,
     STATEMENT_KIND_INCLUDE,
     STATEMENT_KIND_ASSERT,
     STATEMENT_KIND_ERROR,
@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct {
     String_View name;
-} Bind_Native_Statement;
+} Native_Statement;
 
 typedef struct {
     String_View path;
@@ -97,7 +97,7 @@ typedef union {
     // TODO(#327): Remove redundant prefix `bind` from *_Statement types
     Label_Statement as_label;
     Const_Statement as_const;
-    Bind_Native_Statement as_bind_native;
+    Native_Statement as_native;
     Include_Statement as_include;
     Assert_Statement as_assert;
     Error_Statement as_error;

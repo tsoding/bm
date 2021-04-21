@@ -43,8 +43,8 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
-    case STATEMENT_KIND_BIND_NATIVE: {
-        assert(false && "TODO(#275): dumping Bind Native statement is not implemented");
+    case STATEMENT_KIND_NATIVE: {
+        assert(false && "TODO(#275): dumping Native statement is not implemented");
         exit(1);
     }
     break;
@@ -190,9 +190,9 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
-    case STATEMENT_KIND_BIND_NATIVE: {
+    case STATEMENT_KIND_NATIVE: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_native.name;
+        String_View name = statement.value.as_native.name;
 
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%native "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
@@ -563,7 +563,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, sv_from_cstr("native"))) {
         Statement statement = {0};
         statement.location = location;
-        statement.kind = STATEMENT_KIND_BIND_NATIVE;
+        statement.kind = STATEMENT_KIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
@@ -572,7 +572,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_native.name = binding_name.value.as_binding;
+        statement.value.as_native.name = binding_name.value.as_binding;
         expect_no_tokens(&tokenizer, location);
 
         block_list_push(arena, output, statement);
