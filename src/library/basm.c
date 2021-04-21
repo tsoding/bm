@@ -396,7 +396,7 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             break;
 
             case STATEMENT_KIND_MACROCALL:
-                basm_translate_macro_call(basm, statement.value.as_macrocall, statement.location);
+                basm_translate_macrocall_statement(basm, statement.value.as_macrocall, statement.location);
                 break;
 
             case STATEMENT_KIND_MACRODEF:
@@ -1111,7 +1111,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef)
     scope->macrodefs[scope->macrodefs_size++] = macrodef;
 }
 
-void basm_translate_macro_call(Basm *basm, Macrocall_Statement macrocall, File_Location location)
+void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocall, File_Location location)
 {
     // TODO(#322): no support for recursive macros
     Macrodef *macrodef = basm_resolve_macrodef(basm, macrocall.name);
