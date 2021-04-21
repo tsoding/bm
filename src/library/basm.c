@@ -630,7 +630,7 @@ void basm_translate_error(Error error, File_Location location)
     exit(1);
 }
 
-void basm_translate_include(Basm *basm, Include include, File_Location location)
+void basm_translate_include(Basm *basm, Include_Statement include, File_Location location)
 {
     {
         String_View resolved_path = SV_NULL;
