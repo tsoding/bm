@@ -379,35 +379,159 @@ int main(int argc, char *argv[])
         }
         break;
         case INST_GEI: {
-            fprintf(output, "    ;; FIXME: gei\n");
+            fprintf(output, "    ;; gei\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setge al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
         case INST_GTI: {
-            fprintf(output, "    ;; FIXME: gti\n");
+            fprintf(output, "    ;; gti\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setg al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
         case INST_LEI: {
-            fprintf(output, "    ;; FIXME: lei\n");
+            fprintf(output, "    ;; lei\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setle al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_LTI:
-            assert(false && "LTI is not implemented");
-        case INST_NEI:
-            assert(false && "NEI is not implemented");
+        case INST_LTI: {
+            fprintf(output, "    ;; lti\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setl al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NEI: {
+            fprintf(output, "    ;; equ\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setne al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
         case INST_EQU: {
-            fprintf(output, "    ;; FIXME: equ\n");
+            fprintf(output, "    ;; equ\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    sete al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_GEU:
-            assert(false && "GEU is not implemented");
-        case INST_GTU:
-            assert(false && "GTU is not implemented");
-        case INST_LEU:
-            assert(false && "LEU is not implemented");
-        case INST_LTU:
-            assert(false && "LTU is not implemented");
-        case INST_NEU:
-            assert(false && "NEU is not implemented");
+        case INST_GEU: {
+            fprintf(output, "    ;; geu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setnb al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_GTU: {
+            fprintf(output, "    ;; gtu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    seta al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LEU: {
+            fprintf(output, "    ;; leu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setbe al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LTU: {
+            fprintf(output, "    ;; ltu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setb al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NEU: {
+            fprintf(output, "    ;; neu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rax, rbx\n");
+            fprintf(output, "    setne al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
         case INST_EQF:
             assert(false && "EQF is not implemented");
         case INST_GEF: {
