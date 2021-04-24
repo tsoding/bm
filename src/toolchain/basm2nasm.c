@@ -219,7 +219,6 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-
         case INST_MODU: {
             fprintf(output, "    ;; modu\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -534,34 +533,22 @@ int main(int argc, char *argv[])
         break;
         case INST_EQF:
             assert(false && "EQF is not implemented");
-        case INST_GEF: {
-            fprintf(output, "    ;; FIXME: gef\n");
-        }
-        break;
-        case INST_GTF: {
-            fprintf(output, "    ;; FIXME: gtf\n");
-        }
-        break;
-        case INST_LEF: {
-            fprintf(output, "    ;; FIXME: lef\n");
-        }
-        break;
-        case INST_LTF: {
-            fprintf(output, "    ;; FIXME: ltf\n");
-        }
-        break;
+        case INST_GEF:
+            assert(false && "GEF is not implemented");
+        case INST_GTF:
+            assert(false && "GTF is not implemented");
+        case INST_LEF:
+            assert(false && "LEF is not implemented");
+        case INST_LTF:
+            assert(false && "LTF is not implemented");
         case INST_NEF:
             assert(false && "NEF is not implemented");
-        case INST_ANDB: {
-            fprintf(output, "    ;; FIXME: andb\n");
-        }
-        break;
+        case INST_ANDB:
+            assert(false && "ANDB is not implemented");
         case INST_ORB:
             assert(false && "ORB is not implemented");
-        case INST_XOR: {
-            fprintf(output, "    ;; FIXME: xor\n");
-        }
-        break;
+        case INST_XOR:
+            assert(false && "XOR is not implemented");
         case INST_SHR:
             assert(false && "SHR is not implemented");
         case INST_SHL:
@@ -611,16 +598,12 @@ int main(int argc, char *argv[])
             assert(false && "WRITE32 is not implemented");
         case INST_WRITE64:
             assert(false && "WRITE64 is not implemented");
-        case INST_I2F: {
-            fprintf(output, "    ;; FIXME: i2f\n");
-        }
-        break;
+        case INST_I2F:
+            assert(false && "I2F is not implemented");
         case INST_U2F:
             assert(false && "U2F is not implemented");
-        case INST_F2I: {
-            fprintf(output, "    ;; FIXME: f2i\n");
-        }
-        break;
+        case INST_F2I:
+            assert(false && "F2I is not implemented");
         case INST_F2U:
             assert(false && "F2U is not implemented");
         case NUMBER_OF_INSTS:
