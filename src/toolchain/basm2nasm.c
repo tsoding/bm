@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
+    basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
 
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
