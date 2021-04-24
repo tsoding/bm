@@ -1,13 +1,15 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bm.h"
 #include "basm.h"
+#include "sv.h"
 
 static void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: ./basm2nasm <input.basm> <output.asm>\n");
+    fprintf(stream, "Usage: ./basm2nasm <input.basm> <output.asm> [-I <include-path>]\n");
 }
 
 static char *shift(int *argc, char ***argv)
@@ -23,23 +25,41 @@ int main(int argc, char *argv[])
 {
     shift(&argc, &argv);        // skip the program
 
-    if (argc == 0) {
+    char *input_file_path = NULL, *output_file_path = NULL;
+
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Basm basm = {0};
+
+    while (argc) {
+        char *current_arg = shift(&argc, &argv);
+        if (strcmp(current_arg, "-I") == 0) {
+            basm_push_include_path(&basm, sv_from_cstr(shift(&argc, &argv)));
+            continue;
+        }
+
+        if (input_file_path == NULL) {
+            input_file_path = current_arg;
+            continue;
+        }
+
+        if (output_file_path == NULL) {
+            output_file_path = current_arg;
+            continue;
+        }
+    }
+
+    if (!input_file_path) {
         usage(stderr);
         fprintf(stderr, "ERROR: no input provided.\n");
         exit(1);
     }
-    const char *input_file_path = shift(&argc, &argv);
 
-    if (argc == 0) {
+    if (!output_file_path) {
         usage(stderr);
         fprintf(stderr, "ERROR: no output provided.\n");
         exit(1);
     }
-    const char *output_file_path = shift(&argc, &argv);
 
-
-    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
-    static Basm basm = {0};
     basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
 
     FILE *output = fopen(output_file_path, "wb");
