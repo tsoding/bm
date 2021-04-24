@@ -165,9 +165,18 @@ int main(int argc, char *argv[])
             fprintf(output, "    imul rax, rbx\n");
             fprintf(output, "    mov [r11], rax\n");
         }
-        break;
-        case INST_MULTU:
-            assert(false && "MULTU is not implemented");
+            break;
+        case INST_MULTU: {
+            fprintf(output, "    ;; multu\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [r11]\n");
+            fprintf(output, "    mul rbx\n");
+            fprintf(output, "    mov [r11], rax\n");
+        } break;
         case INST_DIVI: {
             fprintf(output, "    ;; divi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
