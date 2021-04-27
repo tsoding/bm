@@ -1,13 +1,15 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bm.h"
 #include "basm.h"
+#include "sv.h"
 
 static void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: ./basm2nasm <input.basm> <output.asm>\n");
+    fprintf(stream, "Usage: ./basm2nasm <input.basm> <output.asm> [-I <include-path>]\n");
 }
 
 static char *shift(int *argc, char ***argv)
@@ -19,28 +21,48 @@ static char *shift(int *argc, char ***argv)
     return result;
 }
 
+// TODO(#333): merge basm2nasm with the main basm tool
+
 int main(int argc, char *argv[])
 {
     shift(&argc, &argv);        // skip the program
 
-    if (argc == 0) {
+    char *input_file_path = NULL, *output_file_path = NULL;
+
+    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
+    static Basm basm = {0};
+
+    while (argc) {
+        char *current_arg = shift(&argc, &argv);
+        if (strcmp(current_arg, "-I") == 0) {
+            basm_push_include_path(&basm, sv_from_cstr(shift(&argc, &argv)));
+            continue;
+        }
+
+        if (input_file_path == NULL) {
+            input_file_path = current_arg;
+            continue;
+        }
+
+        if (output_file_path == NULL) {
+            output_file_path = current_arg;
+            continue;
+        }
+    }
+
+    if (!input_file_path) {
         usage(stderr);
         fprintf(stderr, "ERROR: no input provided.\n");
         exit(1);
     }
-    const char *input_file_path = shift(&argc, &argv);
 
-    if (argc == 0) {
+    if (!output_file_path) {
         usage(stderr);
         fprintf(stderr, "ERROR: no output provided.\n");
         exit(1);
     }
-    const char *output_file_path = shift(&argc, &argv);
 
-
-    // NOTE: The structure might be quite big due its arena. Better allocate it in the static memory.
-    static Basm basm = {0};
-    basm_translate_source_file(&basm, sv_from_cstr(input_file_path));
+    basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
 
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
@@ -146,8 +168,18 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [r11], rax\n");
         }
         break;
-        case INST_MULTU:
-            assert(false && "MULTU is not implemented");
+        case INST_MULTU: {
+            fprintf(output, "    ;; multu\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [r11]\n");
+            fprintf(output, "    mul rbx\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
         case INST_DIVI: {
             fprintf(output, "    ;; divi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -190,7 +222,6 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-
         case INST_MODU: {
             fprintf(output, "    ;; modu\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -350,65 +381,177 @@ int main(int argc, char *argv[])
         }
         break;
         case INST_GEI: {
-            fprintf(output, "    ;; FIXME: gei\n");
+            fprintf(output, "    ;; gei\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setge al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
         case INST_GTI: {
-            fprintf(output, "    ;; FIXME: gti\n");
+            fprintf(output, "    ;; gti\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setg al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
         case INST_LEI: {
-            fprintf(output, "    ;; FIXME: lei\n");
+            fprintf(output, "    ;; lei\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setle al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_LTI:
-            assert(false && "LTI is not implemented");
-        case INST_NEI:
-            assert(false && "NEI is not implemented");
+        case INST_LTI: {
+            fprintf(output, "    ;; lti\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setl al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NEI: {
+            fprintf(output, "    ;; equ\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setne al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
         case INST_EQU: {
-            fprintf(output, "    ;; FIXME: equ\n");
+            fprintf(output, "    ;; equ\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    sete al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_GEU:
-            assert(false && "GEU is not implemented");
-        case INST_GTU:
-            assert(false && "GTU is not implemented");
-        case INST_LEU:
-            assert(false && "LEU is not implemented");
-        case INST_LTU:
-            assert(false && "LTU is not implemented");
-        case INST_NEU:
-            assert(false && "NEU is not implemented");
+        case INST_GEU: {
+            fprintf(output, "    ;; geu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setnb al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_GTU: {
+            fprintf(output, "    ;; gtu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    seta al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LEU: {
+            fprintf(output, "    ;; leu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setbe al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LTU: {
+            fprintf(output, "    ;; ltu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rbx, rax\n");
+            fprintf(output, "    setb al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NEU: {
+            fprintf(output, "    ;; neu\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    cmp rax, rbx\n");
+            fprintf(output, "    setne al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
         case INST_EQF:
             assert(false && "EQF is not implemented");
-        case INST_GEF: {
-            fprintf(output, "    ;; FIXME: gef\n");
-        }
-        break;
-        case INST_GTF: {
-            fprintf(output, "    ;; FIXME: gtf\n");
-        }
-        break;
-        case INST_LEF: {
-            fprintf(output, "    ;; FIXME: lef\n");
-        }
-        break;
-        case INST_LTF: {
-            fprintf(output, "    ;; FIXME: ltf\n");
-        }
-        break;
+        case INST_GEF:
+            assert(false && "GEF is not implemented");
+        case INST_GTF:
+            assert(false && "GTF is not implemented");
+        case INST_LEF:
+            assert(false && "LEF is not implemented");
+        case INST_LTF:
+            assert(false && "LTF is not implemented");
         case INST_NEF:
             assert(false && "NEF is not implemented");
-        case INST_ANDB: {
-            fprintf(output, "    ;; FIXME: andb\n");
-        }
-        break;
+        case INST_ANDB:
+            assert(false && "ANDB is not implemented");
         case INST_ORB:
             assert(false && "ORB is not implemented");
-        case INST_XOR: {
-            fprintf(output, "    ;; FIXME: xor\n");
-        }
-        break;
+        case INST_XOR:
+            assert(false && "XOR is not implemented");
         case INST_SHR:
             assert(false && "SHR is not implemented");
         case INST_SHL:
@@ -458,16 +601,12 @@ int main(int argc, char *argv[])
             assert(false && "WRITE32 is not implemented");
         case INST_WRITE64:
             assert(false && "WRITE64 is not implemented");
-        case INST_I2F: {
-            fprintf(output, "    ;; FIXME: i2f\n");
-        }
-        break;
+        case INST_I2F:
+            assert(false && "I2F is not implemented");
         case INST_U2F:
             assert(false && "U2F is not implemented");
-        case INST_F2I: {
-            fprintf(output, "    ;; FIXME: f2i\n");
-        }
-        break;
+        case INST_F2I:
+            assert(false && "F2I is not implemented");
         case INST_F2U:
             assert(false && "F2U is not implemented");
         case NUMBER_OF_INSTS:
