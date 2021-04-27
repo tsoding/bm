@@ -609,15 +609,6 @@ void basm_translate_native(Basm *basm, Native_Statement native, File_Location lo
     basm->external_natives_size += 1;
 }
 
-void basm_translate_bind_label(Basm *basm, Label_Statement label, File_Location location)
-{
-    basm_bind_value(basm,
-                    label.name,
-                    word_u64(basm->program_size),
-                    BINDING_LABEL,
-                    location);
-}
-
 void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location)
 {
     assert(basm->scope != NULL);
