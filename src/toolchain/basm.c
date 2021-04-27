@@ -4,7 +4,8 @@
 
 typedef enum {
     BASM_OUTPUT_BM = 0,
-    BASM_OUTPUT_NASM
+    BASM_OUTPUT_NASM,
+    COUNT_BASM_OUTPUTS
 } Basm_Output_Format;
 
 static String_View output_format_file_ext(Basm_Output_Format format)
@@ -14,6 +15,7 @@ static String_View output_format_file_ext(Basm_Output_Format format)
         return SV(".bm");
     case BASM_OUTPUT_NASM:
         return SV(".asm");
+    case COUNT_BASM_OUTPUTS:
     default:
         assert(false && "output_format_file_ext: unreachable");
         exit(1);
@@ -22,6 +24,10 @@ static String_View output_format_file_ext(Basm_Output_Format format)
 
 static bool output_format_by_name(const char *name, Basm_Output_Format *format)
 {
+    static_assert(
+        COUNT_BASM_OUTPUTS == 2,
+        "Please add a condition branch for a new output "
+        "and increment the counter above");
     if (strcmp(name, "bm") == 0) {
         *format = BASM_OUTPUT_BM;
         return true;
@@ -130,6 +136,7 @@ int main(int argc, char **argv)
     }
     break;
 
+    case COUNT_BASM_OUTPUTS:
     default:
         assert(false && "basm: unreachable");
         exit(1);
