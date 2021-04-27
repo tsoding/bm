@@ -62,7 +62,7 @@ Binding *basm_resolve_binding(Basm *basm, String_View name)
     return NULL;
 }
 
-void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location)
+void scope_bind_value(Scope *scope, String_View name, Word value, Type type, File_Location location)
 {
     Binding *existing = scope_resolve_binding(scope, name);
     if (existing) {
@@ -81,12 +81,12 @@ void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind k
         .name = name,
         .value = value,
         .status = BINDING_EVALUATED,
-        .kind = kind,
+        .type = type,
         .location = location,
     };
 }
 
-void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location)
+void scope_defer_binding(Scope *scope, String_View name, Type type, File_Location location)
 {
     assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
 
@@ -105,12 +105,12 @@ void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File
     scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .status = BINDING_DEFERRED,
-        .kind = kind,
+        .type = type,
         .location = location,
     };
 }
 
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location)
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_Location location)
 {
     assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
 
@@ -129,27 +129,27 @@ void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kin
     scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .expr = expr,
-        .kind = kind,
+        .type = type,
         .location = location,
     };
 }
 
-void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location)
+void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location)
 {
     assert(basm->scope != NULL);
-    scope_bind_value(basm->scope, name, value, kind, location);
+    scope_bind_value(basm->scope, name, value, type, location);
 }
 
-void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location)
+void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location location)
 {
     assert(basm->scope != NULL);
-    scope_defer_binding(basm->scope, name, kind, location);
+    scope_defer_binding(basm->scope, name, type, location);
 }
 
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location)
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, Type type, File_Location location)
 {
     assert(basm->scope != NULL);
-    scope_bind_expr(basm->scope, name, expr, kind, location);
+    scope_bind_expr(basm->scope, name, expr, type, location);
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
@@ -313,10 +313,11 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             Statement statement = iter->statement;
             switch (statement.kind) {
             case STATEMENT_KIND_LABEL: {
-                basm_defer_binding(basm,
-                                   statement.value.as_label.name,
-                                   BINDING_LABEL,
-                                   statement.location);
+                basm_defer_binding(
+                    basm,
+                    statement.value.as_label.name,
+                    TYPE_INST_ADDR,
+                    statement.location);
             }
             break;
             case STATEMENT_KIND_CONST:
@@ -375,7 +376,6 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             case STATEMENT_KIND_LABEL: {
                 Binding *binding = basm_resolve_binding(basm, statement.value.as_label.name);
                 assert(binding != NULL);
-                assert(binding->kind == BINDING_LABEL);
                 assert(binding->status == BINDING_DEFERRED);
 
                 binding->status = BINDING_EVALUATED;
@@ -474,13 +474,23 @@ void basm_eval_deferred_operands(Basm *basm)
                 exit(1);
             }
 
-            if (basm->program[addr].type == INST_CALL && binding->kind != BINDING_LABEL) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to call not a label. `"SV_Fmt"` is %s, but the call instructions accepts only literals or labels.\n", FL_Arg(basm->deferred_operands[i].location), SV_Arg(name), binding_kind_as_cstr(binding->kind));
+            if (basm->program[addr].type == INST_CALL && binding->type != TYPE_INST_ADDR) {
+                fprintf(stderr, FL_Fmt": ERROR: type check error. `call` instruction expects an operand of the type %s. But the value of type %s was found.",
+                        FL_Arg(basm->deferred_operands[i].location),
+                        type_name(TYPE_INST_ADDR),
+                        type_name(binding->type));
+                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only `call` the labels. Since the labels are the only way to create bindings with Inst_Addr type right now.",
+                        FL_Arg(basm->deferred_operands[i].location));
                 exit(1);
             }
 
-            if (basm->program[addr].type == INST_NATIVE && binding->kind != BINDING_NATIVE) {
-                fprintf(stderr, FL_Fmt": ERROR: trying to invoke native function from a binding that is %s. Bindings for native functions have to be defined via `%%native` basm directives.\n", FL_Arg(basm->deferred_operands[i].location), binding_kind_as_cstr(binding->kind));
+            if (basm->program[addr].type == INST_NATIVE && binding->type != TYPE_NATIVE_ID) {
+                fprintf(stderr, FL_Fmt": ERROR: type check error. `native` instruction expects an operand of the type %s. But the value of type %s was found.",
+                        FL_Arg(basm->deferred_operands[i].location),
+                        type_name(TYPE_NATIVE_ID),
+                        type_name(binding->type));
+                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only use `native` instruction on the bindings that are defined with `%%native` directive.",
+                        FL_Arg(basm->deferred_operands[i].location));
                 exit(1);
             }
         }
@@ -521,8 +531,12 @@ void basm_eval_deferred_entry(Basm *basm)
             exit(1);
         }
 
-        if (binding->kind != BINDING_LABEL) {
-            fprintf(stderr, FL_Fmt": ERROR: trying to set a %s as an entry point. Entry point has to be a label.\n", FL_Arg(basm->deferred_entry.location), binding_kind_as_cstr(binding->kind));
+        if (binding->type != TYPE_INST_ADDR) {
+            fprintf(stderr, FL_Fmt": ERROR: Type check error. Trying to set `"SV_Fmt"` that has the type of %s as an entry point. Entry point has to be %s.\n",
+                    FL_Arg(basm->deferred_entry.location),
+                    SV_Arg(binding->name),
+                    type_name(binding->type),
+                    type_name(TYPE_INST_ADDR));
             exit(1);
         }
 
@@ -581,7 +595,7 @@ void basm_translate_const(Basm *basm, Const_Statement konst, File_Location locat
     basm_bind_expr(basm,
                    konst.name,
                    konst.value,
-                   BINDING_CONST,
+                   TYPE_ANY,
                    location);
 }
 
@@ -603,7 +617,7 @@ void basm_translate_native(Basm *basm, Native_Statement native, File_Location lo
     basm_bind_value(basm,
                     native.name,
                     word_u64(basm->external_natives_size),
-                    BINDING_NATIVE,
+                    TYPE_NATIVE_ID,
                     location);
 
     basm->external_natives_size += 1;
@@ -652,7 +666,6 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
         Eval_Status status = basm_expr_eval(basm, phor.from, location, &from);
         if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
             assert(status.deferred_binding);
-            assert(status.deferred_binding->kind == BINDING_LABEL);
             assert(status.deferred_binding->status == BINDING_DEFERRED);
 
             fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
@@ -671,7 +684,6 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
         Eval_Status status = basm_expr_eval(basm, phor.to, location, &to);
         if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
             assert(status.deferred_binding);
-            assert(status.deferred_binding->kind == BINDING_LABEL);
             assert(status.deferred_binding->status == BINDING_DEFERRED);
 
             fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
@@ -689,7 +701,7 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
             var_value <= to.as_i64;
             ++var_value) {
         basm_push_new_scope(basm);
-        basm_bind_value(basm, phor.var, word_i64(var_value), BINDING_CONST, location);
+        basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_ANY, location);
         basm_translate_block(basm, phor.body);
         basm_pop_scope(basm);
     }
@@ -703,7 +715,6 @@ void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
     if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
         // TODO(#248): there are no CI tests for compiler errors
         assert(status.deferred_binding);
-        assert(status.deferred_binding->kind == BINDING_LABEL);
         assert(status.deferred_binding->status == BINDING_DEFERRED);
 
         fprintf(stderr, FL_Fmt": ERROR: the %%if block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%if block itself.\n",
@@ -1041,21 +1052,6 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
     }
 }
 
-const char *binding_kind_as_cstr(Binding_Kind kind)
-{
-    switch (kind) {
-    case BINDING_CONST:
-        return "const";
-    case BINDING_LABEL:
-        return "label";
-    case BINDING_NATIVE:
-        return "native";
-    default:
-        assert(false && "binding_kind_as_cstr: unreachable");
-        exit(0);
-    }
-}
-
 void basm_push_include_path(Basm *basm, String_View path)
 {
     assert(basm->include_paths_size < BASM_INCLUDE_PATHS_CAPACITY);
@@ -1126,8 +1122,6 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
         Word value = {0};
         Eval_Status status = basm_expr_eval(basm, call_args->value, location, &value);
         if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-            assert(status.deferred_binding->kind == BINDING_LABEL);
-
             fprintf(stderr, FL_Fmt": ERROR: the macro call `"SV_Fmt"` depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the macro call itself when it's expanded.\n",
                     FL_Arg(location),
                     SV_Arg(macrocall.name),
@@ -1144,7 +1138,7 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
         scope_bind_value(args_scope,
                          def_args->name,
                          value,
-                         BINDING_CONST,
+                         TYPE_ANY,
                          macrodef->location);
         call_args = call_args->next;
         def_args = def_args->next;

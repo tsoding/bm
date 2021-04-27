@@ -6,6 +6,7 @@
 #include "./bm.h"
 #include "./expr.h"
 #include "./statement.h"
+#include "./types.h"
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_MACRODEFS_CAPACITY 1024
@@ -14,14 +15,6 @@
 #define BASM_STRING_LENGTHS_CAPACITY 1024
 #define BASM_MAX_INCLUDE_LEVEL 69
 #define BASM_INCLUDE_PATHS_CAPACITY 1024
-
-typedef enum {
-    BINDING_CONST = 0,
-    BINDING_LABEL,
-    BINDING_NATIVE,
-} Binding_Kind;
-
-const char *binding_kind_as_cstr(Binding_Kind kind);
 
 typedef enum {
     BINDING_UNEVALUATED = 0,
@@ -33,7 +26,7 @@ typedef enum {
 const char *binding_status_as_cstr(Binding_Status status);
 
 typedef struct {
-    Binding_Kind kind;
+    Type type;
     String_View name;
     Word value;
     Expr expr;
@@ -139,9 +132,9 @@ Macrodef *scope_resolve_macrodef(Scope *scope, String_View name);
 void scope_add_macrodef(Scope *scope, Macrodef macrodef);
 
 Binding *scope_resolve_binding(Scope *scope, String_View name);
-void scope_bind_value(Scope *scope, String_View name, Word value, Binding_Kind kind, File_Location location);
-void scope_defer_binding(Scope *scope, String_View name, Binding_Kind kind, File_Location location);
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Binding_Kind kind, File_Location location);
+void scope_bind_value(Scope *scope, String_View name, Word value, Type type, File_Location location);
+void scope_defer_binding(Scope *scope, String_View name, Type type, File_Location location);
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_Location location);
 
 void basm_push_scope(Basm *basm, Scope *scope);
 void basm_push_new_scope(Basm *basm);
@@ -151,9 +144,9 @@ void basm_eval_deferred_asserts(Basm *basm);
 void basm_eval_deferred_operands(Basm *basm);
 void basm_eval_deferred_entry(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
-void basm_defer_binding(Basm *basm, String_View name, Binding_Kind kind, File_Location location);
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Binding_Kind kind, File_Location location);
-void basm_bind_value(Basm *basm, String_View name, Word value, Binding_Kind kind, File_Location location);
+void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location location);
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, Type type, File_Location location);
+void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
 void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path);

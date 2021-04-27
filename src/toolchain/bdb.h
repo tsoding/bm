@@ -28,7 +28,7 @@ typedef struct Bdb_Breakpoint {
 } Bdb_Breakpoint;
 
 typedef struct {
-    Binding_Kind kind;
+    Type type;
     String_View name;
     Word value;
 } Bdb_Binding;
