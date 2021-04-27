@@ -61,11 +61,11 @@ Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
         symtab                    = sv_trim_left(symtab);
         String_View  name         = sv_chop_by_delim(&symtab, '\n');
         Word         value        = word_u64(sv_to_u64(raw_addr));
-        Binding_Kind kind         = (Binding_Kind)sv_to_u64(raw_sym_type);
+        Type type                 = (Type)sv_to_u64(raw_sym_type);
 
         state->bindings[state->bindings_size].name = name;
         state->bindings[state->bindings_size].value = value;
-        state->bindings[state->bindings_size].kind = kind;
+        state->bindings[state->bindings_size].type = type;
         state->bindings_size += 1;
     }
 
@@ -279,7 +279,7 @@ void bdb_print_location(Bdb_State *state)
 
     for (size_t i = 0; i < state->bindings_size; ++i) {
         const Bdb_Binding *current = &state->bindings[i];
-        if (current->kind == BINDING_LABEL && current->value.as_u64 <= ip) {
+        if (current->type == TYPE_INST_ADDR && current->value.as_u64 <= ip) {
             if (location == NULL || location->value.as_u64 < current->value.as_u64) {
                 location = current;
             }
@@ -419,11 +419,12 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View addr = sv_trim(arguments);
         Bdb_Binding *binding = bdb_resolve_binding(state, addr);
         if (binding) {
-            if (binding->kind == BINDING_LABEL) {
+            if (binding->type == TYPE_INST_ADDR) {
                 bdb_add_breakpoint(state, binding->value.as_u64, binding->name);
             } else {
-                fprintf(stderr, "ERR : Expected label but got %s\n",
-                        binding_kind_as_cstr(binding->kind));
+                fprintf(stderr, "ERR : Expected %s but got %s\n",
+                        type_name(TYPE_INST_ADDR),
+                        type_name(binding->type));
             }
         } else {
             Word value = {0};
@@ -441,11 +442,12 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         String_View addr = sv_trim(arguments);
         Bdb_Binding *binding = bdb_resolve_binding(state, addr);
         if (binding) {
-            if (binding->kind == BINDING_LABEL) {
+            if (binding->type == TYPE_INST_ADDR) {
                 bdb_delete_breakpoint(state, binding->value.as_u64);
             } else {
-                fprintf(stderr, "ERR : Expected label but got %s\n",
-                        binding_kind_as_cstr(binding->kind));
+                fprintf(stderr, "ERR : Expected %s but got %s\n",
+                        type_name(TYPE_INST_ADDR),
+                        type_name(binding->type));
             }
         } else {
             Word value = {0};
