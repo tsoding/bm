@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
             fprintf(output, "    imul rax, rbx\n");
             fprintf(output, "    mov [r11], rax\n");
         }
-            break;
+        break;
         case INST_MULTU: {
             fprintf(output, "    ;; multu\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -176,7 +176,8 @@ int main(int argc, char *argv[])
             fprintf(output, "    mov rbx, [r11]\n");
             fprintf(output, "    mul rbx\n");
             fprintf(output, "    mov [r11], rax\n");
-        } break;
+        }
+        break;
         case INST_DIVI: {
             fprintf(output, "    ;; divi\n");
             fprintf(output, "    mov rsi, [stack_top]\n");
