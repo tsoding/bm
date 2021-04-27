@@ -112,7 +112,3 @@ Copy [./tools/basm.vim](./tools/basm.vim) in `.vim/syntax/basm.vim`. Add the fol
 ```vimscript
 autocmd BufRead,BufNewFile *.basm set filetype=basm
 ```
-
-Urmom xD
-xD
-xD
