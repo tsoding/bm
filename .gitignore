@@ -10,7 +10,6 @@ bme
 basm
 debasm
 bdb
-basm2nasm
 build/
 vendor/
 nobuild
