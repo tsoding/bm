@@ -21,8 +21,10 @@ int main(int argc, char *argv[])
             printf("%%entry main:\n");
         }
 
-        printf("    %s", inst_name(bm.program[i].type));
-        if (inst_has_operand(bm.program[i].type)) {
+        Inst_Def inst_def = get_inst_def(bm.program[i].type);
+
+        printf("    %s", inst_def.name);
+        if (inst_def.has_operand) {
             printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
                    bm.program[i].operand.as_u64,
                    bm.program[i].operand.as_i64,

@@ -15,6 +15,7 @@
 #include <inttypes.h>
 
 #include "./sv.h"
+#include "./types.h"
 
 // NOTE: Stolen from https://stackoverflow.com/a/3312896
 #if defined(__GNUC__) || defined(__clang__)
@@ -125,9 +126,15 @@ typedef enum {
     NUMBER_OF_INSTS,
 } Inst_Type;
 
-const char *inst_name(Inst_Type type);
-bool inst_has_operand(Inst_Type type);
-bool inst_by_name(String_View name, Inst_Type *output);
+typedef struct {
+    Inst_Type type;
+    const char *name;
+    bool has_operand;
+    Type operand_type;
+} Inst_Def;
+
+Inst_Def get_inst_def(Inst_Type type);
+bool inst_by_name(String_View name, Inst_Def *inst_def);
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;

@@ -78,8 +78,9 @@ void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
     (void) state;               // NOTE: don't forget to remove this
     // when you start using the state.
 
-    fprintf(f, "%s ", inst_name(i->type));
-    if (inst_has_operand(i->type)) {
+    Inst_Def inst_def = get_inst_def(i->type);
+    fprintf(f, "%s ", inst_def.name);
+    if (inst_def.has_operand) {
         fprintf(f, "%" PRIu64, i->operand.as_i64);
     }
 }

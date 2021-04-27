@@ -558,7 +558,7 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Lo
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
     basm->program[basm->program_size].type = emit_inst.type;
 
-    if (inst_has_operand(emit_inst.type)) {
+    if (get_inst_def(emit_inst.type).has_operand) {
         basm_push_deferred_operand(basm, basm->program_size, emit_inst.operand, location);
     }
 

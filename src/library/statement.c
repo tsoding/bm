@@ -18,7 +18,7 @@ void dump_statement(FILE *stream, Statement statement, int level)
 
         fprintf(stream, "%*sEmit_Inst:\n", level * 2, "");
         fprintf(stream, "%*sInst_Type: %s\n", (level + 1) * 2, "",
-                inst_name(type));
+                get_inst_def(type).name);
         fprintf(stream, "%*sOperand:\n", (level + 1) * 2, "");
         dump_expr(stream, operand, level + 2);
     }
@@ -156,11 +156,12 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         int id = (*counter)++;
         Inst_Type type = statement.value.as_emit_inst.type;
         Expr operand = statement.value.as_emit_inst.operand;
+        Inst_Def inst_def = get_inst_def(type);
 
         fprintf(stream, "Expr_%d [shape=box label=\"%s\"]\n",
-                id, inst_name(type));
+                id, inst_def.name);
 
-        if (inst_has_operand(type)) {
+        if (inst_def.has_operand) {
             int child_id = dump_expr_as_dot_edges(stream, operand, counter);
             fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
         }
@@ -773,8 +774,8 @@ Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer)
             String_View name = line.value.as_instruction.name;
             String_View operand_sv = line.value.as_instruction.operand;
 
-            Inst_Type type;
-            if (!inst_by_name(name, &type)) {
+            Inst_Def inst_def;
+            if (!inst_by_name(name, &inst_def)) {
                 fprintf(stderr, FL_Fmt": ERROR: unknown instruction `"SV_Fmt"`\n",
                         FL_Arg(location), SV_Arg(name));
                 exit(1);
@@ -784,9 +785,9 @@ Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer)
             Statement statement = {0};
             statement.location = location;
             statement.kind = STATEMENT_KIND_EMIT_INST;
-            statement.value.as_emit_inst.type = type;
+            statement.value.as_emit_inst.type = inst_def.type;
 
-            if (inst_has_operand(type)) {
+            if (inst_def.has_operand) {
                 Expr operand = parse_expr_from_sv(arena, operand_sv, location);
                 statement.value.as_emit_inst.operand = operand;
             }

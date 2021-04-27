@@ -1,5 +1,76 @@
 #include "./bm.h"
 
+static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
+    [INST_NOP]     = {.type = INST_NOP,     .name = "nop",     .has_operand = false},
+    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_NUMBER },
+    [INST_DROP]    = {.type = INST_DROP,    .name = "drop",    .has_operand = false},
+    [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_STACK_ADDR },
+    [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_STACK_ADDR },
+    [INST_PLUSI]   = {.type = INST_PLUSI,   .name = "plusi",   .has_operand = false},
+    [INST_MINUSI]  = {.type = INST_MINUSI,  .name = "minusi",  .has_operand = false},
+    [INST_MULTI]   = {.type = INST_MULTI,   .name = "multi",   .has_operand = false},
+    [INST_DIVI]    = {.type = INST_DIVI,    .name = "divi",    .has_operand = false},
+    [INST_MODI]    = {.type = INST_MODI,    .name = "modi",    .has_operand = false},
+    [INST_MULTU]   = {.type = INST_MULTU,   .name = "multu",   .has_operand = false},
+    [INST_DIVU]    = {.type = INST_DIVU,    .name = "divu",    .has_operand = false},
+    [INST_MODU]    = {.type = INST_MODU,    .name = "modu",    .has_operand = false},
+    [INST_PLUSF]   = {.type = INST_PLUSF,   .name = "plusf",   .has_operand = false},
+    [INST_MINUSF]  = {.type = INST_MINUSF,  .name = "minusf",  .has_operand = false},
+    [INST_MULTF]   = {.type = INST_MULTF,   .name = "multf",   .has_operand = false},
+    [INST_DIVF]    = {.type = INST_DIVF,    .name = "divf",    .has_operand = false},
+    [INST_JMP]     = {.type = INST_JMP,     .name = "jmp",     .has_operand = true, .operand_type = TYPE_INST_ADDR },
+    [INST_JMP_IF]  = {.type = INST_JMP_IF,  .name = "jmp_if",  .has_operand = true, .operand_type = TYPE_INST_ADDR },
+    [INST_RET]     = {.type = INST_RET,     .name = "ret",     .has_operand = false},
+    [INST_CALL]    = {.type = INST_CALL,    .name = "call",    .has_operand = true, .operand_type = TYPE_INST_ADDR },
+    [INST_NATIVE]  = {.type = INST_NATIVE,  .name = "native",  .has_operand = true, .operand_type = TYPE_NATIVE_ID },
+    [INST_HALT]    = {.type = INST_HALT,    .name = "halt",    .has_operand = false},
+    [INST_NOT]     = {.type = INST_NOT,     .name = "not",     .has_operand = false},
+    [INST_EQI]     = {.type = INST_EQI,     .name = "eqi",     .has_operand = false},
+    [INST_GEI]     = {.type = INST_GEI,     .name = "gei",     .has_operand = false},
+    [INST_GTI]     = {.type = INST_GTI,     .name = "gti",     .has_operand = false},
+    [INST_LEI]     = {.type = INST_LEI,     .name = "lei",     .has_operand = false},
+    [INST_LTI]     = {.type = INST_LTI,     .name = "lti",     .has_operand = false},
+    [INST_NEI]     = {.type = INST_NEI,     .name = "nei",     .has_operand = false},
+    [INST_EQU]     = {.type = INST_EQU,     .name = "equ",     .has_operand = false},
+    [INST_GEU]     = {.type = INST_GEU,     .name = "geu",     .has_operand = false},
+    [INST_GTU]     = {.type = INST_GTU,     .name = "gtu",     .has_operand = false},
+    [INST_LEU]     = {.type = INST_LEU,     .name = "leu",     .has_operand = false},
+    [INST_LTU]     = {.type = INST_LTU,     .name = "ltu",     .has_operand = false},
+    [INST_NEU]     = {.type = INST_NEU,     .name = "neu",     .has_operand = false},
+    [INST_EQF]     = {.type = INST_EQF,     .name = "eqf",     .has_operand = false},
+    [INST_GEF]     = {.type = INST_GEF,     .name = "gef",     .has_operand = false},
+    [INST_GTF]     = {.type = INST_GTF,     .name = "gtf",     .has_operand = false},
+    [INST_LEF]     = {.type = INST_LEF,     .name = "lef",     .has_operand = false},
+    [INST_LTF]     = {.type = INST_LTF,     .name = "ltf",     .has_operand = false},
+    [INST_NEF]     = {.type = INST_NEF,     .name = "nef",     .has_operand = false},
+    [INST_ANDB]    = {.type = INST_ANDB,    .name = "andb",    .has_operand = false},
+    [INST_ORB]     = {.type = INST_ORB,     .name = "orb",     .has_operand = false},
+    [INST_XOR]     = {.type = INST_XOR,     .name = "xor",     .has_operand = false},
+    [INST_SHR]     = {.type = INST_SHR,     .name = "shr",     .has_operand = false},
+    [INST_SHL]     = {.type = INST_SHL,     .name = "shl",     .has_operand = false},
+    [INST_NOTB]    = {.type = INST_NOTB,    .name = "notb",    .has_operand = false},
+    [INST_READ8U]  = {.type = INST_READ8U,  .name = "read8u",  .has_operand = false},
+    [INST_READ16U] = {.type = INST_READ16U, .name = "read16u", .has_operand = false},
+    [INST_READ32U] = {.type = INST_READ32U, .name = "read32u", .has_operand = false},
+    [INST_READ64U] = {.type = INST_READ64U, .name = "read64u", .has_operand = false},
+    [INST_READ8I]  = {.type = INST_READ8I,  .name = "read8i",  .has_operand = false},
+    [INST_READ16I] = {.type = INST_READ16I, .name = "read16i", .has_operand = false},
+    [INST_READ32I] = {.type = INST_READ32I, .name = "read32i", .has_operand = false},
+    [INST_READ64I] = {.type = INST_READ64I, .name = "read64i", .has_operand = false},
+    [INST_WRITE8]  = {.type = INST_WRITE8,  .name = "write8",  .has_operand = false},
+    [INST_WRITE16] = {.type = INST_WRITE16, .name = "write16", .has_operand = false},
+    [INST_WRITE32] = {.type = INST_WRITE32, .name = "write32", .has_operand = false},
+    [INST_WRITE64] = {.type = INST_WRITE64, .name = "write64", .has_operand = false},
+    [INST_I2F]     = {.type = INST_I2F,     .name = "i2f",     .has_operand = false},
+    [INST_U2F]     = {.type = INST_U2F,     .name = "u2f",     .has_operand = false},
+    [INST_F2I]     = {.type = INST_F2I,     .name = "f2i",     .has_operand = false},
+    [INST_F2U]     = {.type = INST_F2U,     .name = "f2u",     .has_operand = false},
+};
+static_assert(
+    NUMBER_OF_INSTS == 64,
+    "You probably added or removed an instruction. "
+    "Please update the definitions above accordingly");
+
 Word word_u64(uint64_t u64)
 {
     return (Word) {
@@ -28,154 +99,11 @@ Word word_ptr(void *ptr)
     };
 }
 
-bool inst_has_operand(Inst_Type type)
+bool inst_by_name(String_View name, Inst_Def *inst_def)
 {
-    switch (type) {
-    case INST_NOP:
-        return false;
-    case INST_PUSH:
-        return true;
-    case INST_DROP:
-        return false;
-    case INST_DUP:
-        return true;
-    case INST_PLUSI:
-        return false;
-    case INST_MINUSI:
-        return false;
-    case INST_MULTI:
-        return false;
-    case INST_DIVI:
-        return false;
-    case INST_MODI:
-        return false;
-    case INST_MULTU:
-        return false;
-    case INST_DIVU:
-        return false;
-    case INST_MODU:
-        return false;
-    case INST_PLUSF:
-        return false;
-    case INST_MINUSF:
-        return false;
-    case INST_MULTF:
-        return false;
-    case INST_DIVF:
-        return false;
-    case INST_JMP:
-        return true;
-    case INST_JMP_IF:
-        return true;
-    case INST_HALT:
-        return false;
-    case INST_SWAP:
-        return true;
-    case INST_NOT:
-        return false;
-    case INST_EQF:
-        return false;
-    case INST_GEF:
-        return false;
-    case INST_GTF:
-        return false;
-    case INST_LEF:
-        return false;
-    case INST_LTF:
-        return false;
-    case INST_NEF:
-        return false;
-
-    case INST_EQI:
-        return false;
-    case INST_GEI:
-        return false;
-    case INST_GTI:
-        return false;
-    case INST_LEI:
-        return false;
-    case INST_LTI:
-        return false;
-    case INST_NEI:
-        return false;
-
-    case INST_EQU:
-        return false;
-    case INST_GEU:
-        return false;
-    case INST_GTU:
-        return false;
-    case INST_LEU:
-        return false;
-    case INST_LTU:
-        return false;
-    case INST_NEU:
-        return false;
-
-    case INST_RET:
-        return false;
-    case INST_CALL:
-        return true;
-    case INST_NATIVE:
-        return true;
-    case INST_ANDB:
-        return false;
-    case INST_ORB:
-        return false;
-    case INST_XOR:
-        return false;
-    case INST_SHR:
-        return false;
-    case INST_SHL:
-        return false;
-    case INST_NOTB:
-        return false;
-    case INST_READ8U:
-        return false;
-    case INST_READ16U:
-        return false;
-    case INST_READ32U:
-        return false;
-    case INST_READ64U:
-        return false;
-
-    case INST_READ8I:
-        return false;
-    case INST_READ16I:
-        return false;
-    case INST_READ32I:
-        return false;
-    case INST_READ64I:
-        return false;
-
-    case INST_WRITE8:
-        return false;
-    case INST_WRITE16:
-        return false;
-    case INST_WRITE32:
-        return false;
-    case INST_WRITE64:
-        return false;
-    case INST_I2F:
-        return false;
-    case INST_U2F:
-        return false;
-    case INST_F2I:
-        return false;
-    case INST_F2U:
-        return false;
-    case NUMBER_OF_INSTS:
-    default:
-        assert(false && "inst_has_operand: unreachable");
-        exit(1);
-    }
-}
-
-bool inst_by_name(String_View name, Inst_Type *output)
-{
-    for (Inst_Type type = (Inst_Type) 0; type < NUMBER_OF_INSTS; type += 1) {
-        if (sv_eq(sv_from_cstr(inst_name(type)), name)) {
-            *output = type;
+    for (Inst_Type type = 0; type < NUMBER_OF_INSTS; type += 1) {
+        if (sv_eq(sv_from_cstr(inst_defs[type].name), name)) {
+            *inst_def = inst_defs[type];
             return true;
         }
     }
@@ -183,149 +111,10 @@ bool inst_by_name(String_View name, Inst_Type *output)
     return false;
 }
 
-const char *inst_name(Inst_Type type)
+Inst_Def get_inst_def(Inst_Type type)
 {
-    switch (type) {
-    case INST_NOP:
-        return "nop";
-    case INST_PUSH:
-        return "push";
-    case INST_DROP:
-        return "drop";
-    case INST_DUP:
-        return "dup";
-    case INST_PLUSI:
-        return "plusi";
-    case INST_MINUSI:
-        return "minusi";
-    case INST_MULTI:
-        return "multi";
-    case INST_DIVI:
-        return "divi";
-    case INST_MODI:
-        return "modi";
-    case INST_MULTU:
-        return "multu";
-    case INST_DIVU:
-        return "divu";
-    case INST_MODU:
-        return "modu";
-    case INST_PLUSF:
-        return "plusf";
-    case INST_MINUSF:
-        return "minusf";
-    case INST_MULTF:
-        return "multf";
-    case INST_DIVF:
-        return "divf";
-    case INST_JMP:
-        return "jmp";
-    case INST_JMP_IF:
-        return "jmp_if";
-    case INST_HALT:
-        return "halt";
-    case INST_SWAP:
-        return "swap";
-    case INST_NOT:
-        return "not";
-
-    case INST_EQI:
-        return "eqi";
-    case INST_GEI:
-        return "gei";
-    case INST_GTI:
-        return "gti";
-    case INST_LEI:
-        return "lei";
-    case INST_LTI:
-        return "lti";
-    case INST_NEI:
-        return "nei";
-
-    case INST_EQU:
-        return "equ";
-    case INST_GEU:
-        return "geu";
-    case INST_GTU:
-        return "gtu";
-    case INST_LEU:
-        return "leu";
-    case INST_LTU:
-        return "ltu";
-    case INST_NEU:
-        return "neu";
-
-    case INST_EQF:
-        return "eqf";
-    case INST_GEF:
-        return "gef";
-    case INST_GTF:
-        return "gtf";
-    case INST_LEF:
-        return "lef";
-    case INST_LTF:
-        return "ltf";
-    case INST_NEF:
-        return "nef";
-    case INST_RET:
-        return "ret";
-    case INST_CALL:
-        return "call";
-    case INST_NATIVE:
-        return "native";
-    case INST_ANDB:
-        return "andb";
-    case INST_ORB:
-        return "orb";
-    case INST_XOR:
-        return "xor";
-    case INST_SHR:
-        return "shr";
-    case INST_SHL:
-        return "shl";
-    case INST_NOTB:
-        return "notb";
-
-    case INST_READ8U:
-        return "read8u";
-    case INST_READ16U:
-        return "read16u";
-    case INST_READ32U:
-        return "read32u";
-    case INST_READ64U:
-        return "read64u";
-
-    case INST_READ8I:
-        return "read8i";
-    case INST_READ16I:
-        return "read16i";
-    case INST_READ32I:
-        return "read32i";
-    case INST_READ64I:
-        return "read64i";
-
-    case INST_WRITE8:
-        return "write8";
-    case INST_WRITE16:
-        return "write16";
-    case INST_WRITE32:
-        return "write32";
-    case INST_WRITE64:
-        return "write64";
-
-    case INST_I2F:
-        return "i2f";
-    case INST_U2F:
-        return "u2f";
-    case INST_F2I:
-        return "f2i";
-    case INST_F2U:
-        return "f2u";
-    case NUMBER_OF_INSTS:
-    default:
-        assert(false && "inst_name: unreachable");
-        exit(1);
-    }
+    assert(type < NUMBER_OF_INSTS);
+    return inst_defs[type];
 }
 
 const char *err_as_cstr(Err err)
