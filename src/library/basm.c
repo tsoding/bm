@@ -312,18 +312,18 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
         for (Block_Statement *iter = block; iter != NULL; iter = iter->next) {
             Statement statement = iter->statement;
             switch (statement.kind) {
-            case STATEMENT_KIND_BIND_LABEL: {
+            case STATEMENT_KIND_LABEL: {
                 basm_defer_binding(basm,
-                                   statement.value.as_bind_label.name,
+                                   statement.value.as_label.name,
                                    BINDING_LABEL,
                                    statement.location);
             }
             break;
-            case STATEMENT_KIND_BIND_CONST:
-                basm_translate_bind_const(basm, statement.value.as_bind_const, statement.location);
+            case STATEMENT_KIND_CONST:
+                basm_translate_const(basm, statement.value.as_const, statement.location);
                 break;
-            case STATEMENT_KIND_BIND_NATIVE:
-                basm_translate_bind_native(basm, statement.value.as_bind_native, statement.location);
+            case STATEMENT_KIND_NATIVE:
+                basm_translate_native(basm, statement.value.as_native, statement.location);
                 break;
             case STATEMENT_KIND_INCLUDE:
                 basm_translate_include(basm, statement.value.as_include, statement.location);
@@ -372,8 +372,8 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             }
             break;
 
-            case STATEMENT_KIND_BIND_LABEL: {
-                Binding *binding = basm_resolve_binding(basm, statement.value.as_bind_label.name);
+            case STATEMENT_KIND_LABEL: {
+                Binding *binding = basm_resolve_binding(basm, statement.value.as_label.name);
                 assert(binding != NULL);
                 assert(binding->kind == BINDING_LABEL);
                 assert(binding->status == BINDING_DEFERRED);
@@ -405,14 +405,14 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
                 break;
 
             case STATEMENT_KIND_MACRODEF:
-            case STATEMENT_KIND_BIND_NATIVE:
+            case STATEMENT_KIND_NATIVE:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_BLOCK:
             case STATEMENT_KIND_ENTRY:
             case STATEMENT_KIND_ERROR:
             case STATEMENT_KIND_ASSERT:
             case STATEMENT_KIND_INCLUDE:
-            case STATEMENT_KIND_BIND_CONST:
+            case STATEMENT_KIND_CONST:
                 // NOTE: ignored at the second pass
                 break;
 
@@ -576,18 +576,18 @@ void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location locat
     basm->deferred_entry.scope = basm->scope;
 }
 
-void basm_translate_bind_const(Basm *basm, Bind_Const_Statement bind_const, File_Location location)
+void basm_translate_const(Basm *basm, Const_Statement konst, File_Location location)
 {
     basm_bind_expr(basm,
-                   bind_const.name,
-                   bind_const.value,
+                   konst.name,
+                   konst.value,
                    BINDING_CONST,
                    location);
 }
 
-void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, File_Location location)
+void basm_translate_native(Basm *basm, Native_Statement native, File_Location location)
 {
-    if (bind_native.name.count >= NATIVE_NAME_CAPACITY - 1) {
+    if (native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
         exit(1);
     }
@@ -597,25 +597,16 @@ void basm_translate_bind_native(Basm *basm, Bind_Native_Statement bind_native, F
            NATIVE_NAME_CAPACITY);
 
     memcpy(basm->external_natives[basm->external_natives_size].name,
-           bind_native.name.data,
-           bind_native.name.count);
+           native.name.data,
+           native.name.count);
 
     basm_bind_value(basm,
-                    bind_native.name,
+                    native.name,
                     word_u64(basm->external_natives_size),
                     BINDING_NATIVE,
                     location);
 
     basm->external_natives_size += 1;
-}
-
-void basm_translate_bind_label(Basm *basm, Bind_Label_Statement bind_label, File_Location location)
-{
-    basm_bind_value(basm,
-                    bind_label.name,
-                    word_u64(basm->program_size),
-                    BINDING_LABEL,
-                    location);
 }
 
 void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location)

@@ -24,27 +24,27 @@ void dump_statement(FILE *stream, Statement statement, int level)
     }
     break;
 
-    case STATEMENT_KIND_BIND_LABEL: {
-        String_View name = statement.value.as_bind_label.name;
+    case STATEMENT_KIND_LABEL: {
+        String_View name = statement.value.as_label.name;
 
         fprintf(stream, "%*sLabel:\n", level * 2, "");
         fprintf(stream, "%*s"SV_Fmt"\n", (level + 1) * 2, "", SV_Arg(name));
     }
     break;
 
-    case STATEMENT_KIND_BIND_CONST: {
-        String_View name = statement.value.as_bind_const.name;
-        Expr value = statement.value.as_bind_const.value;
+    case STATEMENT_KIND_CONST: {
+        String_View name = statement.value.as_const.name;
+        Expr value = statement.value.as_const.value;
 
-        fprintf(stream, "%*sBind Const:\n", level * 2, "");
+        fprintf(stream, "%*sConst:\n", level * 2, "");
         fprintf(stream, "%*sName: "SV_Fmt"\n", (level + 1) * 2, "", SV_Arg(name));
         fprintf(stream, "%*sValue:\n", (level + 1) * 2, "");
         dump_expr(stream, value, level + 2);
     }
     break;
 
-    case STATEMENT_KIND_BIND_NATIVE: {
-        assert(false && "TODO(#275): dumping Bind Native statement is not implemented");
+    case STATEMENT_KIND_NATIVE: {
+        assert(false && "TODO(#275): dumping Native statement is not implemented");
         exit(1);
     }
     break;
@@ -168,19 +168,19 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
-    case STATEMENT_KIND_BIND_LABEL: {
+    case STATEMENT_KIND_LABEL: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_label.name;
+        String_View name = statement.value.as_label.name;
         fprintf(stream, "Expr_%d [shape=diamond label=\"Label: "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
         return id;
     }
     break;
 
-    case STATEMENT_KIND_BIND_CONST: {
+    case STATEMENT_KIND_CONST: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_const.name;
-        Expr value = statement.value.as_bind_const.value;
+        String_View name = statement.value.as_const.name;
+        Expr value = statement.value.as_const.value;
 
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%const "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
@@ -190,9 +190,9 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
     }
     break;
 
-    case STATEMENT_KIND_BIND_NATIVE: {
+    case STATEMENT_KIND_NATIVE: {
         int id = (*counter)++;
-        String_View name = statement.value.as_bind_native.name;
+        String_View name = statement.value.as_native.name;
 
         fprintf(stream, "Expr_%d [shape=diamond label=\"%%native "SV_Fmt"\"]\n",
                 id, SV_Arg(name));
@@ -542,7 +542,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, sv_from_cstr("const"))) {
         Statement statement = {0};
         statement.location = location;
-        statement.kind = STATEMENT_KIND_BIND_CONST;
+        statement.kind = STATEMENT_KIND_CONST;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
@@ -551,11 +551,11 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_const.name = binding_name.value.as_binding;
+        statement.value.as_const.name = binding_name.value.as_binding;
 
         expect_token_next(&tokenizer, TOKEN_KIND_EQ, location);
 
-        statement.value.as_bind_const.value =
+        statement.value.as_const.value =
             parse_expr_from_tokens(arena, &tokenizer, location);
         expect_no_tokens(&tokenizer, location);
 
@@ -563,7 +563,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
     } else if (sv_eq(name, sv_from_cstr("native"))) {
         Statement statement = {0};
         statement.location = location;
-        statement.kind = STATEMENT_KIND_BIND_NATIVE;
+        statement.kind = STATEMENT_KIND_NATIVE;
 
         Tokenizer tokenizer = tokenizer_from_sv(body);
         Expr binding_name = parse_expr_from_tokens(arena, &tokenizer, location);
@@ -572,7 +572,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(location));
             exit(1);
         }
-        statement.value.as_bind_native.name = binding_name.value.as_binding;
+        statement.value.as_native.name = binding_name.value.as_binding;
         expect_no_tokens(&tokenizer, location);
 
         block_list_push(arena, output, statement);
@@ -605,7 +605,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         if (inline_entry) {
             Statement statement = {0};
             statement.location = location;
-            statement.kind = STATEMENT_KIND_BIND_LABEL;
+            statement.kind = STATEMENT_KIND_LABEL;
 
             if (expr.kind != EXPR_KIND_BINDING) {
                 fprintf(stderr, FL_Fmt": ERROR: expected binding name for a label\n",
@@ -613,7 +613,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                 exit(1);
             }
 
-            statement.value.as_bind_label.name = expr.value.as_binding;
+            statement.value.as_label.name = expr.value.as_binding;
             block_list_push(arena, output, statement);
         }
     } else if (sv_eq(name, SV("error"))) {
@@ -810,8 +810,8 @@ Block_Statement *parse_block_from_lines(Arena *arena, Linizer *linizer)
 
             Statement statement = {0};
             statement.location = location;
-            statement.kind = STATEMENT_KIND_BIND_LABEL;
-            statement.value.as_bind_label.name = label.value.as_binding;
+            statement.kind = STATEMENT_KIND_LABEL;
+            statement.value.as_label.name = label.value.as_binding;
             block_list_push(arena, &result, statement);
 
             linizer_next(linizer, NULL);
