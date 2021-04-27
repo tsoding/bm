@@ -33,8 +33,6 @@ const char *type_name(Type type)
         exit(1);
     }
     }
-
-    return NULL;
 }
 
 Type supertype_of(Type subtype)
@@ -66,7 +64,6 @@ Type supertype_of(Type subtype)
         exit(1);
     }
     }
-    return false;
 }
 
 void dump_type_hierarchy_as_dot(FILE *stream)
