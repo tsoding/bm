@@ -237,7 +237,7 @@ bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length)
     return false;
 }
 
-void basm_save_to_file(Basm *basm, const char *file_path)
+void basm_save_to_file_as_bm(Basm *basm, const char *file_path)
 {
     FILE *f = fopen(file_path, "wb");
     if (f == NULL) {
@@ -1201,4 +1201,11 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
     }
 
     return NULL;
+}
+
+void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
+{
+    (void) basm;
+    (void) output_file_path;
+    assert(false && "TODO: basm_save_to_file_as_nasm is not implemented");
 }
