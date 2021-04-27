@@ -21,6 +21,8 @@ static char *shift(int *argc, char ***argv)
     return result;
 }
 
+// TODO(#333): merge basm2nasm with the main basm tool
+
 int main(int argc, char *argv[])
 {
     shift(&argc, &argv);        // skip the program
