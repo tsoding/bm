@@ -257,7 +257,7 @@ void cases_command(int argc, char **argv)
             }
         });
     } else {
-#if defined(__linux__)
+#ifdef __linux__
         FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
             if (ENDS_WITH(caze, ".basm"))
             {
