@@ -246,46 +246,53 @@ void cases_command(int argc, char **argv)
     RM(PATH("build", "test", "cases"));
     MKDIRS("build", "test", "cases");
 
-    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
-        if (ENDS_WITH(caze, ".basm"))
-        {
-            CMD(PATH("build", "toolchain", "basm"),
-                "-I", "./lib/",
-                PATH("test", "cases", caze),
-                "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".bm")));
-        }
-    });
-}
-
-void build_x86_64_example(const char *example)
-{
-    CMD(PATH("build", "bin", "basm2nasm"),
-        PATH("examples", CONCAT(example, ".basm")),
-        PATH("build", "examples", CONCAT(example, ".asm")));
-
-    CMD("nasm", "-felf64", "-F", "dwarf", "-g",
-        PATH("build", "examples", CONCAT(example, ".asm")),
-        "-o",
-        PATH("build", "examples", CONCAT(example, ".o")));
-
-    CMD("ld",
-        "-o", PATH("build", "examples", CONCAT(example, ".exe")),
-        PATH("build", "examples", CONCAT(example, ".o")));
+    if (argc == 0 || strcmp(argv[0], "nasm") != 0) {
+        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+            if (ENDS_WITH(caze, ".basm"))
+            {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "./lib/",
+                    PATH("test", "cases", caze),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".bm")));
+            }
+        });
+    } else {
+#if defined(__linux__)
+        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+            if (ENDS_WITH(caze, ".basm"))
+            {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "./lib/",
+                    "-f", "nasm",
+                    PATH("test", "cases", caze),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
+                CMD("nasm", "-felf64", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")), "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
+                CMD("ld", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")), "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".elf")));
+            }
+        });
+    }
+#else
+    assert(0 && "FIXME: right now assembly that basm produces is linux only");
+#endif
 }
 
 void test_command(int argc, char **argv)
 {
     cases_command(argc, argv);
 
-    FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
-        if (ENDS_WITH(caze, ".basm"))
-        {
-            const char *caze_base = NOEXT(caze);
-            CMD(PATH("build", "toolchain", "bmr"),
-                "-p", PATH("build", "test", "cases", CONCAT(caze_base, ".bm")),
-                "-eo", PATH("test", "outputs", CONCAT(caze_base, ".expected.out")));
-        }
-    });
+    if (argc == 0 || strcmp(argv[0], "nasm") != 0) {
+        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+            if (ENDS_WITH(caze, ".basm"))
+            {
+                const char *caze_base = NOEXT(caze);
+                CMD(PATH("build", "toolchain", "bmr"),
+                    "-p", PATH("build", "test", "cases", CONCAT(caze_base, ".bm")),
+                    "-eo", PATH("test", "outputs", CONCAT(caze_base, ".expected.out")));
+            }
+        });
+    } else {
+        assert(0 && "FIXME: implement some mechanism to test native executables");
+    }
 }
 
 void record_command(int argc, char **argv)
