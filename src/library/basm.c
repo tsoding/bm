@@ -1274,7 +1274,7 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
     fprintf(output, "segment .text\n");
     fprintf(output, "global _start\n");
 
-    size_t jmp_if_escape_count = 0;
+    size_t jmp_count = 0;
     for (size_t i = 0; i < basm->program_size; ++i) {
         Inst inst = basm->program[i];
 
@@ -1495,12 +1495,12 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    mov [stack_top], rsi\n");
             fprintf(output, "    cmp rax, 0\n");
-            fprintf(output, "    je jmp_if_escape_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    je jmp_if_escape_%zu\n", jmp_count);
             fprintf(output, "    mov rdi, inst_map\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
-            fprintf(output, "jmp_if_escape_%zu:\n", jmp_if_escape_count);
-            jmp_if_escape_count += 1;
+            fprintf(output, "jmp_if_escape_%zu:\n", jmp_count);
+            jmp_count += 1;
         }
         break;
         case INST_RET: {
@@ -1904,12 +1904,12 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov al, BYTE [rsi]\n");
             fprintf(output, "    test al, al\n");
-            fprintf(output, "    jnl .read8i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    jnl .read8i_%zu\n", jmp_count);
             fprintf(output, "    neg al\n");
             fprintf(output, "    neg rax\n");
-            fprintf(output, "    .read8i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    .read8i_%zu:\n", jmp_count);
             fprintf(output, "    mov [r11], rax\n");
-            jmp_if_escape_count += 1;
+            jmp_count += 1;
         }
         break;
         case INST_READ8U: {
@@ -1932,12 +1932,12 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov ax, WORD [rsi]\n");
             fprintf(output, "    test ax, ax\n");
-            fprintf(output, "    jnl .read16i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    jnl .read16i_%zu\n", jmp_count);
             fprintf(output, "    neg ax\n");
             fprintf(output, "    neg rax\n");
-            fprintf(output, "    .read16i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    .read16i_%zu:\n", jmp_count);
             fprintf(output, "    mov [r11], rax\n");
-            jmp_if_escape_count += 1;
+            jmp_count += 1;
         }
         break;
         case INST_READ16U: {
@@ -1960,12 +1960,12 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov eax, DWORD [rsi]\n");
             fprintf(output, "    test eax, eax\n");
-            fprintf(output, "    jnl .read32i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    jnl .read32i_%zu\n", jmp_count);
             fprintf(output, "    neg eax\n");
             fprintf(output, "    neg rax\n");
-            fprintf(output, "    .read32i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    .read32i_%zu:\n", jmp_count);
             fprintf(output, "    mov [r11], rax\n");
-            jmp_if_escape_count += 1;
+            jmp_count += 1;
         }
         break;
         case INST_READ32U: {
@@ -2057,11 +2057,11 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rdi, [r11]\n");
             fprintf(output, "    test rdi, rdi\n");
-            fprintf(output, "    js .u2f_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    js .u2f_%zu\n", jmp_count);
             fprintf(output, "    pxor xmm0, xmm0\n");
             fprintf(output, "    cvtsi2sd xmm0, rdi\n");
-            fprintf(output, "    jmp .u2f_end_%zu\n", jmp_if_escape_count);
-            fprintf(output, "    .u2f_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    jmp .u2f_end_%zu\n", jmp_count);
+            fprintf(output, "    .u2f_%zu:\n", jmp_count);
             fprintf(output, "    mov rax, rdi\n");
             fprintf(output, "    and edi, 1\n");
             fprintf(output, "    pxor xmm0, xmm0\n");
@@ -2069,11 +2069,11 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    or rax, rdi\n");
             fprintf(output, "    cvtsi2sd xmm0, rax\n");
             fprintf(output, "    addsd xmm0, xmm0\n");
-            fprintf(output, "    .u2f_end_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    .u2f_end_%zu:\n", jmp_count);
             fprintf(output, "    movsd [r11], xmm0\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], r11\n");
-            jmp_if_escape_count += 1;
+            jmp_count += 1;
         }
         break;
         case INST_F2I: {
@@ -2094,14 +2094,14 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    movsd xmm1, [magic_number_for_f2u]\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
-            fprintf(output, "    jnb .f2u_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    jnb .f2u_%zu\n", jmp_count);
             fprintf(output, "    cvttsd2si rax, xmm0\n");
-            fprintf(output, "    jmp .f2u_end_%zu\n", jmp_if_escape_count);
-            fprintf(output, "    .f2u_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    jmp .f2u_end_%zu\n", jmp_count);
+            fprintf(output, "    .f2u_%zu:\n", jmp_count);
             fprintf(output, "    subsd xmm0, xmm1\n");
             fprintf(output, "    cvttsd2si rax, xmm0\n");
             fprintf(output, "    btc rax, 63\n");
-            fprintf(output, "    .f2u_end_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    .f2u_end_%zu:\n", jmp_count);
             fprintf(output, "    mov [r11], rax\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov [stack_top], r11\n");
