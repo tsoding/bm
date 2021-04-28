@@ -899,29 +899,29 @@ static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_L
     }
 }
 
-Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output)
+Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output_value)
 {
     switch (expr.kind) {
     case EXPR_KIND_LIT_INT: {
-        *output = word_u64(expr.value.as_lit_int);
+        *output_value = word_u64(expr.value.as_lit_int);
         return eval_status_ok();
     }
     break;
 
     case EXPR_KIND_LIT_FLOAT: {
-        *output = word_f64(expr.value.as_lit_float);
+        *output_value = word_f64(expr.value.as_lit_float);
         return eval_status_ok();
     }
     break;
 
     case EXPR_KIND_LIT_CHAR: {
-        *output = word_u64(lit_char_value(expr.value.as_lit_char));
+        *output_value = word_u64(lit_char_value(expr.value.as_lit_char));
         return eval_status_ok();
     }
     break;
 
     case EXPR_KIND_LIT_STR: {
-        *output = basm_push_string_to_memory(basm, expr.value.as_lit_str);
+        *output_value = basm_push_string_to_memory(basm, expr.value.as_lit_str);
         return eval_status_ok();
     }
     break;
@@ -948,7 +948,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
                 exit(1);
             }
 
-            *output = length;
+            *output_value = length;
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
             funcall_expect_arity(expr.value.as_funcall, 2, location);
 
@@ -974,7 +974,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
                 }
             }
 
-            *output = basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
+            *output_value = basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("int32"))) {
             Funcall_Arg *args = expr.value.as_funcall->args;
 
@@ -993,7 +993,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             }
 
             uint32_t byte_array = (uint32_t) init_value.as_u64;
-            *output = basm_push_buffer_to_memory(basm, (uint8_t*) &byte_array, sizeof(byte_array));
+            *output_value = basm_push_buffer_to_memory(basm, (uint8_t*) &byte_array, sizeof(byte_array));
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("file"))) {
             funcall_expect_arity(expr.value.as_funcall, 1, location);
 
@@ -1015,7 +1015,7 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
                 exit(1);
             }
 
-            *output = basm_push_string_to_memory(basm, file_content);
+            *output_value = basm_push_string_to_memory(basm, file_content);
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
@@ -1035,12 +1035,12 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             exit(1);
         }
 
-        return basm_binding_eval(basm, binding, output);
+        return basm_binding_eval(basm, binding, output_value);
     }
     break;
 
     case EXPR_KIND_BINARY_OP: {
-        return basm_binary_op_eval(basm, expr.value.as_binary_op, location, output);
+        return basm_binary_op_eval(basm, expr.value.as_binary_op, location, output_value);
     }
     break;
 
