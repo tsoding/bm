@@ -270,10 +270,10 @@ void cases_command(int argc, char **argv)
                 CMD("ld", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")), "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".elf")));
             }
         });
-    }
 #else
     assert(0 && "FIXME: right now assembly that basm produces is linux only");
 #endif
+    }
 }
 
 void test_command(int argc, char **argv)
