@@ -1895,7 +1895,23 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_READ8I:
+        case INST_READ8I: {
+            fprintf(output, "    ;; read8i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov al, BYTE [rsi]\n");
+            fprintf(output, "    test al, al\n");
+            fprintf(output, "    jnl .read8i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    neg al\n");
+            fprintf(output, "    neg rax\n");
+            fprintf(output, "    .read8i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    mov [r11], rax\n");
+            jmp_if_escape_count += 1;
+        }
+        break;
         case INST_READ8U: {
             fprintf(output, "    ;; read8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -1907,9 +1923,25 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [r11], rax\n");
         }
         break;
-        case INST_READ16I:
+        case INST_READ16I: {
+            fprintf(output, "    ;; read16i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov ax, WORD [rsi]\n");
+            fprintf(output, "    test ax, ax\n");
+            fprintf(output, "    jnl .read16i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    neg ax\n");
+            fprintf(output, "    neg rax\n");
+            fprintf(output, "    .read16i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    mov [r11], rax\n");
+            jmp_if_escape_count += 1;
+        }
+        break;
         case INST_READ16U: {
-            fprintf(output, "    ;; read16\n");
+            fprintf(output, "    ;; read16u\n");
             fprintf(output, "    mov r11, [stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rsi, [r11]\n");
@@ -1919,9 +1951,25 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [r11], rax\n");
         }
         break;
-        case INST_READ32I:
+        case INST_READ32I: {
+            fprintf(output, "    ;; read32i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov eax, DWORD [rsi]\n");
+            fprintf(output, "    test eax, eax\n");
+            fprintf(output, "    jnl .read32i_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    neg eax\n");
+            fprintf(output, "    neg rax\n");
+            fprintf(output, "    .read32i_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    mov [r11], rax\n");
+            jmp_if_escape_count += 1;
+        }
+        break;
         case INST_READ32U: {
-            fprintf(output, "    ;; read32\n");
+            fprintf(output, "    ;; read32u\n");
             fprintf(output, "    mov r11, [stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rsi, [r11]\n");
