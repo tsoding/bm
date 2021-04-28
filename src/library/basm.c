@@ -453,7 +453,7 @@ void basm_eval_deferred_asserts(Basm *basm)
 
 void basm_eval_deferred_operands(Basm *basm)
 {
-    // TODO: type check deferred operand based on the expected types of the instruction
+    // TODO(#340): type check deferred operand based on the expected types of the instruction
 
     Scope *saved_basm_scope = basm->scope;
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
