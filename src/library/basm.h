@@ -52,6 +52,14 @@ typedef struct {
 Eval_Status eval_status_ok(void);
 Eval_Status eval_status_deferred(Binding *deferred_binding);
 
+typedef struct {
+    Eval_Status status;
+    Word value;
+    Type type;
+} Eval_Result;
+
+Eval_Result eval_result(Eval_Status status, Word value);
+
 typedef struct Scope Scope;
 
 typedef struct {
@@ -154,8 +162,8 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 Word basm_push_buffer_to_memory(Basm *basm, uint8_t *buffer, uint64_t buffer_size);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
-Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output_value);
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output);
+Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location);
+Eval_Result basm_binding_eval(Basm *basm, Binding *binding);
 void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,

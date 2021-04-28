@@ -19,6 +19,14 @@ Eval_Status eval_status_deferred(Binding *deferred_binding)
     };
 }
 
+Eval_Result eval_result(Eval_Status status, Word value)
+{
+    return (Eval_Result) {
+        .status = status,
+        .value = value,
+    };
+}
+
 Binding *scope_resolve_binding(Scope *scope, String_View name)
 {
     for (size_t i = 0; i < scope->bindings_size; ++i) {
@@ -430,19 +438,17 @@ void basm_eval_deferred_asserts(Basm *basm)
     Scope *saved_basm_scope = basm->scope;
 
     for (size_t i = 0; i < basm->deferred_asserts_size; ++i) {
-        Word value = {0};
         assert(basm->deferred_asserts[i].scope);
         basm->scope = basm->deferred_asserts[i].scope;
         // TODO(#285): make basm_expr_eval accept the scope in which you want to evaluate the expression
         // So there is no need for that silly `saved_basm_scope` hack above
-        Eval_Status status = basm_expr_eval(
+        Eval_Result result = basm_expr_eval(
                                  basm,
                                  basm->deferred_asserts[i].expr,
-                                 basm->deferred_asserts[i].location,
-                                 &value);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
+                                 basm->deferred_asserts[i].location);
+        assert(result.status.kind == EVAL_STATUS_KIND_OK);
 
-        if (!value.as_u64) {
+        if (!result.value.as_u64) {
             fprintf(stderr, FL_Fmt": ERROR: assertion failed\n",
                     FL_Arg(basm->deferred_asserts[i].location));
             exit(1);
@@ -495,10 +501,9 @@ void basm_eval_deferred_operands(Basm *basm)
             }
         }
 
-        Eval_Status status = basm_expr_eval(
-                                 basm, expr, location,
-                                 &basm->program[addr].operand);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
+        Eval_Result result = basm_expr_eval(basm, expr, location);
+        assert(result.status.kind == EVAL_STATUS_KIND_OK);
+        basm->program[addr].operand = result.value;
     }
 
     basm->scope = saved_basm_scope;
@@ -540,12 +545,10 @@ void basm_eval_deferred_entry(Basm *basm)
             exit(1);
         }
 
-        Word entry = {0};
+        Eval_Result result = basm_binding_eval(basm, binding);
+        assert(result.status.kind == EVAL_STATUS_KIND_OK);
 
-        Eval_Status status = basm_binding_eval(basm, binding, &entry);
-        assert(status.kind == EVAL_STATUS_KIND_OK);
-
-        basm->entry = entry.as_u64;
+        basm->entry = result.value.as_u64;
         basm->has_entry = true;
         basm->entry_location = basm->deferred_entry.location;
     }
@@ -663,38 +666,40 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
 {
     Word from = {0};
     {
-        Eval_Status status = basm_expr_eval(basm, phor.from, location, &from);
-        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-            assert(status.deferred_binding);
-            assert(status.deferred_binding->status == BINDING_DEFERRED);
+        Eval_Result result = basm_expr_eval(basm, phor.from, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            assert(result.status.deferred_binding);
+            assert(result.status.deferred_binding->status == BINDING_DEFERRED);
 
             fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
                     FL_Arg(location),
-                    SV_Arg(status.deferred_binding->name));
+                    SV_Arg(result.status.deferred_binding->name));
             fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%for block defined above it.\n",
-                    FL_Arg(status.deferred_binding->location),
-                    SV_Arg(status.deferred_binding->name));
+                    FL_Arg(result.status.deferred_binding->location),
+                    SV_Arg(result.status.deferred_binding->name));
             fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%for block that depends on it.\n");
             exit(1);
         }
+        from = result.value;
     }
 
     Word to = {0};
     {
-        Eval_Status status = basm_expr_eval(basm, phor.to, location, &to);
-        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-            assert(status.deferred_binding);
-            assert(status.deferred_binding->status == BINDING_DEFERRED);
+        Eval_Result result = basm_expr_eval(basm, phor.to, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            assert(result.status.deferred_binding);
+            assert(result.status.deferred_binding->status == BINDING_DEFERRED);
 
             fprintf(stderr, FL_Fmt": ERROR: the %%for block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%for block itself.\n",
                     FL_Arg(location),
-                    SV_Arg(status.deferred_binding->name));
+                    SV_Arg(result.status.deferred_binding->name));
             fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%for block defined above it.\n",
-                    FL_Arg(status.deferred_binding->location),
-                    SV_Arg(status.deferred_binding->name));
+                    FL_Arg(result.status.deferred_binding->location),
+                    SV_Arg(result.status.deferred_binding->name));
             fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%for block that depends on it.\n");
             exit(1);
         }
+        to = result.value;
     }
 
     for (int64_t var_value = from.as_i64;
@@ -710,21 +715,23 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
 void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
 {
     Word condition = {0};
-    Eval_Status status = basm_expr_eval(basm, eef.condition, location, &condition);
+    {
+        Eval_Result result = basm_expr_eval(basm, eef.condition, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            // TODO(#248): there are no CI tests for compiler errors
+            assert(result.status.deferred_binding);
+            assert(result.status.deferred_binding->status == BINDING_DEFERRED);
 
-    if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-        // TODO(#248): there are no CI tests for compiler errors
-        assert(status.deferred_binding);
-        assert(status.deferred_binding->status == BINDING_DEFERRED);
-
-        fprintf(stderr, FL_Fmt": ERROR: the %%if block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%if block itself.\n",
-                FL_Arg(location),
-                SV_Arg(status.deferred_binding->name));
-        fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%if block defined above it.\n",
-                FL_Arg(status.deferred_binding->location),
-                SV_Arg(status.deferred_binding->name));
-        fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%if block that depends on it.\n");
-        exit(1);
+            fprintf(stderr, FL_Fmt": ERROR: the %%if block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%if block itself.\n",
+                    FL_Arg(location),
+                    SV_Arg(result.status.deferred_binding->name));
+            fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%if block defined above it.\n",
+                    FL_Arg(result.status.deferred_binding->location),
+                    SV_Arg(result.status.deferred_binding->name));
+            fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%if block that depends on it.\n");
+            exit(1);
+        }
+        condition = result.value;
     }
 
     if (condition.as_u64) {
@@ -783,15 +790,19 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
     basm_translate_block(basm, input_file_block);
 }
 
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output)
+Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
 {
     switch (binding->status) {
     case BINDING_UNEVALUATED: {
         binding->status = BINDING_EVALUATING;
-        Eval_Status status = basm_expr_eval(basm, binding->expr, binding->location, output);
+        Eval_Result result = basm_expr_eval(basm, binding->expr, binding->location);
         binding->status = BINDING_EVALUATED;
-        binding->value = *output;
-        return status;
+
+        if (result.status.kind == EVAL_STATUS_KIND_OK) {
+            binding->value = result.value;
+        }
+
+        return result;
     }
     break;
     case BINDING_EVALUATING: {
@@ -801,12 +812,11 @@ Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output)
     }
     break;
     case BINDING_EVALUATED: {
-        *output = binding->value;
-        return eval_status_ok();
+        return eval_result(eval_status_ok(), binding->value);
     }
     break;
     case BINDING_DEFERRED: {
-        return eval_status_deferred(binding);
+        return eval_result(eval_status_deferred(binding), word_u64(0));
     }
     break;
 
@@ -817,63 +827,65 @@ Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output)
     }
 }
 
-static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location, Word *output)
+static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
     Word left = {0};
     {
-        Eval_Status status = basm_expr_eval(basm, binary_op->left, location, &left);
-        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-            return status;
+        Eval_Result result = basm_expr_eval(basm, binary_op->left, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            return result;
         }
+        left = result.value;
     }
 
     Word right = {0};
     {
-        Eval_Status status = basm_expr_eval(basm, binary_op->right, location, &right);
-        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-            return status;
+        Eval_Result result = basm_expr_eval(basm, binary_op->right, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+            return result;
         }
+        right = result.value;
     }
 
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
         // TODO(#183): compile-time sum can only work with integers
-        *output = word_u64(left.as_u64 + right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 + right.as_u64));
     }
     break;
 
     case BINARY_OP_MINUS: {
-        *output = word_u64(left.as_u64 - right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 - right.as_u64));
     }
     break;
 
     case BINARY_OP_MULT: {
-        *output = word_u64(left.as_u64 * right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 * right.as_u64));
     }
     break;
 
     case BINARY_OP_DIV: {
-        *output = word_u64(left.as_u64 / right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 / right.as_u64));
     }
     break;
 
     case BINARY_OP_GT: {
-        *output = word_u64(left.as_u64 > right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 > right.as_u64));
     }
     break;
 
     case BINARY_OP_LT: {
-        *output = word_u64(left.as_u64 < right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 < right.as_u64));
     }
     break;
 
     case BINARY_OP_EQUALS: {
-        *output = word_u64(left.as_u64 == right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 == right.as_u64));
     }
     break;
 
     case BINARY_OP_MOD: {
-        *output = word_u64(left.as_u64 % right.as_u64);
+        return eval_result(eval_status_ok(), word_u64(left.as_u64 % right.as_u64));
     }
     break;
 
@@ -882,8 +894,6 @@ static Eval_Status basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
         exit(1);
     }
     }
-
-    return eval_status_ok();
 }
 
 static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
@@ -899,30 +909,26 @@ static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_L
     }
 }
 
-Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output_value)
+Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
 {
     switch (expr.kind) {
     case EXPR_KIND_LIT_INT: {
-        *output_value = word_u64(expr.value.as_lit_int);
-        return eval_status_ok();
+        return eval_result(eval_status_ok(), word_u64(expr.value.as_lit_int));
     }
     break;
 
     case EXPR_KIND_LIT_FLOAT: {
-        *output_value = word_f64(expr.value.as_lit_float);
-        return eval_status_ok();
+        return eval_result(eval_status_ok(), word_f64(expr.value.as_lit_float));
     }
     break;
 
     case EXPR_KIND_LIT_CHAR: {
-        *output_value = word_u64(lit_char_value(expr.value.as_lit_char));
-        return eval_status_ok();
+        return eval_result(eval_status_ok(), word_u64(lit_char_value(expr.value.as_lit_char)));
     }
     break;
 
     case EXPR_KIND_LIT_STR: {
-        *output_value = basm_push_string_to_memory(basm, expr.value.as_lit_str);
-        return eval_status_ok();
+        return eval_result(eval_status_ok(), basm_push_string_to_memory(basm, expr.value.as_lit_str));
     }
     break;
 
@@ -932,14 +938,14 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
 
             Word addr = {0};
             {
-                Eval_Status status = basm_expr_eval(
+                Eval_Result result = basm_expr_eval(
                                          basm,
                                          expr.value.as_funcall->args->value,
-                                         location,
-                                         &addr);
-                if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-                    return status;
+                                         location);
+                if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+                    return result;
                 }
+                addr = result.value;
             }
 
             Word length = {0};
@@ -948,33 +954,39 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
                 exit(1);
             }
 
-            *output_value = length;
+            return eval_result(eval_status_ok(), length);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
             funcall_expect_arity(expr.value.as_funcall, 2, location);
 
             Funcall_Arg *args = expr.value.as_funcall->args;
             Word size = {0};
             {
-                Eval_Status status = basm_expr_eval(
+                Eval_Result result = basm_expr_eval(
                                          basm,
                                          args->value,
-                                         location,
-                                         &size);
-                if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-                    return status;
+                                         location);
+                if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+                    return result;
                 }
+                size = result.value;
             }
             args = args->next;
 
             Word value = {0};
             {
-                Eval_Status status = basm_expr_eval(basm, args->value, location, &value);
-                if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-                    return status;
+                Eval_Result result = basm_expr_eval(basm, args->value, location);
+                if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+                    return result;
                 }
+                value = result.value;
             }
 
-            *output_value = basm_push_byte_array_to_memory(basm, size.as_u64, (uint8_t) value.as_u64);
+            return eval_result(
+                       eval_status_ok(),
+                       basm_push_byte_array_to_memory(
+                           basm,
+                           size.as_u64,
+                           (uint8_t) value.as_u64));
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("int32"))) {
             Funcall_Arg *args = expr.value.as_funcall->args;
 
@@ -982,18 +994,20 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
 
             Word init_value = {0};
             {
-                Eval_Status status = basm_expr_eval(
-                                         basm,
-                                         args->value,
-                                         location,
-                                         &init_value);
-                if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
-                    return status;
+                Eval_Result result = basm_expr_eval(basm, args->value, location);
+                if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
+                    return result;
                 }
+                init_value = result.value;
             }
 
             uint32_t byte_array = (uint32_t) init_value.as_u64;
-            *output_value = basm_push_buffer_to_memory(basm, (uint8_t*) &byte_array, sizeof(byte_array));
+            return eval_result(
+                       eval_status_ok(),
+                       basm_push_buffer_to_memory(
+                           basm,
+                           (uint8_t*) &byte_array,
+                           sizeof(byte_array)));
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("file"))) {
             funcall_expect_arity(expr.value.as_funcall, 1, location);
 
@@ -1015,14 +1029,15 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
                 exit(1);
             }
 
-            *output_value = basm_push_string_to_memory(basm, file_content);
+            return eval_result(
+                       eval_status_ok(),
+                       basm_push_string_to_memory(basm, file_content));
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
                     FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
             exit(1);
         }
-        return eval_status_ok();
     }
     break;
 
@@ -1035,12 +1050,12 @@ Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *
             exit(1);
         }
 
-        return basm_binding_eval(basm, binding, output_value);
+        return basm_binding_eval(basm, binding);
     }
     break;
 
     case EXPR_KIND_BINARY_OP: {
-        return basm_binary_op_eval(basm, expr.value.as_binary_op, location, output_value);
+        return basm_binary_op_eval(basm, expr.value.as_binary_op, location);
     }
     break;
 
@@ -1119,21 +1134,21 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
 
     size_t arity = 0;
     while (call_args && def_args) {
-        Word value = {0};
-        Eval_Status status = basm_expr_eval(basm, call_args->value, location, &value);
-        if (status.kind == EVAL_STATUS_KIND_DEFERRED) {
+        Eval_Result result = basm_expr_eval(basm, call_args->value, location);
+        if (result.status.kind == EVAL_STATUS_KIND_DEFERRED) {
             fprintf(stderr, FL_Fmt": ERROR: the macro call `"SV_Fmt"` depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the macro call itself when it's expanded.\n",
                     FL_Arg(location),
                     SV_Arg(macrocall.name),
-                    SV_Arg(status.deferred_binding->name));
+                    SV_Arg(result.status.deferred_binding->name));
             fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the macro call `"SV_Fmt"` defined above it.\n",
-                    FL_Arg(status.deferred_binding->location),
-                    SV_Arg(status.deferred_binding->name),
+                    FL_Arg(result.status.deferred_binding->location),
+                    SV_Arg(result.status.deferred_binding->name),
                     SV_Arg(macrocall.name));
             fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the macro call that depends on it.\n");
             exit(1);
         }
-        assert(status.kind == EVAL_STATUS_KIND_OK);
+        assert(result.status.kind == EVAL_STATUS_KIND_OK);
+        Word value = result.value;
 
         scope_bind_value(args_scope,
                          def_args->name,
