@@ -824,7 +824,7 @@ Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
 
 static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
-    // TODO: compile-time binary operations can only work with integers
+    // TODO(#341): compile-time binary operations can only work with integers
 
     Eval_Result left_result = basm_expr_eval(basm, binary_op->left, location);
     if (left_result.status == EVAL_STATUS_DEFERRED) {
