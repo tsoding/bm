@@ -1284,8 +1284,11 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
 
         fprintf(output, "inst_%zu:\n", i);
         switch (inst.type) {
-        case INST_NOP:
-            assert(false && "NOP is not implemented");
+        case INST_NOP: {
+            fprintf(output, "    ;; nop\n");
+            fprintf(output, "    nop\n");
+        }
+        break;
         case INST_PUSH: {
             fprintf(output, "    ;; push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
