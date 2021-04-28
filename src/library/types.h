@@ -17,6 +17,7 @@ typedef enum {
     COUNT_TYPES
 } Type;
 
+bool type_by_name(const char *name, Type *type);
 const char *type_name(Type type);
 Type supertype_of(Type subtype);
 void dump_type_hierarchy_as_dot(FILE *stream);

@@ -4,6 +4,19 @@
 #include <stdio.h>
 #include "./types.h"
 
+bool type_by_name(const char *name, Type *output_type)
+{
+    for (Type type = 0; type < COUNT_TYPES; ++type) {
+        if (strcmp(name, type_name(type)) == 0) {
+            if (output_type) {
+                *output_type = type;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 const char *type_name(Type type)
 {
     switch (type) {
