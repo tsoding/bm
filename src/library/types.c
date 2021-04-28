@@ -22,16 +22,12 @@ const char *type_name(Type type)
     switch (type) {
     case TYPE_ANY:
         return "Any";
-    case TYPE_NUMBER:
-        return "Number";
     case TYPE_FLOAT:
         return "Float";
-    case TYPE_INTEGER:
-        return "Integer";
-    case TYPE_SIGNED:
-        return "Signed";
-    case TYPE_UNSIGNED:
-        return "Unsigned";
+    case TYPE_SIGNED_INT:
+        return "Signed_Int";
+    case TYPE_UNSIGNED_INT:
+        return "Unsigned_Int";
     case TYPE_MEM_ADDR:
         return "Mem_Addr";
     case TYPE_INST_ADDR:
@@ -61,24 +57,20 @@ Type supertype_of(Type subtype)
     switch (subtype) {
     case TYPE_ANY:
         return TYPE_ANY;
-    case TYPE_NUMBER:
-        return TYPE_ANY;
     case TYPE_FLOAT:
-        return TYPE_NUMBER;
-    case TYPE_INTEGER:
-        return TYPE_NUMBER;
-    case TYPE_SIGNED:
-        return TYPE_INTEGER;
-    case TYPE_UNSIGNED:
-        return TYPE_INTEGER;
+        return TYPE_ANY;
+    case TYPE_SIGNED_INT:
+        return TYPE_ANY;
+    case TYPE_UNSIGNED_INT:
+        return TYPE_ANY;
     case TYPE_MEM_ADDR:
-        return TYPE_UNSIGNED;
+        return TYPE_UNSIGNED_INT;
     case TYPE_INST_ADDR:
-        return TYPE_UNSIGNED;
+        return TYPE_UNSIGNED_INT;
     case TYPE_STACK_ADDR:
-        return TYPE_UNSIGNED;
+        return TYPE_UNSIGNED_INT;
     case TYPE_NATIVE_ID:
-        return TYPE_UNSIGNED;
+        return TYPE_UNSIGNED_INT;
     case COUNT_TYPES:
     default: {
         assert(false && "type_name: unreachable");
@@ -103,16 +95,12 @@ Type_Repr type_repr_of(Type type)
 {
     switch (type) {
     case TYPE_ANY:
-        return TYPE_REPR_U64 | TYPE_REPR_I64 | TYPE_REPR_F64 | TYPE_REPR_PTR;
-    case TYPE_NUMBER:
-        return TYPE_REPR_U64 | TYPE_REPR_I64 | TYPE_REPR_F64;
+        return TYPE_REPR_ANY;
     case TYPE_FLOAT:
         return TYPE_REPR_F64;
-    case TYPE_INTEGER:
-        return TYPE_REPR_U64 | TYPE_REPR_I64;
-    case TYPE_SIGNED:
+    case TYPE_SIGNED_INT:
         return TYPE_REPR_I64;
-    case TYPE_UNSIGNED:
+    case TYPE_UNSIGNED_INT:
     case TYPE_MEM_ADDR:
     case TYPE_INST_ADDR:
     case TYPE_STACK_ADDR:
@@ -128,10 +116,70 @@ Type_Repr type_repr_of(Type type)
 
 Word convert_type_reprs(Word input, Type_Repr from, Type_Repr to)
 {
-    (void) input;
-    (void) from;
-    (void) to;
-    assert(false && "TODO: convert_type_reprs is not implemented");
+    switch (from) {
+    case TYPE_REPR_ANY:
+        switch(to) {
+        case TYPE_REPR_ANY:
+        case TYPE_REPR_U64:
+        case TYPE_REPR_I64:
+        case TYPE_REPR_F64:
+            return input;
+        default: {
+            assert(false && "convert_type_reprs: unreachable");
+            exit(1);
+        }
+        }
+        break;
+    case TYPE_REPR_U64:
+        switch (to)  {
+        case TYPE_REPR_ANY:
+        case TYPE_REPR_U64:
+            return input;
+        case TYPE_REPR_I64:
+            return word_i64((int64_t) input.as_u64);
+        case TYPE_REPR_F64:
+            return word_f64((double) input.as_u64);
+        default: {
+            assert(false && "convert_type_reprs: unreachable");
+            exit(1);
+        }
+        }
+        break;
+    case TYPE_REPR_I64:
+        switch (to)  {
+        case TYPE_REPR_ANY:
+        case TYPE_REPR_I64:
+            return input;
+        case TYPE_REPR_U64:
+            return word_u64((uint64_t) input.as_i64);
+        case TYPE_REPR_F64:
+            return word_f64((double) input.as_i64);
+        default: {
+            assert(false && "convert_type_reprs: unreachable");
+            exit(1);
+        }
+        }
+        break;
+    case TYPE_REPR_F64:
+        switch (to)  {
+        case TYPE_REPR_ANY:
+        case TYPE_REPR_F64:
+            return input;
+        case TYPE_REPR_I64:
+            return word_i64((int64_t) input.as_f64);
+        case TYPE_REPR_U64:
+            return word_u64((uint64_t) input.as_f64);
+        default: {
+            assert(false && "convert_type_reprs: unreachable");
+            exit(1);
+        }
+        }
+        break;
+    default: {
+        assert(false && "convert_type_reprs: unreachable");
+        exit(1);
+    }
+    }
 }
 
 Word word_u64(uint64_t u64)

@@ -2,7 +2,7 @@
 
 static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     [INST_NOP]     = {.type = INST_NOP,     .name = "nop",     .has_operand = false},
-    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_NUMBER },
+    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_ANY },
     [INST_DROP]    = {.type = INST_DROP,    .name = "drop",    .has_operand = false},
     [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_STACK_ADDR },
     [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_STACK_ADDR },

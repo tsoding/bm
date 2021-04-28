@@ -476,11 +476,11 @@ void basm_eval_deferred_operands(Basm *basm)
             }
 
             if (basm->program[addr].type == INST_CALL && binding->type != TYPE_INST_ADDR) {
-                fprintf(stderr, FL_Fmt": ERROR: type check error. `call` instruction expects an operand of the type %s. But the value of type %s was found.",
+                fprintf(stderr, FL_Fmt": ERROR: type check error. `call` instruction expects an operand of the type %s. But the value of type %s was found.\n",
                         FL_Arg(basm->deferred_operands[i].location),
                         type_name(TYPE_INST_ADDR),
                         type_name(binding->type));
-                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only `call` the labels. Since the labels are the only way to create bindings with Inst_Addr type right now.",
+                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only `call` the labels. Since the labels are the only way to create bindings with Inst_Addr type right now.\n",
                         FL_Arg(basm->deferred_operands[i].location));
                 exit(1);
             }
@@ -700,7 +700,7 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
             var_value <= to.as_i64;
             ++var_value) {
         basm_push_new_scope(basm);
-        basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_UNSIGNED, location);
+        basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_UNSIGNED_INT, location);
         basm_translate_block(basm, phor.body);
         basm_pop_scope(basm);
     }
@@ -830,10 +830,10 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     if (left_result.status == EVAL_STATUS_DEFERRED) {
         return left_result;
     }
-    if (left_result.type != TYPE_UNSIGNED) {
+    if (left_result.type != TYPE_UNSIGNED_INT) {
         fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Left operand but got %s\n",
                 FL_Arg(location),
-                type_name(TYPE_UNSIGNED),
+                type_name(TYPE_UNSIGNED_INT),
                 type_name(left_result.type));
         exit(1);
     }
@@ -842,10 +842,10 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     if (right_result.status == EVAL_STATUS_DEFERRED) {
         return right_result;
     }
-    if (right_result.type != TYPE_UNSIGNED) {
+    if (right_result.type != TYPE_UNSIGNED_INT) {
         fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Right operand but got %s\n",
                 FL_Arg(location),
-                type_name(TYPE_UNSIGNED),
+                type_name(TYPE_UNSIGNED_INT),
                 type_name(right_result.type));
         exit(1);
     }
@@ -854,56 +854,56 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     case BINARY_OP_PLUS: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 + right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_MINUS: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 - right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_MULT: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 * right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_DIV: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 / right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_GT: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 > right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_LT: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 < right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_EQUALS: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 == right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
     case BINARY_OP_MOD: {
         return eval_result_ok(
                    word_u64(left_result.value.as_u64 % right_result.value.as_u64),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
@@ -933,7 +933,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
     case EXPR_KIND_LIT_INT: {
         return eval_result_ok(
                    word_u64(expr.value.as_lit_int),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
@@ -947,7 +947,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
     case EXPR_KIND_LIT_CHAR: {
         return eval_result_ok(
                    word_u64(lit_char_value(expr.value.as_lit_char)),
-                   TYPE_UNSIGNED);
+                   TYPE_UNSIGNED_INT);
     }
     break;
 
@@ -980,7 +980,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                 exit(1);
             }
 
-            return eval_result_ok(length, TYPE_UNSIGNED);
+            return eval_result_ok(length, TYPE_UNSIGNED_INT);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
             funcall_expect_arity(expr.value.as_funcall, 2, location);
 
