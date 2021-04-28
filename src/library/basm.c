@@ -4,11 +4,12 @@
 #include "./linizer.h"
 #include "./path.h"
 
-Eval_Result eval_result_ok(Word value)
+Eval_Result eval_result_ok(Word value, Type type)
 {
     return (Eval_Result) {
         .status = EVAL_STATUS_OK,
         .value = value,
+        .type = type,
     };
 }
 
@@ -111,7 +112,7 @@ void scope_defer_binding(Scope *scope, String_View name, Type type, File_Locatio
     };
 }
 
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_Location location)
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, File_Location location)
 {
     assert(scope->bindings_size < BASM_BINDINGS_CAPACITY);
 
@@ -130,7 +131,6 @@ void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_
     scope->bindings[scope->bindings_size++] = (Binding) {
         .name = name,
         .expr = expr,
-        .type = type,
         .location = location,
     };
 }
@@ -147,10 +147,10 @@ void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location l
     scope_defer_binding(basm->scope, name, type, location);
 }
 
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Type type, File_Location location)
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, File_Location location)
 {
     assert(basm->scope != NULL);
-    scope_bind_expr(basm->scope, name, expr, type, location);
+    scope_bind_expr(basm->scope, name, expr, location);
 }
 
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location)
@@ -591,7 +591,6 @@ void basm_translate_const(Basm *basm, Const_Statement konst, File_Location locat
     basm_bind_expr(basm,
                    konst.name,
                    konst.value,
-                   TYPE_ANY,
                    location);
 }
 
@@ -699,7 +698,7 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
             var_value <= to.as_i64;
             ++var_value) {
         basm_push_new_scope(basm);
-        basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_ANY, location);
+        basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_UNSIGNED, location);
         basm_translate_block(basm, phor.body);
         basm_pop_scope(basm);
     }
@@ -792,6 +791,7 @@ Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
         binding->status = BINDING_EVALUATED;
 
         if (result.status == EVAL_STATUS_OK) {
+            binding->type = result.type;
             binding->value = result.value;
         }
 
@@ -805,7 +805,7 @@ Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
     }
     break;
     case BINDING_EVALUATED: {
-        return eval_result_ok(binding->value);
+        return eval_result_ok(binding->value, binding->type);
     }
     break;
     case BINDING_DEFERRED: {
@@ -822,63 +822,86 @@ Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
 
 static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
-    Word left = {0};
-    {
-        Eval_Result result = basm_expr_eval(basm, binary_op->left, location);
-        if (result.status == EVAL_STATUS_DEFERRED) {
-            return result;
-        }
-        left = result.value;
+    // TODO: compile-time binary operations can only work with integers
+
+    Eval_Result left_result = basm_expr_eval(basm, binary_op->left, location);
+    if (left_result.status == EVAL_STATUS_DEFERRED) {
+        return left_result;
+    }
+    if (left_result.type != TYPE_UNSIGNED) {
+        fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Left operand but got %s\n",
+                FL_Arg(location),
+                type_name(TYPE_UNSIGNED),
+                type_name(left_result.type));
+        exit(1);
     }
 
-    Word right = {0};
-    {
-        Eval_Result result = basm_expr_eval(basm, binary_op->right, location);
-        if (result.status == EVAL_STATUS_DEFERRED) {
-            return result;
-        }
-        right = result.value;
+    Eval_Result right_result = basm_expr_eval(basm, binary_op->right, location);
+    if (right_result.status == EVAL_STATUS_DEFERRED) {
+        return right_result;
+    }
+    if (right_result.type != TYPE_UNSIGNED) {
+        fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Right operand but got %s\n",
+                FL_Arg(location),
+                type_name(TYPE_UNSIGNED),
+                type_name(right_result.type));
+        exit(1);
     }
 
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
-        // TODO(#183): compile-time sum can only work with integers
-        return eval_result_ok(word_u64(left.as_u64 + right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 + right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_MINUS: {
-        return eval_result_ok(word_u64(left.as_u64 - right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 - right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_MULT: {
-        return eval_result_ok(word_u64(left.as_u64 * right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 * right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_DIV: {
-        return eval_result_ok(word_u64(left.as_u64 / right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 / right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_GT: {
-        return eval_result_ok(word_u64(left.as_u64 > right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 > right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_LT: {
-        return eval_result_ok(word_u64(left.as_u64 < right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 < right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_EQUALS: {
-        return eval_result_ok(word_u64(left.as_u64 == right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 == right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case BINARY_OP_MOD: {
-        return eval_result_ok(word_u64(left.as_u64 % right.as_u64));
+        return eval_result_ok(
+                   word_u64(left_result.value.as_u64 % right_result.value.as_u64),
+                   TYPE_UNSIGNED);
     }
     break;
 
@@ -906,22 +929,30 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
 {
     switch (expr.kind) {
     case EXPR_KIND_LIT_INT: {
-        return eval_result_ok(word_u64(expr.value.as_lit_int));
+        return eval_result_ok(
+                   word_u64(expr.value.as_lit_int),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case EXPR_KIND_LIT_FLOAT: {
-        return eval_result_ok(word_f64(expr.value.as_lit_float));
+        return eval_result_ok(
+                   word_f64(expr.value.as_lit_float),
+                   TYPE_FLOAT);
     }
     break;
 
     case EXPR_KIND_LIT_CHAR: {
-        return eval_result_ok(word_u64(lit_char_value(expr.value.as_lit_char)));
+        return eval_result_ok(
+                   word_u64(lit_char_value(expr.value.as_lit_char)),
+                   TYPE_UNSIGNED);
     }
     break;
 
     case EXPR_KIND_LIT_STR: {
-        return eval_result_ok(basm_push_string_to_memory(basm, expr.value.as_lit_str));
+        return eval_result_ok(
+                   basm_push_string_to_memory(basm, expr.value.as_lit_str),
+                   TYPE_MEM_ADDR);
     }
     break;
 
@@ -947,7 +978,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                 exit(1);
             }
 
-            return eval_result_ok(length);
+            return eval_result_ok(length, TYPE_UNSIGNED);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("byte_array"))) {
             funcall_expect_arity(expr.value.as_funcall, 2, location);
 
@@ -978,7 +1009,8 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                        basm_push_byte_array_to_memory(
                            basm,
                            size.as_u64,
-                           (uint8_t) value.as_u64));
+                           (uint8_t) value.as_u64),
+                       TYPE_MEM_ADDR);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("int32"))) {
             Funcall_Arg *args = expr.value.as_funcall->args;
 
@@ -998,7 +1030,8 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                        basm_push_buffer_to_memory(
                            basm,
                            (uint8_t*) &byte_array,
-                           sizeof(byte_array)));
+                           sizeof(byte_array)),
+                       TYPE_MEM_ADDR);
         } else if (sv_eq(expr.value.as_funcall->name, sv_from_cstr("file"))) {
             funcall_expect_arity(expr.value.as_funcall, 1, location);
 
@@ -1020,7 +1053,9 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                 exit(1);
             }
 
-            return eval_result_ok(basm_push_string_to_memory(basm, file_content));
+            return eval_result_ok(
+                       basm_push_string_to_memory(basm, file_content),
+                       TYPE_MEM_ADDR);
         } else {
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
@@ -1137,13 +1172,13 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
             exit(1);
         }
         assert(result.status == EVAL_STATUS_OK);
-        Word value = result.value;
 
         scope_bind_value(args_scope,
                          def_args->name,
-                         value,
-                         TYPE_ANY,
+                         result.value,
+                         result.type,
                          macrodef->location);
+
         call_args = call_args->next;
         def_args = def_args->next;
         arity += 1;

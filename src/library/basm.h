@@ -51,7 +51,7 @@ typedef struct {
     Type type;
 } Eval_Result;
 
-Eval_Result eval_result_ok(Word value);
+Eval_Result eval_result_ok(Word value, Type type);
 Eval_Result eval_result_deferred(Binding *deferred_binding);
 
 typedef struct Scope Scope;
@@ -136,7 +136,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef);
 Binding *scope_resolve_binding(Scope *scope, String_View name);
 void scope_bind_value(Scope *scope, String_View name, Word value, Type type, File_Location location);
 void scope_defer_binding(Scope *scope, String_View name, Type type, File_Location location);
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_Location location);
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, File_Location location);
 
 void basm_push_scope(Basm *basm, Scope *scope);
 void basm_push_new_scope(Basm *basm);
@@ -147,7 +147,7 @@ void basm_eval_deferred_operands(Basm *basm);
 void basm_eval_deferred_entry(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location location);
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Type type, File_Location location);
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
