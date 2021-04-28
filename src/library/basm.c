@@ -1059,7 +1059,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                        basm_push_string_to_memory(basm, file_content),
                        TYPE_MEM_ADDR);
         } else {
-            // TODO: implement type casting as translation time function call
+            // TODO(#342): implement type casting as translation time function call
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
                     FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
