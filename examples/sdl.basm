@@ -53,38 +53,38 @@ init_logo:
 %scope
     ;; Initialize LOGO_SRCRECT
     %scope
-        push LOGO_SRCRECT + SDL_Rect_x
+        push Unsigned_Int(LOGO_SRCRECT) + SDL_Rect_x
         push 0
         write32
         
-        push LOGO_SRCRECT + SDL_Rect_y
+        push Unsigned_Int(LOGO_SRCRECT) + SDL_Rect_y
         push 0
         write32
         
-        push LOGO_SRCRECT + SDL_Rect_w
+        push Unsigned_Int(LOGO_SRCRECT) + SDL_Rect_w
         push LOGO_WIDTH
         write32
         
-        push LOGO_SRCRECT + SDL_Rect_h
+        push Unsigned_Int(LOGO_SRCRECT) + SDL_Rect_h
         push LOGO_HEIGHT
         write32
     %end
 
     ;; Initialize LOGO_DSTRECT
     %scope
-        push LOGO_DSTRECT + SDL_Rect_x
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_x
         push 100
         write32
     
-        push LOGO_DSTRECT + SDL_Rect_y
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_y
         push 100
         write32
     
-        push LOGO_DSTRECT + SDL_Rect_w
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_w
         push LOGO_WIDTH
         write32
     
-        push LOGO_DSTRECT + SDL_Rect_h
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_h
         push LOGO_HEIGHT
         write32
     %end
@@ -116,7 +116,7 @@ update_logo:
     native SDL_GetWindowSize
 
     %scope
-        push LOGO_DSTRECT + SDL_Rect_y
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_y
         read32i
 
         dup 1
@@ -124,7 +124,7 @@ update_logo:
         minusi
         lti
 
-        push LOGO_DSTRECT + SDL_Rect_y
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_y
         read32i
 
         swap 0
@@ -145,15 +145,15 @@ update_logo:
     %end
 
     %scope
-        push LOGO_DSTRECT + SDL_Rect_x
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_x
         read32i
 
         dup 1
-        push LOGO_WIDTH
+        push Unsigned_Int(LOGO_WIDTH)
         minusi
         lti
 
-        push LOGO_DSTRECT + SDL_Rect_x
+        push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_x
         read32i
 
         swap 0
@@ -173,22 +173,22 @@ update_logo:
         drop
     %end
 
-    push LOGO_DSTRECT + SDL_Rect_x
+    push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_x
 
     read32i
     push LOGO_DX
     read32i
     plusi
-    push LOGO_DSTRECT + SDL_Rect_x
+    push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_x
     swap 1
     write32
 
-    push LOGO_DSTRECT + SDL_Rect_y
+    push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_y
     read32i
     push LOGO_DY
     read32i
     plusi
-    push LOGO_DSTRECT + SDL_Rect_y
+    push Unsigned_Int(LOGO_DSTRECT) + SDL_Rect_y
     swap 1
     write32
 
