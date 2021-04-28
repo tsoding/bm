@@ -40,25 +40,19 @@ typedef struct {
 } String_Length;
 
 typedef enum {
-    EVAL_STATUS_KIND_OK = 0,
-    EVAL_STATUS_KIND_DEFERRED
-} Eval_Status_Kind;
-
-typedef struct {
-    Eval_Status_Kind kind;
-    Binding *deferred_binding;
+    EVAL_STATUS_OK = 0,
+    EVAL_STATUS_DEFERRED
 } Eval_Status;
-
-Eval_Status eval_status_ok(void);
-Eval_Status eval_status_deferred(Binding *deferred_binding);
 
 typedef struct {
     Eval_Status status;
+    Binding *deferred_binding;
     Word value;
     Type type;
 } Eval_Result;
 
-Eval_Result eval_result(Eval_Status status, Word value);
+Eval_Result eval_result_ok(Word value);
+Eval_Result eval_result_deferred(Binding *deferred_binding);
 
 typedef struct Scope Scope;
 
