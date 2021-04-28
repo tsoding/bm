@@ -453,6 +453,8 @@ void basm_eval_deferred_asserts(Basm *basm)
 
 void basm_eval_deferred_operands(Basm *basm)
 {
+    // TODO: type check deferred operand based on the expected types of the instruction
+
     Scope *saved_basm_scope = basm->scope;
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         assert(basm->deferred_operands[i].scope);
@@ -1057,6 +1059,7 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                        basm_push_string_to_memory(basm, file_content),
                        TYPE_MEM_ADDR);
         } else {
+            // TODO: implement type casting as translation time function call
             fprintf(stderr,
                     FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
                     FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
