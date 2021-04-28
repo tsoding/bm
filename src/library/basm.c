@@ -1955,12 +1955,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], r11\n");
         }
         break;
-        case INST_WRITE16:
-            assert(false && "WRITE16 is not implemented");
-        case INST_WRITE32:
-            assert(false && "WRITE32 is not implemented");
-        case INST_WRITE64:
-            assert(false && "WRITE64 is not implemented");
         case INST_I2F:
             assert(false && "I2F is not implemented");
         case INST_U2F:
@@ -1969,6 +1963,42 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             assert(false && "F2I is not implemented");
         case INST_F2U:
             assert(false && "F2U is not implemented");
+        case INST_WRITE16: {
+            fprintf(output, "    ;; write16\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov WORD [rsi], ax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_WRITE32: {
+            fprintf(output, "    ;; write32\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov DWORD [rsi], eax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_WRITE64: {
+            fprintf(output, "    ;; write64\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov QWORD [rsi], rax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
         case NUMBER_OF_INSTS:
         default:
             assert(false && "unknown instruction");
