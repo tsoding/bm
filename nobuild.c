@@ -266,8 +266,12 @@ void cases_command(int argc, char **argv)
                     "-f", "nasm",
                     PATH("test", "cases", caze),
                     "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
-                CMD("nasm", "-felf64", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")), "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
-                CMD("ld", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")), "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".elf")));
+                CMD("nasm", "-felf64",
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
+                CMD("ld",
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".elf")));
             }
         });
 #else
