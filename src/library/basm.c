@@ -1955,14 +1955,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], r11\n");
         }
         break;
-        case INST_I2F:
-            assert(false && "I2F is not implemented");
-        case INST_U2F:
-            assert(false && "U2F is not implemented");
-        case INST_F2I:
-            assert(false && "F2I is not implemented");
-        case INST_F2U:
-            assert(false && "F2U is not implemented");
         case INST_WRITE16: {
             fprintf(output, "    ;; write16\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -1999,6 +1991,74 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], r11\n");
         }
         break;
+        case INST_I2F: {
+            fprintf(output, "    ;; i2f\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rdi, [r11]\n");
+            fprintf(output, "    pxor xmm0, xmm1\n");
+            fprintf(output, "    cvtsi2sd xmm0, rdi\n");
+            fprintf(output, "    movsd [r11], xmm0\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_U2F: {
+            fprintf(output, "    ;; u2f\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rdi, [r11]\n");
+            fprintf(output, "    test rdi, rdi\n");
+            fprintf(output, "    js .u2f_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    pxor xmm0, xmm0\n");
+            fprintf(output, "    cvtsi2sd xmm0, rdi\n");
+            fprintf(output, "    jmp .u2f_end_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    .u2f_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    mov rax, rdi\n");
+            fprintf(output, "    and edi, 1\n");
+            fprintf(output, "    pxor xmm0, xmm0\n");
+            fprintf(output, "    shr rax, 1\n");
+            fprintf(output, "    or rax, rdi\n");
+            fprintf(output, "    cvtsi2sd xmm0, rax\n");
+            fprintf(output, "    addsd xmm0, xmm0\n");
+            fprintf(output, "    .u2f_end_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    movsd [r11], xmm0\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+            jmp_if_escape_count += 1;
+        }
+        break;
+        case INST_F2I: {
+            fprintf(output, "    ;; f2i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [r11]\n");
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    mov [r11], rax\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_F2U: {
+            fprintf(output, "    ;; f2i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [r11]\n");
+            fprintf(output, "    movsd xmm1, [magic_number_for_f2u]\n");
+            fprintf(output, "    comisd xmm0, xmm1\n");
+            fprintf(output, "    jnb .f2u_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    jmp .f2u_end_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    .f2u_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    subsd xmm0, xmm1\n");
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    btc rax, 63\n");
+            fprintf(output, "    .f2u_end_%zu:\n", jmp_if_escape_count);
+            fprintf(output, "    mov [r11], rax\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
         case NUMBER_OF_INSTS:
         default:
             assert(false && "unknown instruction");
@@ -2007,6 +2067,7 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
 
     fprintf(output, "    ret\n");
     fprintf(output, "segment .data\n");
+    fprintf(output, "magic_number_for_f2u: dq 0x43E0000000000000\n");
     fprintf(output, "stack_top: dq stack\n");
     fprintf(output, "inst_map:\n");
 #define ROW_SIZE 5
