@@ -139,18 +139,6 @@ bool inst_by_name(String_View name, Inst_Def *inst_def);
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
 
-typedef union {
-    uint64_t as_u64;
-    int64_t as_i64;
-    double as_f64;
-    void *as_ptr;
-} Word;
-
-Word word_u64(uint64_t u64);
-Word word_i64(int64_t i64);
-Word word_f64(double f64);
-Word word_ptr(void *ptr);
-
 static_assert(sizeof(Word) == BM_WORD_SIZE,
               "The BM's Word is expected to be 64 bits");
 
