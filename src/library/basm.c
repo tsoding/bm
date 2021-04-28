@@ -1896,13 +1896,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
         }
         break;
         case INST_READ8I:
-            assert(false && "READ8I is not implemented");
-        case INST_READ16I:
-            assert(false && "READ16I is not implemented");
-        case INST_READ32I:
-            assert(false && "READ32I is not implemented");
-        case INST_READ64I:
-            assert(false && "READ64I is not implemented");
         case INST_READ8U: {
             fprintf(output, "    ;; read8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -1914,12 +1907,42 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [r11], rax\n");
         }
         break;
-        case INST_READ16U:
-            assert(false && "READ16 is not implemented");
-        case INST_READ32U:
-            assert(false && "READ32 is not implemented");
-        case INST_READ64U:
-            assert(false && "READ64 is not implemented");
+        case INST_READ16I:
+        case INST_READ16U: {
+            fprintf(output, "    ;; read16\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov ax, WORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ32I:
+        case INST_READ32U: {
+            fprintf(output, "    ;; read32\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov eax, DWORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ64I:
+        case INST_READ64U: {
+            fprintf(output, "    ;; read64\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov rax, QWORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
         case INST_WRITE8: {
             fprintf(output, "    ;; write8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
