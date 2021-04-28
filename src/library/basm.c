@@ -1059,11 +1059,29 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
                        basm_push_string_to_memory(basm, file_content),
                        TYPE_MEM_ADDR);
         } else {
-            // TODO(#342): implement type casting as translation time function call
-            fprintf(stderr,
-                    FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
-                    FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
-            exit(1);
+            Type target_type = TYPE_ANY;
+            if (type_by_name(expr.value.as_funcall->name, &target_type)) {
+                Funcall_Arg *args = expr.value.as_funcall->args;
+                funcall_expect_arity(expr.value.as_funcall, 1, location);
+
+                Eval_Result result = basm_expr_eval(basm, args->value, location);
+                if (result.status == EVAL_STATUS_DEFERRED) {
+                    return result;
+                }
+
+                result.value = convert_type_reprs(
+                                   result.value,
+                                   type_repr_of(result.type),
+                                   type_repr_of(target_type));
+                result.type = target_type;
+
+                return result;
+            } else {
+                fprintf(stderr,
+                        FL_Fmt": ERROR: Unknown translation time function `"SV_Fmt"`\n",
+                        FL_Arg(location), SV_Arg(expr.value.as_funcall->name));
+                exit(1);
+            }
         }
     }
     break;
@@ -1090,7 +1108,6 @@ Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location)
         assert(false && "basm_expr_eval: unreachable");
         exit(1);
     }
-    break;
     }
 }
 

@@ -71,34 +71,6 @@ static_assert(
     "You probably added or removed an instruction. "
     "Please update the definitions above accordingly");
 
-Word word_u64(uint64_t u64)
-{
-    return (Word) {
-        .as_u64 = u64
-    };
-}
-
-Word word_i64(int64_t i64)
-{
-    return (Word) {
-        .as_i64 = i64
-    };
-}
-
-Word word_f64(double f64)
-{
-    return (Word) {
-        .as_f64 = f64
-    };
-}
-
-Word word_ptr(void *ptr)
-{
-    return (Word) {
-        .as_ptr = ptr
-    };
-}
-
 bool inst_by_name(String_View name, Inst_Def *inst_def)
 {
     for (Inst_Type type = 0; type < NUMBER_OF_INSTS; type += 1) {
