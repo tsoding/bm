@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include "sv.h"
 
+typedef enum {
+    TYPE_REPR_ANY,
+    TYPE_REPR_U64,
+    TYPE_REPR_I64,
+    TYPE_REPR_F64,
+} Type_Repr;
+
 typedef union {
     uint64_t as_u64;
     int64_t as_i64;
@@ -16,12 +23,14 @@ Word word_i64(int64_t i64);
 Word word_f64(double f64);
 Word word_ptr(void *ptr);
 
-typedef enum {
-    TYPE_REPR_ANY,
-    TYPE_REPR_U64,
-    TYPE_REPR_I64,
-    TYPE_REPR_F64,
-} Type_Repr;
+Word word_plus_repr(Word a, Word b, Type_Repr repr);
+Word word_minus_repr(Word a, Word b, Type_Repr repr);
+Word word_mult_repr(Word a, Word b, Type_Repr repr);
+Word word_div_repr(Word a, Word b, Type_Repr repr);
+Word word_gt_repr(Word a, Word b, Type_Repr repr);
+Word word_lt_repr(Word a, Word b, Type_Repr repr);
+Word word_eq_repr(Word a, Word b, Type_Repr repr);
+Word word_mod_repr(Word a, Word b, Type_Repr repr);
 
 typedef enum {
     TYPE_ANY = 0,

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "./types.h"
 
 bool type_by_name(String_View name, Type *output_type)
@@ -211,3 +212,148 @@ Word word_ptr(void *ptr)
         .as_ptr = ptr
     };
 }
+
+Word word_plus_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 + b.as_u64);
+    case TYPE_REPR_I64:
+        return word_i64(a.as_i64 + b.as_i64);
+    case TYPE_REPR_F64:
+        return word_f64(a.as_f64 + b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_minus_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 - b.as_u64);
+    case TYPE_REPR_I64:
+        return word_i64(a.as_i64 - b.as_i64);
+    case TYPE_REPR_F64:
+        return word_f64(a.as_f64 - b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_mult_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 * b.as_u64);
+    case TYPE_REPR_I64:
+        return word_i64(a.as_i64 * b.as_i64);
+    case TYPE_REPR_F64:
+        return word_f64(a.as_f64 * b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_div_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 / b.as_u64);
+    case TYPE_REPR_I64:
+        return word_i64(a.as_i64 / b.as_i64);
+    case TYPE_REPR_F64:
+        return word_f64(a.as_f64 / b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_gt_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 > b.as_u64);
+    case TYPE_REPR_I64:
+        return word_u64(a.as_i64 > b.as_i64);
+    case TYPE_REPR_F64:
+        return word_u64(a.as_f64 > b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_lt_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 < b.as_u64);
+    case TYPE_REPR_I64:
+        return word_u64(a.as_i64 < b.as_i64);
+    case TYPE_REPR_F64:
+        return word_u64(a.as_f64 < b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_eq_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 == b.as_u64);
+    case TYPE_REPR_I64:
+        return word_u64(a.as_i64 == b.as_i64);
+    case TYPE_REPR_F64:
+        return word_u64(a.as_f64 == b.as_f64);
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
+Word word_mod_repr(Word a, Word b, Type_Repr repr)
+{
+    switch (repr) {
+    case TYPE_REPR_U64:
+        return word_u64(a.as_u64 % b.as_u64);
+    case TYPE_REPR_I64:
+        return word_i64(a.as_i64 % b.as_i64);
+    case TYPE_REPR_F64:
+        return word_f64(fmod(a.as_f64, b.as_f64));
+    case TYPE_REPR_ANY:
+        assert(0 && "word_plus_repr: representation is too vague");
+        exit(1);
+    default:
+        assert(0 && "word_plus_repr: unreachable");
+        exit(1);
+    }
+}
+
