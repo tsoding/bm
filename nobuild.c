@@ -72,10 +72,23 @@ Command commands[] = {
 };
 size_t commands_size = sizeof(commands) / sizeof(commands[0]);
 
+const char *cc(void)
+{
+#ifndef _WIN32
+    const char *result = getenv("CC");
+    if (result == NULL) {
+        result = "cc";
+    }
+#else
+    const char *result = "cl.exe";
+#endif // _WIN32
+    return result;
+}
+
 void build_tool(const char *name)
 {
 #ifdef _WIN32
-    CMD("cl.exe", CFLAGS,
+    CMD(cc(), CFLAGS,
         "/Fe.\\build\\toolchain\\",
         "/Fo.\\build\\toolchain\\",
         "/I", PATH("src", "library"),
@@ -83,12 +96,7 @@ void build_tool(const char *name)
         "bm.lib",
         "/link", CONCAT("/LIBPATH:", PATH("build", "library")));
 #else
-    const char *cc = getenv("CC");
-    if (cc == NULL) {
-        cc = "cc";
-    }
-
-    CMD(cc, CFLAGS,
+    CMD(cc(), CFLAGS,
         "-o", PATH("build", "toolchain", name),
         "-I", PATH("src", "library"),
         "-L", PATH("build", "library"),
@@ -158,7 +166,7 @@ void wrappers_command(int argc, char **argv)
 #ifndef _WIN32
     // SDL wrapper
     {
-        CMD("cc", CFLAGS,
+        CMD(cc(), CFLAGS,
             "-c", "-fpic",
 #ifdef __FreeBSD__
             // NOTE: Technically, this should be determined by pkg-config
@@ -168,7 +176,7 @@ void wrappers_command(int argc, char **argv)
             "-o", PATH("build", "wrappers", "bm_sdl.o"),
             PATH("wrappers", "bm_sdl.c"));
 
-        CMD("cc", CFLAGS,
+        CMD(cc(), CFLAGS,
             "-shared",
 #ifdef __FreeBSD__
             // NOTE: See above
@@ -181,13 +189,13 @@ void wrappers_command(int argc, char **argv)
 
     // hello wrapper
     {
-        CMD("cc", CFLAGS,
+        CMD(cc(), CFLAGS,
             "-c", "-fpic",
             "-I", PATH("src", "library"),
             "-o", PATH("build", "wrappers", "bm_hello.o"),
             PATH("wrappers", "bm_hello.c"));
 
-        CMD("cc", CFLAGS,
+        CMD(cc(), CFLAGS,
             "-shared",
             "-o", PATH("build", "wrappers", "libbm_hello.so"),
             PATH("build", "wrappers", "bm_hello.o"));
@@ -198,7 +206,7 @@ void wrappers_command(int argc, char **argv)
 
     // SDL wrapper
     {
-        CMD("cl.exe", CFLAGS,
+        CMD(cc(), CFLAGS,
             "/I", PATH("vendor", "sdl2", "include"),
             "/I", PATH("src", "library"),
             PATH("wrappers", "bm_sdl.c"),
@@ -211,7 +219,7 @@ void wrappers_command(int argc, char **argv)
 
     // hello wrapper
     {
-        CMD("cl.exe", CFLAGS,
+        CMD(cc(), CFLAGS,
             "/I", PATH("src", "library"),
             PATH("wrappers", "bm_hello.c"),
             "/link",
@@ -340,11 +348,11 @@ void help_command(int argc, char **argv)
 void build_lib_object(const char *name)
 {
 #ifdef _WIN32
-    CMD("cl.exe", CFLAGS, "/c",
+    CMD(cc(), CFLAGS, "/c",
         PATH("src", "library", CONCAT(name, ".c")),
         "/Fo.\\build\\library\\");
 #else
-    CMD("cc", CFLAGS, "-c",
+    CMD(cc(), CFLAGS, "-c",
         PATH("src", "library", CONCAT(name, ".c")),
         "-o", PATH("build", "library", CONCAT(name, ".o")));
 #endif // _WIN32
