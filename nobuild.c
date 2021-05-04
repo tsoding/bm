@@ -295,7 +295,7 @@ void test_command(int argc, char **argv)
             }
         });
     } else {
-        assert(0 && "FIXME: implement some mechanism to test native executables");
+        assert(0 && "TODO: implement some mechanism to test native executables");
     }
 }
 
