@@ -306,7 +306,7 @@ const char *binding_status_as_cstr(Binding_Status status)
     }
 }
 
-void basm_translate_block(Basm *basm, Block_Statement *block)
+void basm_translate_block_statement(Basm *basm, Block_Statement *block)
 {
     // first pass begin
     {
@@ -322,25 +322,25 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             }
             break;
             case STATEMENT_KIND_CONST:
-                basm_translate_const(basm, statement.value.as_const, statement.location);
+                basm_translate_const_statement(basm, statement.value.as_const, statement.location);
                 break;
             case STATEMENT_KIND_NATIVE:
-                basm_translate_native(basm, statement.value.as_native, statement.location);
+                basm_translate_native_statement(basm, statement.value.as_native, statement.location);
                 break;
             case STATEMENT_KIND_INCLUDE:
-                basm_translate_include(basm, statement.value.as_include, statement.location);
+                basm_translate_include_statement(basm, statement.value.as_include, statement.location);
                 break;
             case STATEMENT_KIND_ASSERT:
-                basm_translate_assert(basm, statement.value.as_assert, statement.location);
+                basm_translate_assert_statement(basm, statement.value.as_assert, statement.location);
                 break;
             case STATEMENT_KIND_ERROR:
-                basm_translate_error(statement.value.as_error, statement.location);
+                basm_translate_error_statement(statement.value.as_error, statement.location);
                 break;
             case STATEMENT_KIND_ENTRY:
-                basm_translate_entry(basm, statement.value.as_entry, statement.location);
+                basm_translate_entry_statement(basm, statement.value.as_entry, statement.location);
                 break;
             case STATEMENT_KIND_BLOCK:
-                basm_translate_block(basm, statement.value.as_block);
+                basm_translate_block_statement(basm, statement.value.as_block);
                 break;
 
             case STATEMENT_KIND_MACRODEF:
@@ -370,7 +370,7 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             Statement statement = iter->statement;
             switch (statement.kind) {
             case STATEMENT_KIND_EMIT_INST: {
-                basm_translate_emit_inst(basm, statement.value.as_emit_inst, statement.location);
+                basm_translate_emit_inst_statement(basm, statement.value.as_emit_inst, statement.location);
             }
             break;
 
@@ -385,19 +385,19 @@ void basm_translate_block(Basm *basm, Block_Statement *block)
             break;
 
             case STATEMENT_KIND_IF: {
-                basm_translate_if(basm, statement.value.as_if, statement.location);
+                basm_translate_if_statement(basm, statement.value.as_if, statement.location);
             }
             break;
 
             case STATEMENT_KIND_SCOPE: {
                 basm_push_new_scope(basm);
-                basm_translate_block(basm, statement.value.as_scope);
+                basm_translate_block_statement(basm, statement.value.as_scope);
                 basm_pop_scope(basm);
             }
             break;
 
             case STATEMENT_KIND_FOR: {
-                basm_translate_for(basm, statement.value.as_for, statement.location);
+                basm_translate_for_statement(basm, statement.value.as_for, statement.location);
             }
             break;
 
@@ -551,7 +551,7 @@ void basm_eval_deferred_entry(Basm *basm)
     basm->scope = saved_basm_scope;
 }
 
-void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location)
+void basm_translate_emit_inst_statement(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location)
 {
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
     basm->program[basm->program_size].type = emit_inst.type;
@@ -563,7 +563,7 @@ void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Lo
     basm->program_size += 1;
 }
 
-void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location)
+void basm_translate_entry_statement(Basm *basm, Entry_Statement entry, File_Location location)
 {
     assert(basm->scope);
 
@@ -588,7 +588,7 @@ void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location locat
     basm->deferred_entry.scope = basm->scope;
 }
 
-void basm_translate_const(Basm *basm, Const_Statement konst, File_Location location)
+void basm_translate_const_statement(Basm *basm, Const_Statement konst, File_Location location)
 {
     basm_bind_expr(basm,
                    konst.name,
@@ -596,7 +596,7 @@ void basm_translate_const(Basm *basm, Const_Statement konst, File_Location locat
                    location);
 }
 
-void basm_translate_native(Basm *basm, Native_Statement native, File_Location location)
+void basm_translate_native_statement(Basm *basm, Native_Statement native, File_Location location)
 {
     if (native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
@@ -620,7 +620,7 @@ void basm_translate_native(Basm *basm, Native_Statement native, File_Location lo
     basm->external_natives_size += 1;
 }
 
-void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location)
+void basm_translate_assert_statement(Basm *basm, Assert_Statement azzert, File_Location location)
 {
     assert(basm->scope != NULL);
     basm->deferred_asserts[basm->deferred_asserts_size++] = (Deferred_Assert) {
@@ -630,14 +630,14 @@ void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location lo
     };
 }
 
-void basm_translate_error(Error_Statement error, File_Location location)
+void basm_translate_error_statement(Error_Statement error, File_Location location)
 {
     fprintf(stderr, FL_Fmt": ERROR: "SV_Fmt"\n",
             FL_Arg(location), SV_Arg(error.message));
     exit(1);
 }
 
-void basm_translate_include(Basm *basm, Include_Statement include, File_Location location)
+void basm_translate_include_statement(Basm *basm, Include_Statement include, File_Location location)
 {
     {
         String_View resolved_path = SV_NULL;
@@ -656,7 +656,7 @@ void basm_translate_include(Basm *basm, Include_Statement include, File_Location
     }
 }
 
-void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
+void basm_translate_for_statement(Basm *basm, For_Statement phor, File_Location location)
 {
     Word from = {0};
     {
@@ -701,12 +701,12 @@ void basm_translate_for(Basm *basm, For_Statement phor, File_Location location)
             ++var_value) {
         basm_push_new_scope(basm);
         basm_bind_value(basm, phor.var, word_i64(var_value), TYPE_UNSIGNED_INT, location);
-        basm_translate_block(basm, phor.body);
+        basm_translate_block_statement(basm, phor.body);
         basm_pop_scope(basm);
     }
 }
 
-void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
+void basm_translate_if_statement(Basm *basm, If_Statement eef, File_Location location)
 {
     Word condition = {0};
     {
@@ -730,11 +730,11 @@ void basm_translate_if(Basm *basm, If_Statement eef, File_Location location)
 
     if (condition.as_u64) {
         basm_push_new_scope(basm);
-        basm_translate_block(basm, eef.then);
+        basm_translate_block_statement(basm, eef.then);
         basm_pop_scope(basm);
     } else if (eef.elze) {
         basm_push_new_scope(basm);
-        basm_translate_block(basm, eef.elze);
+        basm_translate_block_statement(basm, eef.elze);
         basm_pop_scope(basm);
     }
 }
@@ -781,7 +781,7 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path)
 
     Block_Statement *input_file_block = parse_block_from_lines(&basm->arena, &linizer);
     expect_no_lines(&linizer);
-    basm_translate_block(basm, input_file_block);
+    basm_translate_block_statement(basm, input_file_block);
 }
 
 Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
@@ -1227,7 +1227,7 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
     Scope *saved_scope = basm->scope;
     basm->scope = macrodef->scope;
     basm_push_scope(basm, args_scope);
-    basm_translate_block(basm, macrodef->body);
+    basm_translate_block_statement(basm, macrodef->body);
     basm->scope = saved_scope;
 }
 

@@ -167,16 +167,16 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
 // Like `basm_translate_macrocall_statement` or `basm_translate_macrodef_statement`
 void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocall, File_Location location);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
-void basm_translate_block(Basm *basm, Block_Statement *block);
-void basm_translate_const(Basm *basm, Const_Statement konst, File_Location location);
-void basm_translate_native(Basm *basm, Native_Statement native, File_Location location);
-void basm_translate_if(Basm *basm, If_Statement eef, File_Location location);
-void basm_translate_include(Basm *basm, Include_Statement include, File_Location location);
-void basm_translate_assert(Basm *basm, Assert_Statement azzert, File_Location location);
-void basm_translate_error(Error_Statement error, File_Location location);
-void basm_translate_entry(Basm *basm, Entry_Statement entry, File_Location location);
-void basm_translate_emit_inst(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location);
-void basm_translate_for(Basm *basm, For_Statement phor, File_Location location);
+void basm_translate_block_statement(Basm *basm, Block_Statement *block);
+void basm_translate_const_statement(Basm *basm, Const_Statement konst, File_Location location);
+void basm_translate_native_statement(Basm *basm, Native_Statement native, File_Location location);
+void basm_translate_if_statement(Basm *basm, If_Statement eef, File_Location location);
+void basm_translate_include_statement(Basm *basm, Include_Statement include, File_Location location);
+void basm_translate_assert_statement(Basm *basm, Assert_Statement azzert, File_Location location);
+void basm_translate_error_statement(Error_Statement error, File_Location location);
+void basm_translate_entry_statement(Basm *basm, Entry_Statement entry, File_Location location);
+void basm_translate_emit_inst_statement(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location);
+void basm_translate_for_statement(Basm *basm, For_Statement phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
 
