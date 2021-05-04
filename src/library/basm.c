@@ -1905,7 +1905,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov al, BYTE [rsi]\n");
             fprintf(output, "    movsx rax, al\n");
             fprintf(output, "    mov [r11], rax\n");
-            jmp_count += 1;
         }
         break;
         case INST_READ8U: {
@@ -1929,7 +1928,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov ax, WORD [rsi]\n");
             fprintf(output, "    movsx rax, ax\n");
             fprintf(output, "    mov [r11], rax\n");
-            jmp_count += 1;
         }
         break;
         case INST_READ16U: {
@@ -1953,7 +1951,6 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov eax, DWORD [rsi]\n");
             fprintf(output, "    movsx rax, eax\n");
             fprintf(output, "    mov [r11], rax\n");
-            jmp_count += 1;
         }
         break;
         case INST_READ32U: {
