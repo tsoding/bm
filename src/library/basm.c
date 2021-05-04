@@ -1253,7 +1253,7 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
     fprintf(output, "segment .text\n");
     fprintf(output, "global _start\n");
 
-    size_t jmp_if_escape_count = 0;
+    size_t jmp_count = 0;
     for (size_t i = 0; i < basm->program_size; ++i) {
         Inst inst = basm->program[i];
 
@@ -1263,8 +1263,11 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
 
         fprintf(output, "inst_%zu:\n", i);
         switch (inst.type) {
-        case INST_NOP:
-            assert(false && "NOP is not implemented");
+        case INST_NOP: {
+            fprintf(output, "    ;; nop\n");
+            fprintf(output, "    nop\n");
+        }
+        break;
         case INST_PUSH: {
             fprintf(output, "    ;; push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rsi, [stack_top]\n");
@@ -1471,12 +1474,12 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    mov [stack_top], rsi\n");
             fprintf(output, "    cmp rax, 0\n");
-            fprintf(output, "    je jmp_if_escape_%zu\n", jmp_if_escape_count);
+            fprintf(output, "    je jmp_if_escape_%zu\n", jmp_count);
             fprintf(output, "    mov rdi, inst_map\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
-            fprintf(output, "jmp_if_escape_%zu:\n", jmp_if_escape_count);
-            jmp_if_escape_count += 1;
+            fprintf(output, "jmp_if_escape_%zu:\n", jmp_count);
+            jmp_count += 1;
         }
         break;
         case INST_RET: {
@@ -1707,38 +1710,182 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], rsi\n");
         }
         break;
-        case INST_EQF:
-            assert(false && "EQF is not implemented");
-        case INST_GEF:
-            assert(false && "GEF is not implemented");
-        case INST_GTF:
-            assert(false && "GTF is not implemented");
-        case INST_LEF:
-            assert(false && "LEF is not implemented");
-        case INST_LTF:
-            assert(false && "LTF is not implemented");
-        case INST_NEF:
-            assert(false && "NEF is not implemented");
-        case INST_ANDB:
-            assert(false && "ANDB is not implemented");
-        case INST_ORB:
-            assert(false && "ORB is not implemented");
-        case INST_XOR:
-            assert(false && "XOR is not implemented");
-        case INST_SHR:
-            assert(false && "SHR is not implemented");
-        case INST_SHL:
-            assert(false && "SHL is not implemented");
-        case INST_NOTB:
-            assert(false && "NOTB is not implemented");
-        case INST_READ8I:
-            assert(false && "READ8I is not implemented");
-        case INST_READ16I:
-            assert(false && "READ16I is not implemented");
-        case INST_READ32I:
-            assert(false && "READ32I is not implemented");
-        case INST_READ64I:
-            assert(false && "READ64I is not implemented");
+        case INST_EQF: {
+            fprintf(output, "    ;; eqf\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    ucomisd xmm0, xmm1\n");
+            fprintf(output, "    mov edx, 0\n");
+            fprintf(output, "    setnp al\n");
+            fprintf(output, "    cmovne eax, edx\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_GEF: {
+            fprintf(output, "    ;; gef\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    comisd xmm1, xmm0\n");
+            fprintf(output, "    setae al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_GTF: {
+            fprintf(output, "    ;; gtf\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    comisd xmm1, xmm0\n");
+            fprintf(output, "    seta al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LEF: {
+            fprintf(output, "    ;; lef\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    comisd xmm0, xmm1\n");
+            fprintf(output, "    setnb al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_LTF: {
+            fprintf(output, "    ;; ltf\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    comisd xmm0, xmm1\n");
+            fprintf(output, "    seta al\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NEF: {
+            fprintf(output, "    ;; ltf\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    ucomisd xmm1, xmm0\n");
+            fprintf(output, "    mov edx, 1\n");
+            fprintf(output, "    setp al\n");
+            fprintf(output, "    cmovne eax, edx\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_ANDB: {
+            fprintf(output, "    ;; andb\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    and rax, rbx\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_ORB: {
+            fprintf(output, "    ;; orb\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    or rax, rbx\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_XOR: {
+            fprintf(output, "    ;; xor\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    xor rax, rbx\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_SHR: {
+            fprintf(output, "    ;; shr\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rcx, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    shr rax, cl\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_SHL: {
+            fprintf(output, "    ;; shl\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rcx, [rsi]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    shl rax, cl\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_NOTB: {
+            fprintf(output, "    ;; notb\n");
+            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [rsi]\n");
+            fprintf(output, "    not rax\n");
+            fprintf(output, "    mov [rsi], rax\n");
+            fprintf(output, "    add rsi, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], rsi\n");
+        }
+        break;
+        case INST_READ8I: {
+            fprintf(output, "    ;; read8i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov al, BYTE [rsi]\n");
+            fprintf(output, "    movsx rax, al\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
         case INST_READ8U: {
             fprintf(output, "    ;; read8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -1750,12 +1897,64 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [r11], rax\n");
         }
         break;
-        case INST_READ16U:
-            assert(false && "READ16 is not implemented");
-        case INST_READ32U:
-            assert(false && "READ32 is not implemented");
-        case INST_READ64U:
-            assert(false && "READ64 is not implemented");
+        case INST_READ16I: {
+            fprintf(output, "    ;; read16i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov ax, WORD [rsi]\n");
+            fprintf(output, "    movsx rax, ax\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ16U: {
+            fprintf(output, "    ;; read16u\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov ax, WORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ32I: {
+            fprintf(output, "    ;; read32i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov eax, DWORD [rsi]\n");
+            fprintf(output, "    movsx rax, eax\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ32U: {
+            fprintf(output, "    ;; read32u\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov eax, DWORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
+        case INST_READ64I:
+        case INST_READ64U: {
+            fprintf(output, "    ;; read64\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    xor rax, rax\n");
+            fprintf(output, "    mov rax, QWORD [rsi]\n");
+            fprintf(output, "    mov [r11], rax\n");
+        }
+        break;
         case INST_WRITE8: {
             fprintf(output, "    ;; write8\n");
             fprintf(output, "    mov r11, [stack_top]\n");
@@ -1768,20 +1967,111 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], r11\n");
         }
         break;
-        case INST_WRITE16:
-            assert(false && "WRITE16 is not implemented");
-        case INST_WRITE32:
-            assert(false && "WRITE32 is not implemented");
-        case INST_WRITE64:
-            assert(false && "WRITE64 is not implemented");
-        case INST_I2F:
-            assert(false && "I2F is not implemented");
-        case INST_U2F:
-            assert(false && "U2F is not implemented");
-        case INST_F2I:
-            assert(false && "F2I is not implemented");
-        case INST_F2U:
-            assert(false && "F2U is not implemented");
+        case INST_WRITE16: {
+            fprintf(output, "    ;; write16\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov WORD [rsi], ax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_WRITE32: {
+            fprintf(output, "    ;; write32\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov DWORD [rsi], eax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_WRITE64: {
+            fprintf(output, "    ;; write64\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rax, [r11]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rsi, [r11]\n");
+            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    mov QWORD [rsi], rax\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_I2F: {
+            fprintf(output, "    ;; i2f\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rdi, [r11]\n");
+            fprintf(output, "    pxor xmm0, xmm1\n");
+            fprintf(output, "    cvtsi2sd xmm0, rdi\n");
+            fprintf(output, "    movsd [r11], xmm0\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        case INST_U2F: {
+            fprintf(output, "    ;; u2f\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov rdi, [r11]\n");
+            fprintf(output, "    test rdi, rdi\n");
+            fprintf(output, "    js .u2f_%zu\n", jmp_count);
+            fprintf(output, "    pxor xmm0, xmm0\n");
+            fprintf(output, "    cvtsi2sd xmm0, rdi\n");
+            fprintf(output, "    jmp .u2f_end_%zu\n", jmp_count);
+            fprintf(output, "    .u2f_%zu:\n", jmp_count);
+            fprintf(output, "    mov rax, rdi\n");
+            fprintf(output, "    and edi, 1\n");
+            fprintf(output, "    pxor xmm0, xmm0\n");
+            fprintf(output, "    shr rax, 1\n");
+            fprintf(output, "    or rax, rdi\n");
+            fprintf(output, "    cvtsi2sd xmm0, rax\n");
+            fprintf(output, "    addsd xmm0, xmm0\n");
+            fprintf(output, "    .u2f_end_%zu:\n", jmp_count);
+            fprintf(output, "    movsd [r11], xmm0\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+            jmp_count += 1;
+        }
+        break;
+        case INST_F2I: {
+            fprintf(output, "    ;; f2i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [r11]\n");
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    mov [r11], rax\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
+        // TODO(#349): try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
+        case INST_F2U: {
+            fprintf(output, "    ;; f2i\n");
+            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    sub r11, BM_WORD_SIZE\n");
+            fprintf(output, "    movsd xmm0, [r11]\n");
+            fprintf(output, "    movsd xmm1, [magic_number_for_f2u]\n");
+            fprintf(output, "    comisd xmm0, xmm1\n");
+            fprintf(output, "    jnb .f2u_%zu\n", jmp_count);
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    jmp .f2u_end_%zu\n", jmp_count);
+            fprintf(output, "    .f2u_%zu:\n", jmp_count);
+            fprintf(output, "    subsd xmm0, xmm1\n");
+            fprintf(output, "    cvttsd2si rax, xmm0\n");
+            fprintf(output, "    btc rax, 63\n");
+            fprintf(output, "    .f2u_end_%zu:\n", jmp_count);
+            fprintf(output, "    mov [r11], rax\n");
+            fprintf(output, "    add r11, BM_WORD_SIZE\n");
+            fprintf(output, "    mov [stack_top], r11\n");
+        }
+        break;
         case NUMBER_OF_INSTS:
         default:
             assert(false && "unknown instruction");
@@ -1790,6 +2080,7 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
 
     fprintf(output, "    ret\n");
     fprintf(output, "segment .data\n");
+    fprintf(output, "magic_number_for_f2u: dq 0x43E0000000000000\n");
     fprintf(output, "stack_top: dq stack\n");
     fprintf(output, "inst_map:\n");
 #define ROW_SIZE 5
