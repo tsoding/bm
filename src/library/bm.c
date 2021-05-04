@@ -2,7 +2,7 @@
 
 static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     [INST_NOP]     = {.type = INST_NOP,     .name = "nop",     .has_operand = false},
-    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_NUMBER },
+    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_ANY },
     [INST_DROP]    = {.type = INST_DROP,    .name = "drop",    .has_operand = false},
     [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_STACK_ADDR },
     [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_STACK_ADDR },
@@ -70,34 +70,6 @@ static_assert(
     NUMBER_OF_INSTS == 64,
     "You probably added or removed an instruction. "
     "Please update the definitions above accordingly");
-
-Word word_u64(uint64_t u64)
-{
-    return (Word) {
-        .as_u64 = u64
-    };
-}
-
-Word word_i64(int64_t i64)
-{
-    return (Word) {
-        .as_i64 = i64
-    };
-}
-
-Word word_f64(double f64)
-{
-    return (Word) {
-        .as_f64 = f64
-    };
-}
-
-Word word_ptr(void *ptr)
-{
-    return (Word) {
-        .as_ptr = ptr
-    };
-}
 
 bool inst_by_name(String_View name, Inst_Def *inst_def)
 {

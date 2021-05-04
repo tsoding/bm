@@ -40,17 +40,19 @@ typedef struct {
 } String_Length;
 
 typedef enum {
-    EVAL_STATUS_KIND_OK = 0,
-    EVAL_STATUS_KIND_DEFERRED
-} Eval_Status_Kind;
-
-typedef struct {
-    Eval_Status_Kind kind;
-    Binding *deferred_binding;
+    EVAL_STATUS_OK = 0,
+    EVAL_STATUS_DEFERRED
 } Eval_Status;
 
-Eval_Status eval_status_ok(void);
-Eval_Status eval_status_deferred(Binding *deferred_binding);
+typedef struct {
+    Eval_Status status;
+    Binding *deferred_binding;
+    Word value;
+    Type type;
+} Eval_Result;
+
+Eval_Result eval_result_ok(Word value, Type type);
+Eval_Result eval_result_deferred(Binding *deferred_binding);
 
 typedef struct Scope Scope;
 
@@ -134,7 +136,7 @@ void scope_add_macrodef(Scope *scope, Macrodef macrodef);
 Binding *scope_resolve_binding(Scope *scope, String_View name);
 void scope_bind_value(Scope *scope, String_View name, Word value, Type type, File_Location location);
 void scope_defer_binding(Scope *scope, String_View name, Type type, File_Location location);
-void scope_bind_expr(Scope *scope, String_View name, Expr expr, Type type, File_Location location);
+void scope_bind_expr(Scope *scope, String_View name, Expr expr, File_Location location);
 
 void basm_push_scope(Basm *basm, Scope *scope);
 void basm_push_new_scope(Basm *basm);
@@ -145,7 +147,7 @@ void basm_eval_deferred_operands(Basm *basm);
 void basm_eval_deferred_entry(Basm *basm);
 Binding *basm_resolve_binding(Basm *basm, String_View name);
 void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location location);
-void basm_bind_expr(Basm *basm, String_View name, Expr expr, Type type, File_Location location);
+void basm_bind_expr(Basm *basm, String_View name, Expr expr, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
@@ -154,8 +156,8 @@ Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 Word basm_push_buffer_to_memory(Basm *basm, uint8_t *buffer, uint64_t buffer_size);
 bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length);
-Eval_Status basm_expr_eval(Basm *basm, Expr expr, File_Location location, Word *output);
-Eval_Status basm_binding_eval(Basm *basm, Binding *binding, Word *output);
+Eval_Result basm_expr_eval(Basm *basm, Expr expr, File_Location location);
+Eval_Result basm_binding_eval(Basm *basm, Binding *binding);
 void basm_push_include_path(Basm *basm, String_View path);
 bool basm_resolve_include_file_path(Basm *basm,
                                     String_View file_path,
