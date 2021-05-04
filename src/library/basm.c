@@ -2072,7 +2072,7 @@ void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
             fprintf(output, "    mov [stack_top], r11\n");
         }
         break;
-        // TODO: try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
+        // TODO(#349): try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
         case INST_F2U: {
             fprintf(output, "    ;; f2i\n");
             fprintf(output, "    mov r11, [stack_top]\n");
