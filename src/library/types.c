@@ -17,6 +17,8 @@ bool type_by_name(String_View name, Type *output_type)
     return false;
 }
 
+// TODO(#347): there is no character type
+
 const char *type_name(Type type)
 {
     switch (type) {

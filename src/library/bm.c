@@ -4,8 +4,10 @@ static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     [INST_NOP]     = {.type = INST_NOP,     .name = "nop",     .has_operand = false},
     [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_ANY },
     [INST_DROP]    = {.type = INST_DROP,    .name = "drop",    .has_operand = false},
-    [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_STACK_ADDR },
-    [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_STACK_ADDR },
+    // TODO(#346): `dup` and `swap` should accept operands of type TYPE_STACK_ADDR
+    // But it's difficult to enforce right now because of the legacy code base and other semantic problems with the language
+    [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_UNSIGNED_INT },
+    [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_UNSIGNED_INT },
     [INST_PLUSI]   = {.type = INST_PLUSI,   .name = "plusi",   .has_operand = false},
     [INST_MINUSI]  = {.type = INST_MINUSI,  .name = "minusi",  .has_operand = false},
     [INST_MULTI]   = {.type = INST_MULTI,   .name = "multi",   .has_operand = false},

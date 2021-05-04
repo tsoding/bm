@@ -453,9 +453,8 @@ void basm_eval_deferred_asserts(Basm *basm)
 
 void basm_eval_deferred_operands(Basm *basm)
 {
-    // TODO(#340): type check deferred operand based on the expected types of the instruction
-
     Scope *saved_basm_scope = basm->scope;
+
     for (size_t i = 0; i < basm->deferred_operands_size; ++i) {
         assert(basm->deferred_operands[i].scope);
         basm->scope = basm->deferred_operands[i].scope;
@@ -464,41 +463,21 @@ void basm_eval_deferred_operands(Basm *basm)
         Expr expr = basm->deferred_operands[i].expr;
         File_Location location = basm->deferred_operands[i].location;
 
-        if (expr.kind == EXPR_KIND_BINDING) {
-            String_View name = expr.value.as_binding;
-
-            Binding *binding = basm_resolve_binding(basm, name);
-            if (binding == NULL) {
-                fprintf(stderr, FL_Fmt": ERROR: unknown binding `"SV_Fmt"`\n",
-                        FL_Arg(basm->deferred_operands[i].location),
-                        SV_Arg(name));
-                exit(1);
-            }
-
-            if (basm->program[addr].type == INST_CALL && binding->type != TYPE_INST_ADDR) {
-                fprintf(stderr, FL_Fmt": ERROR: type check error. `call` instruction expects an operand of the type %s. But the value of type %s was found.\n",
-                        FL_Arg(basm->deferred_operands[i].location),
-                        type_name(TYPE_INST_ADDR),
-                        type_name(binding->type));
-                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only `call` the labels. Since the labels are the only way to create bindings with Inst_Addr type right now.\n",
-                        FL_Arg(basm->deferred_operands[i].location));
-                exit(1);
-            }
-
-            if (basm->program[addr].type == INST_NATIVE && binding->type != TYPE_NATIVE_ID) {
-                fprintf(stderr, FL_Fmt": ERROR: type check error. `native` instruction expects an operand of the type %s. But the value of type %s was found.",
-                        FL_Arg(basm->deferred_operands[i].location),
-                        type_name(TYPE_NATIVE_ID),
-                        type_name(binding->type));
-                fprintf(stderr, FL_Fmt": NOTE: this just means that you can only use `native` instruction on the bindings that are defined with `%%native` directive.",
-                        FL_Arg(basm->deferred_operands[i].location));
-                exit(1);
-            }
-        }
-
         Eval_Result result = basm_expr_eval(basm, expr, location);
         assert(result.status == EVAL_STATUS_OK);
         basm->program[addr].operand = result.value;
+
+        Inst_Def inst_def = get_inst_def(basm->program[addr].type);
+        assert(inst_def.has_operand);
+
+        if (!is_subtype_of(result.type, inst_def.operand_type)) {
+            fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! `%s` instruction expects an operand of the type `%s`. But the value of type `%s` was found.\n",
+                    FL_Arg(basm->deferred_operands[i].location),
+                    inst_def.name,
+                    type_name(inst_def.operand_type),
+                    type_name(result.type));
+            exit(1);
+        }
     }
 
     basm->scope = saved_basm_scope;
