@@ -470,7 +470,7 @@ void basm_eval_deferred_operands(Basm *basm)
         Inst_Def inst_def = get_inst_def(basm->program[addr].type);
         assert(inst_def.has_operand);
 
-        if (inst_def.operand_type != result.type) {
+        if (!is_subtype_of(result.type, inst_def.operand_type)) {
             fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! `%s` instruction expects an operand of the type `%s`. But the value of type `%s` was found.\n",
                     FL_Arg(basm->deferred_operands[i].location),
                     inst_def.name,
