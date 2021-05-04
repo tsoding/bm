@@ -464,6 +464,10 @@ void basm_eval_deferred_operands(Basm *basm)
         Expr expr = basm->deferred_operands[i].expr;
         File_Location location = basm->deferred_operands[i].location;
 
+        Eval_Result result = basm_expr_eval(basm, expr, location);
+        assert(result.status == EVAL_STATUS_OK);
+        basm->program[addr].operand = result.value;
+
         if (expr.kind == EXPR_KIND_BINDING) {
             String_View name = expr.value.as_binding;
 
@@ -474,6 +478,8 @@ void basm_eval_deferred_operands(Basm *basm)
                         SV_Arg(name));
                 exit(1);
             }
+
+            assert(binding->status == BINDING_EVALUATED);
 
             if (basm->program[addr].type == INST_CALL && binding->type != TYPE_INST_ADDR) {
                 fprintf(stderr, FL_Fmt": ERROR: type check error. `call` instruction expects an operand of the type %s. But the value of type %s was found.\n",
@@ -495,10 +501,6 @@ void basm_eval_deferred_operands(Basm *basm)
                 exit(1);
             }
         }
-
-        Eval_Result result = basm_expr_eval(basm, expr, location);
-        assert(result.status == EVAL_STATUS_OK);
-        basm->program[addr].operand = result.value;
     }
 
     basm->scope = saved_basm_scope;
