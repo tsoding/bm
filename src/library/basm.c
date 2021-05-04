@@ -803,86 +803,90 @@ Eval_Result basm_binding_eval(Basm *basm, Binding *binding)
 
 static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Location location)
 {
-    // TODO(#341): compile-time binary operations can only work with integers
-
     Eval_Result left_result = basm_expr_eval(basm, binary_op->left, location);
     if (left_result.status == EVAL_STATUS_DEFERRED) {
         return left_result;
-    }
-    if (left_result.type != TYPE_UNSIGNED_INT) {
-        fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Left operand but got %s\n",
-                FL_Arg(location),
-                type_name(TYPE_UNSIGNED_INT),
-                type_name(left_result.type));
-        exit(1);
     }
 
     Eval_Result right_result = basm_expr_eval(basm, binary_op->right, location);
     if (right_result.status == EVAL_STATUS_DEFERRED) {
         return right_result;
     }
-    if (right_result.type != TYPE_UNSIGNED_INT) {
-        fprintf(stderr, FL_Fmt": ERROR: Type Check Error! Expected type %s on the Right operand but got %s\n",
+
+    if (is_subtype_of(left_result.type, right_result.type)) {
+        left_result.type = right_result.type;
+    }
+
+    if (is_subtype_of(right_result.type, left_result.type)) {
+        right_result.type = left_result.type;
+    }
+
+    if (left_result.type != right_result.type) {
+        fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! left operand has type `%s` but the right operand has the type `%s`.\n",
                 FL_Arg(location),
-                type_name(TYPE_UNSIGNED_INT),
+                type_name(left_result.type),
                 type_name(right_result.type));
         exit(1);
     }
 
+    assert(left_result.type == right_result.type);
+    const Type type = left_result.type;
+    const Type_Repr repr = type_repr_of(type);
+
     switch (binary_op->kind) {
     case BINARY_OP_PLUS: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 + right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_plus_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_MINUS: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 - right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_minus_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_MULT: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 * right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_mult_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_DIV: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 / right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_div_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_GT: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 > right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_gt_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_LT: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 < right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_lt_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_EQUALS: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 == right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_eq_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
     case BINARY_OP_MOD: {
         return eval_result_ok(
-                   word_u64(left_result.value.as_u64 % right_result.value.as_u64),
-                   TYPE_UNSIGNED_INT);
+                   word_mod_repr(left_result.value, right_result.value, repr),
+                   type);
     }
     break;
 
