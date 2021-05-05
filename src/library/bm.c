@@ -12,7 +12,7 @@ static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
                       .operand_type = TYPE_UNSIGNED_INT },
     [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true,
                       .operand_type = TYPE_UNSIGNED_INT },
-    // TODO: PLUSI and MINUSI both accept Signed and Unsigned Ints but our type system is incapable of handling that right now
+    // TODO(#355): PLUSI and MINUSI both accept Signed and Unsigned Ints but our type system is incapable of handling that right now
     [INST_PLUSI]   = {.type = INST_PLUSI,   .name = "plusi",   .has_operand = false,
                       .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
                       .output = TYPE_LIST(TYPE_UNSIGNED_INT)},
