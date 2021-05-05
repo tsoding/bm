@@ -2142,7 +2142,7 @@ bool type_stack_pop(Type_Stack *type_stack, Type *output)
     return false;
 }
 
-// TODO: unreachable code elimination
+// TODO(#357): unreachable code elimination
 
 void basm_verify_program(Basm *basm)
 {
