@@ -2167,7 +2167,7 @@ void basm_verify_program(Basm *basm)
         break;
 
         case INST_PUSH: {
-            // TODO: customizable stack size that is communicated between bme and basm somehow
+            // TODO(#358): customizable stack size that is communicated between bme and basm somehow
             if (!type_stack_push(&stack, basm->program_operand_types[ip])) {
                 fprintf(stderr, FL_Fmt": ERROR: stack overflow\n",
                         FL_Arg(basm->program_locations[ip]));
