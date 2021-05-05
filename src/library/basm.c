@@ -690,27 +690,31 @@ void basm_translate_for_statement(Basm *basm, For_Statement phor, File_Location 
 
 void basm_translate_if_statement(Basm *basm, If_Statement eef, File_Location location)
 {
-    Word condition = {0};
-    {
-        Eval_Result result = basm_expr_eval(basm, eef.condition, location);
-        if (result.status == EVAL_STATUS_DEFERRED) {
-            // TODO(#248): there are no CI tests for compiler errors
-            assert(result.deferred_binding);
-            assert(result.deferred_binding->status == BINDING_DEFERRED);
+    Eval_Result result = basm_expr_eval(basm, eef.condition, location);
+    if (result.status == EVAL_STATUS_DEFERRED) {
+        // TODO(#248): there are no CI tests for compiler errors
+        assert(result.deferred_binding);
+        assert(result.deferred_binding->status == BINDING_DEFERRED);
 
-            fprintf(stderr, FL_Fmt": ERROR: the %%if block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%if block itself.\n",
-                    FL_Arg(location),
-                    SV_Arg(result.deferred_binding->name));
-            fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%if block defined above it.\n",
-                    FL_Arg(result.deferred_binding->location),
-                    SV_Arg(result.deferred_binding->name));
-            fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%if block that depends on it.\n");
-            exit(1);
-        }
-        condition = result.value;
+        fprintf(stderr, FL_Fmt": ERROR: the %%if block depends on the ambiguous value of a label `"SV_Fmt"` which could be offset by the %%if block itself.\n",
+                FL_Arg(location),
+                SV_Arg(result.deferred_binding->name));
+        fprintf(stderr, FL_Fmt": ERROR: the value of label `"SV_Fmt"` is ambiguous, because of the %%if block defined above it.\n",
+                FL_Arg(result.deferred_binding->location),
+                SV_Arg(result.deferred_binding->name));
+        fprintf(stderr, "\n    NOTE: To resolve this circular dependency try to define the label before the %%if block that depends on it.\n");
+        exit(1);
     }
 
-    if (condition.as_u64) {
+    if (result.type != TYPE_BOOL) {
+        fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! Expected type `%s`, but got `%s`\n",
+                FL_Arg(location),
+                type_name(TYPE_BOOL),
+                type_name(result.type));
+        exit(1);
+    }
+
+    if (result.value.as_u64) {
         basm_push_new_scope(basm);
         basm_translate_block_statement(basm, eef.then);
         basm_pop_scope(basm);
