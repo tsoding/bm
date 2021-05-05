@@ -2312,7 +2312,7 @@ void basm_verify_program(Basm *basm)
         case INST_JMP_IF:
         case INST_RET:
         case INST_CALL:
-            // TODO: verification for control-flow instructions is not implemented
+            // TODO(#360): verification for control-flow instructions is not implemented
         case INST_NATIVE:
             // TODO: verification for native calls is not implemented
             fprintf(stderr, FL_Fmt": ERROR: verification for instruction `%s` is not implemented yet\n", FL_Arg(basm->program_locations[ip]), def.name);
