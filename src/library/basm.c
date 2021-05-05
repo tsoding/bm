@@ -868,21 +868,21 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     case BINARY_OP_GT: {
         return eval_result_ok(
                    word_gt_repr(left_result.value, right_result.value, repr),
-                   type);
+                   TYPE_BOOL);
     }
     break;
 
     case BINARY_OP_LT: {
         return eval_result_ok(
                    word_lt_repr(left_result.value, right_result.value, repr),
-                   type);
+                   TYPE_BOOL);
     }
     break;
 
     case BINARY_OP_EQUALS: {
         return eval_result_ok(
                    word_eq_repr(left_result.value, right_result.value, repr),
-                   type);
+                   TYPE_BOOL);
     }
     break;
 
