@@ -107,98 +107,98 @@ static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     // The comparison operations should return them instead of Unsigned_Int-s
     [INST_NOT]     = {
         .type = INST_NOT,     .name = "not",     .has_operand = false,
-        .input = TYPE_LIST(TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .input = TYPE_LIST(TYPE_BOOL),
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_EQI]     = {
         .type = INST_EQI,     .name = "eqi",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GEI]     = {
         .type = INST_GEI,     .name = "gei",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GTI]     = {
         .type = INST_GTI,     .name = "gti",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LEI]     = {
         .type = INST_LEI,     .name = "lei",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LTI]     = {
         .type = INST_LTI,     .name = "lti",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_NEI]     = {
         .type = INST_NEI,     .name = "nei",     .has_operand = false,
         .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_EQU]     = {
         .type = INST_EQU,     .name = "equ",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GEU]     = {
         .type = INST_GEU,     .name = "geu",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GTU]     = {
         .type = INST_GTU,     .name = "gtu",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LEU]     = {
         .type = INST_LEU,     .name = "leu",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LTU]     = {
         .type = INST_LTU,     .name = "ltu",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_NEU]     = {
         .type = INST_NEU,     .name = "neu",     .has_operand = false,
         .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_EQF]     = {
         .type = INST_EQF,     .name = "eqf",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GEF]     = {
         .type = INST_GEF,     .name = "gef",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_GTF]     = {
         .type = INST_GTF,     .name = "gtf",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LEF]     = {
         .type = INST_LEF,     .name = "lef",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_LTF]     = {
         .type = INST_LTF,     .name = "ltf",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_NEF]     = {
         .type = INST_NEF,     .name = "nef",     .has_operand = false,
         .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
-        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+        .output = TYPE_LIST(TYPE_BOOL)
     },
     [INST_ANDB]    = {
         .type = INST_ANDB,    .name = "andb",    .has_operand = false,
