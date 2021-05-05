@@ -39,6 +39,8 @@ const char *type_name(Type type)
         return "Stack_Addr";
     case TYPE_NATIVE_ID:
         return "Native_ID";
+    case TYPE_BOOL:
+        return "Bool";
     case COUNT_TYPES:
     default: {
         assert(false && "type_name: unreachable");
@@ -74,6 +76,8 @@ Type supertype_of(Type subtype)
         return TYPE_UNSIGNED_INT;
     case TYPE_NATIVE_ID:
         return TYPE_UNSIGNED_INT;
+    case TYPE_BOOL:
+        return TYPE_UNSIGNED_INT;
     case COUNT_TYPES:
     default: {
         assert(false && "type_name: unreachable");
@@ -108,6 +112,7 @@ Type_Repr type_repr_of(Type type)
     case TYPE_INST_ADDR:
     case TYPE_STACK_ADDR:
     case TYPE_NATIVE_ID:
+    case TYPE_BOOL:
         return TYPE_REPR_U64;
     case COUNT_TYPES:
     default: {
