@@ -41,6 +41,7 @@ typedef enum {
     TYPE_INST_ADDR,
     TYPE_STACK_ADDR,
     TYPE_NATIVE_ID,
+    TYPE_BOOL,
     COUNT_TYPES
 } Type;
 
