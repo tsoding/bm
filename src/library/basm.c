@@ -2286,7 +2286,7 @@ void basm_verify_program(Basm *basm)
 
                 Type expected_type = def.input.types[i - 1];
                 if (actual_type != expected_type) {
-                    // TODO: type check error in the basm_verify_program() should report the argument number as well
+                    // TODO(#359): type check error in the basm_verify_program() should report the argument number as well
                     fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! Instruction `%s` expected `%s`, but found `%s`\n",
                             FL_Arg(basm->program_locations[ip]),
                             def.name,
