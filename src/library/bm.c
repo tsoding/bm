@@ -61,7 +61,7 @@ static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     [INST_NATIVE]  = {.type = INST_NATIVE,  .name = "native",  .has_operand = true,
                       .operand_type = TYPE_NATIVE_ID },
     [INST_HALT]    = {.type = INST_HALT,    .name = "halt",    .has_operand = false},
-    // TODO: introduce booleans to the type system
+    // TODO(#356): introduce booleans to the type system
     // The comparison operations should return them instead of Unsigned_Int-s
     [INST_NOT]     = {.type = INST_NOT,     .name = "not",     .has_operand = false,
                       .input = TYPE_LIST(TYPE_UNSIGNED_INT),
