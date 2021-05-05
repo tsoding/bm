@@ -126,11 +126,21 @@ typedef enum {
     NUMBER_OF_INSTS,
 } Inst_Type;
 
+#define TYPE_LIST_CAPACITY 2
+typedef struct {
+    Type types[TYPE_LIST_CAPACITY];
+    size_t size;
+} Type_List;
+
+#define TYPE_LIST(...) {.types = {__VA_ARGS__}, .size = sizeof((Type[]){__VA_ARGS__}) / sizeof(Type)}
+
 typedef struct {
     Inst_Type type;
     const char *name;
     bool has_operand;
     Type operand_type;
+    Type_List input;
+    Type_List output;
 } Inst_Def;
 
 Inst_Def get_inst_def(Inst_Type type);
@@ -138,6 +148,7 @@ bool inst_by_name(String_View name, Inst_Def *inst_def);
 
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
+typedef uint64_t Stack_Addr;
 
 static_assert(sizeof(Word) == BM_WORD_SIZE,
               "The BM's Word is expected to be 64 bits");

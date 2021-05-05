@@ -55,6 +55,7 @@ static void usage(FILE *stream, const char *program)
     fprintf(stream, "    -I <include/path/>    Add include path\n");
     fprintf(stream, "    -o <output.bm>        Provide output path\n");
     fprintf(stream, "    -f <bm|nasm>          Output format. Default is bm\n");
+    fprintf(stream, "    -verify               Verify the bytecode instructions after the translation\n");
     fprintf(stream, "    -h                    Print this help to stdout\n");
 }
 
@@ -80,6 +81,7 @@ int main(int argc, char **argv)
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
     Basm_Output_Format output_format = BASM_OUTPUT_BM;
+    bool verify = false;
 
     while (argc > 0) {
         const char *flag = shift(&argc, &argv);
@@ -98,6 +100,8 @@ int main(int argc, char **argv)
                 fprintf(stderr, "ERROR: unknown output format `%s`\n", name);
                 exit(1);
             }
+        } else if (strcmp(flag, "-verify") == 0) {
+            verify = true;
         } else {
             if (input_file_path != NULL) {
                 usage(stderr, program);
@@ -124,6 +128,10 @@ int main(int argc, char **argv)
     }
 
     basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
+
+    if (verify) {
+        basm_verify_program(&basm);
+    }
 
     switch (output_format) {
     case BASM_OUTPUT_BM: {

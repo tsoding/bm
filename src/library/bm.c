@@ -2,71 +2,310 @@
 
 static Inst_Def inst_defs[NUMBER_OF_INSTS] = {
     [INST_NOP]     = {.type = INST_NOP,     .name = "nop",     .has_operand = false},
-    [INST_PUSH]    = {.type = INST_PUSH,    .name = "push",    .has_operand = true, .operand_type = TYPE_ANY },
-    [INST_DROP]    = {.type = INST_DROP,    .name = "drop",    .has_operand = false},
+    [INST_PUSH]    = {
+        .type = INST_PUSH,    .name = "push",    .has_operand = true,
+        .operand_type = TYPE_ANY
+    },
+    [INST_DROP]    = {
+        .type = INST_DROP,    .name = "drop",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_ANY)
+    },
     // TODO(#346): `dup` and `swap` should accept operands of type TYPE_STACK_ADDR
     // But it's difficult to enforce right now because of the legacy code base and other semantic problems with the language
-    [INST_DUP]     = {.type = INST_DUP,     .name = "dup",     .has_operand = true, .operand_type = TYPE_UNSIGNED_INT },
-    [INST_SWAP]    = {.type = INST_SWAP,    .name = "swap",    .has_operand = true, .operand_type = TYPE_UNSIGNED_INT },
-    [INST_PLUSI]   = {.type = INST_PLUSI,   .name = "plusi",   .has_operand = false},
-    [INST_MINUSI]  = {.type = INST_MINUSI,  .name = "minusi",  .has_operand = false},
-    [INST_MULTI]   = {.type = INST_MULTI,   .name = "multi",   .has_operand = false},
-    [INST_DIVI]    = {.type = INST_DIVI,    .name = "divi",    .has_operand = false},
-    [INST_MODI]    = {.type = INST_MODI,    .name = "modi",    .has_operand = false},
-    [INST_MULTU]   = {.type = INST_MULTU,   .name = "multu",   .has_operand = false},
-    [INST_DIVU]    = {.type = INST_DIVU,    .name = "divu",    .has_operand = false},
-    [INST_MODU]    = {.type = INST_MODU,    .name = "modu",    .has_operand = false},
-    [INST_PLUSF]   = {.type = INST_PLUSF,   .name = "plusf",   .has_operand = false},
-    [INST_MINUSF]  = {.type = INST_MINUSF,  .name = "minusf",  .has_operand = false},
-    [INST_MULTF]   = {.type = INST_MULTF,   .name = "multf",   .has_operand = false},
-    [INST_DIVF]    = {.type = INST_DIVF,    .name = "divf",    .has_operand = false},
-    [INST_JMP]     = {.type = INST_JMP,     .name = "jmp",     .has_operand = true, .operand_type = TYPE_INST_ADDR },
-    [INST_JMP_IF]  = {.type = INST_JMP_IF,  .name = "jmp_if",  .has_operand = true, .operand_type = TYPE_INST_ADDR },
-    [INST_RET]     = {.type = INST_RET,     .name = "ret",     .has_operand = false},
-    [INST_CALL]    = {.type = INST_CALL,    .name = "call",    .has_operand = true, .operand_type = TYPE_INST_ADDR },
-    [INST_NATIVE]  = {.type = INST_NATIVE,  .name = "native",  .has_operand = true, .operand_type = TYPE_NATIVE_ID },
+    [INST_DUP]     = {
+        .type = INST_DUP,     .name = "dup",     .has_operand = true,
+        .operand_type = TYPE_UNSIGNED_INT
+    },
+    [INST_SWAP]    = {
+        .type = INST_SWAP,    .name = "swap",    .has_operand = true,
+        .operand_type = TYPE_UNSIGNED_INT
+    },
+    // TODO(#355): PLUSI and MINUSI both accept Signed and Unsigned Ints but our type system is incapable of handling that right now
+    [INST_PLUSI]   = {
+        .type = INST_PLUSI,   .name = "plusi",   .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_MINUSI]  = {
+        .type = INST_MINUSI,  .name = "minusi",  .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_MULTI]   = {
+        .type = INST_MULTI,   .name = "multi",   .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_DIVI]    = {
+        .type = INST_DIVI,    .name = "divi",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_MODI]    = {
+        .type = INST_MODI,    .name = "modi",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_MULTU]   = {
+        .type = INST_MULTU,   .name = "multu",   .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_DIVU]    = {
+        .type = INST_DIVU,    .name = "divu",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_MODU]    = {
+        .type = INST_MODU,    .name = "modu",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_PLUSF]   = {
+        .type = INST_PLUSF,   .name = "plusf",   .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_MINUSF]  = {
+        .type = INST_MINUSF,  .name = "minusf",  .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_MULTF]   = {
+        .type = INST_MULTF,   .name = "multf",   .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_DIVF]    = {
+        .type = INST_DIVF,    .name = "divf",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_JMP]     = {
+        .type = INST_JMP,     .name = "jmp",     .has_operand = true,
+        .operand_type = TYPE_INST_ADDR
+    },
+    [INST_JMP_IF]  = {
+        .type = INST_JMP_IF,  .name = "jmp_if",  .has_operand = true,
+        .operand_type = TYPE_INST_ADDR
+    },
+    [INST_RET]     = {
+        .type = INST_RET,     .name = "ret",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_INST_ADDR)
+    },
+    [INST_CALL]    = {
+        .type = INST_CALL,    .name = "call",    .has_operand = true,
+        .operand_type = TYPE_INST_ADDR,
+        .output = TYPE_LIST(TYPE_INST_ADDR)
+    },
+    [INST_NATIVE]  = {
+        .type = INST_NATIVE,  .name = "native",  .has_operand = true,
+        .operand_type = TYPE_NATIVE_ID
+    },
     [INST_HALT]    = {.type = INST_HALT,    .name = "halt",    .has_operand = false},
-    [INST_NOT]     = {.type = INST_NOT,     .name = "not",     .has_operand = false},
-    [INST_EQI]     = {.type = INST_EQI,     .name = "eqi",     .has_operand = false},
-    [INST_GEI]     = {.type = INST_GEI,     .name = "gei",     .has_operand = false},
-    [INST_GTI]     = {.type = INST_GTI,     .name = "gti",     .has_operand = false},
-    [INST_LEI]     = {.type = INST_LEI,     .name = "lei",     .has_operand = false},
-    [INST_LTI]     = {.type = INST_LTI,     .name = "lti",     .has_operand = false},
-    [INST_NEI]     = {.type = INST_NEI,     .name = "nei",     .has_operand = false},
-    [INST_EQU]     = {.type = INST_EQU,     .name = "equ",     .has_operand = false},
-    [INST_GEU]     = {.type = INST_GEU,     .name = "geu",     .has_operand = false},
-    [INST_GTU]     = {.type = INST_GTU,     .name = "gtu",     .has_operand = false},
-    [INST_LEU]     = {.type = INST_LEU,     .name = "leu",     .has_operand = false},
-    [INST_LTU]     = {.type = INST_LTU,     .name = "ltu",     .has_operand = false},
-    [INST_NEU]     = {.type = INST_NEU,     .name = "neu",     .has_operand = false},
-    [INST_EQF]     = {.type = INST_EQF,     .name = "eqf",     .has_operand = false},
-    [INST_GEF]     = {.type = INST_GEF,     .name = "gef",     .has_operand = false},
-    [INST_GTF]     = {.type = INST_GTF,     .name = "gtf",     .has_operand = false},
-    [INST_LEF]     = {.type = INST_LEF,     .name = "lef",     .has_operand = false},
-    [INST_LTF]     = {.type = INST_LTF,     .name = "ltf",     .has_operand = false},
-    [INST_NEF]     = {.type = INST_NEF,     .name = "nef",     .has_operand = false},
-    [INST_ANDB]    = {.type = INST_ANDB,    .name = "andb",    .has_operand = false},
-    [INST_ORB]     = {.type = INST_ORB,     .name = "orb",     .has_operand = false},
-    [INST_XOR]     = {.type = INST_XOR,     .name = "xor",     .has_operand = false},
-    [INST_SHR]     = {.type = INST_SHR,     .name = "shr",     .has_operand = false},
-    [INST_SHL]     = {.type = INST_SHL,     .name = "shl",     .has_operand = false},
-    [INST_NOTB]    = {.type = INST_NOTB,    .name = "notb",    .has_operand = false},
-    [INST_READ8U]  = {.type = INST_READ8U,  .name = "read8u",  .has_operand = false},
-    [INST_READ16U] = {.type = INST_READ16U, .name = "read16u", .has_operand = false},
-    [INST_READ32U] = {.type = INST_READ32U, .name = "read32u", .has_operand = false},
-    [INST_READ64U] = {.type = INST_READ64U, .name = "read64u", .has_operand = false},
-    [INST_READ8I]  = {.type = INST_READ8I,  .name = "read8i",  .has_operand = false},
-    [INST_READ16I] = {.type = INST_READ16I, .name = "read16i", .has_operand = false},
-    [INST_READ32I] = {.type = INST_READ32I, .name = "read32i", .has_operand = false},
-    [INST_READ64I] = {.type = INST_READ64I, .name = "read64i", .has_operand = false},
-    [INST_WRITE8]  = {.type = INST_WRITE8,  .name = "write8",  .has_operand = false},
-    [INST_WRITE16] = {.type = INST_WRITE16, .name = "write16", .has_operand = false},
-    [INST_WRITE32] = {.type = INST_WRITE32, .name = "write32", .has_operand = false},
-    [INST_WRITE64] = {.type = INST_WRITE64, .name = "write64", .has_operand = false},
-    [INST_I2F]     = {.type = INST_I2F,     .name = "i2f",     .has_operand = false},
-    [INST_U2F]     = {.type = INST_U2F,     .name = "u2f",     .has_operand = false},
-    [INST_F2I]     = {.type = INST_F2I,     .name = "f2i",     .has_operand = false},
-    [INST_F2U]     = {.type = INST_F2U,     .name = "f2u",     .has_operand = false},
+    // TODO(#356): introduce booleans to the type system
+    // The comparison operations should return them instead of Unsigned_Int-s
+    [INST_NOT]     = {
+        .type = INST_NOT,     .name = "not",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_EQI]     = {
+        .type = INST_EQI,     .name = "eqi",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GEI]     = {
+        .type = INST_GEI,     .name = "gei",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GTI]     = {
+        .type = INST_GTI,     .name = "gti",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LEI]     = {
+        .type = INST_LEI,     .name = "lei",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LTI]     = {
+        .type = INST_LTI,     .name = "lti",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_NEI]     = {
+        .type = INST_NEI,     .name = "nei",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT, TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_EQU]     = {
+        .type = INST_EQU,     .name = "equ",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GEU]     = {
+        .type = INST_GEU,     .name = "geu",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GTU]     = {
+        .type = INST_GTU,     .name = "gtu",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LEU]     = {
+        .type = INST_LEU,     .name = "leu",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LTU]     = {
+        .type = INST_LTU,     .name = "ltu",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_NEU]     = {
+        .type = INST_NEU,     .name = "neu",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_EQF]     = {
+        .type = INST_EQF,     .name = "eqf",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GEF]     = {
+        .type = INST_GEF,     .name = "gef",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_GTF]     = {
+        .type = INST_GTF,     .name = "gtf",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LEF]     = {
+        .type = INST_LEF,     .name = "lef",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_LTF]     = {
+        .type = INST_LTF,     .name = "ltf",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_NEF]     = {
+        .type = INST_NEF,     .name = "nef",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT, TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_ANDB]    = {
+        .type = INST_ANDB,    .name = "andb",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_ORB]     = {
+        .type = INST_ORB,     .name = "orb",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_XOR]     = {
+        .type = INST_XOR,     .name = "xor",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_SHR]     = {
+        .type = INST_SHR,     .name = "shr",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_SHL]     = {
+        .type = INST_SHL,     .name = "shl",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT, TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_NOTB]    = {
+        .type = INST_NOTB,    .name = "notb",    .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_READ8U]  = {
+        .type = INST_READ8U,  .name = "read8u",  .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_READ16U] = {
+        .type = INST_READ16U, .name = "read16u", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_READ32U] = {
+        .type = INST_READ32U, .name = "read32u", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_READ64U] = {
+        .type = INST_READ64U, .name = "read64u", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
+    [INST_READ8I]  = {
+        .type = INST_READ8I,  .name = "read8i",  .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_READ16I] = {
+        .type = INST_READ16I, .name = "read16i", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_READ32I] = {
+        .type = INST_READ32I, .name = "read32i", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_READ64I] = {
+        .type = INST_READ64I, .name = "read64i", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_WRITE8]  = {
+        .type = INST_WRITE8,  .name = "write8",  .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR, TYPE_UNSIGNED_INT)
+    },
+    [INST_WRITE16] = {
+        .type = INST_WRITE16, .name = "write16", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR, TYPE_UNSIGNED_INT)
+    },
+    [INST_WRITE32] = {
+        .type = INST_WRITE32, .name = "write32", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR, TYPE_UNSIGNED_INT)
+    },
+    [INST_WRITE64] = {
+        .type = INST_WRITE64, .name = "write64", .has_operand = false,
+        .input = TYPE_LIST(TYPE_MEM_ADDR, TYPE_UNSIGNED_INT)
+    },
+    [INST_I2F]     = {
+        .type = INST_I2F,     .name = "i2f",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_SIGNED_INT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_U2F]     = {
+        .type = INST_U2F,     .name = "u2f",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_UNSIGNED_INT),
+        .output = TYPE_LIST(TYPE_FLOAT)
+    },
+    [INST_F2I]     = {
+        .type = INST_F2I,     .name = "f2i",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_SIGNED_INT)
+    },
+    [INST_F2U]     = {
+        .type = INST_F2U,     .name = "f2u",     .has_operand = false,
+        .input = TYPE_LIST(TYPE_FLOAT),
+        .output = TYPE_LIST(TYPE_UNSIGNED_INT)
+    },
 };
 static_assert(
     NUMBER_OF_INSTS == 64,
