@@ -27,11 +27,19 @@ bool verifier_pop_type(Verifier *verifier, Type *output)
 
 void verifier_verify(Verifier *verifier, const Basm *basm)
 {
+    if (basm->entry >= BM_PROGRAM_CAPACITY) {
+        fprintf(stderr, FL_Fmt": ERROR: entry point is an illegal instruction address\n",
+                FL_Arg(basm->entry_location));
+        exit(1);
+    }
+
     Inst_Addr ip = basm->entry;
     bool halt = false;
 
     while (!halt) {
         Inst_Def def = get_inst_def(basm->program[ip].type);
+
+        assert(ip < BM_PROGRAM_CAPACITY);
 
         switch (basm->program[ip].type) {
         case INST_HALT: {
