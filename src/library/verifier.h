@@ -6,12 +6,17 @@
 #include "./basm.h"
 
 typedef struct {
-    Type types[BM_STACK_CAPACITY];
-    size_t types_size;
+    Type type;
+    File_Location location;
+} Frame;
+
+typedef struct {
+    Frame stack[BM_STACK_CAPACITY];
+    size_t stack_size;
 } Verifier;
 
-bool verifier_push_type(Verifier *verifier, Type type);
-bool verifier_pop_type(Verifier *verifier, Type *output);
+bool verifier_push_frame(Verifier *verifier, Type type, File_Location location);
+bool verifier_pop_frame(Verifier *verifier, Frame *output);
 
 void verifier_verify(Verifier *verifier, const Basm *basm);
 

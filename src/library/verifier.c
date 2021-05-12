@@ -1,19 +1,21 @@
 #include "./verifier.h"
 
-bool verifier_push_type(Verifier *verifier, Type type)
+bool verifier_push_frame(Verifier *verifier, Type type, File_Location location)
 {
-    if (verifier->types_size < BM_STACK_CAPACITY) {
-        verifier->types[verifier->types_size++] = type;
+    if (verifier->stack_size < BM_STACK_CAPACITY) {
+        verifier->stack[verifier->stack_size].type = type;
+        verifier->stack[verifier->stack_size].location = location;
+        verifier->stack_size += 1;
         return true;
     }
 
     return false;
 }
 
-bool verifier_pop_type(Verifier *verifier, Type *output)
+bool verifier_pop_frame(Verifier *verifier, Frame *output)
 {
-    if (verifier->types_size > 0) {
-        Type frame = verifier->types[--verifier->types_size];
+    if (verifier->stack_size > 0) {
+        Frame frame = verifier->stack[--verifier->stack_size];
         if (output) {
             *output = frame;
         }
@@ -55,7 +57,7 @@ void verifier_verify(Verifier *verifier, const Basm *basm)
 
         case INST_PUSH: {
             // TODO(#358): customizable stack size that is communicated between bme and basm somehow
-            if (!verifier_push_type(verifier, basm->program_operand_types[ip])) {
+            if (!verifier_push_frame(verifier, basm->program_operand_types[ip], basm->program_locations[ip])) {
                 fprintf(stderr, FL_Fmt": ERROR: stack overflow\n",
                         FL_Arg(basm->program_locations[ip]));
                 exit(1);
@@ -65,7 +67,7 @@ void verifier_verify(Verifier *verifier, const Basm *basm)
         break;
 
         case INST_DROP: {
-            if (!verifier_pop_type(verifier, NULL)) {
+            if (!verifier_pop_frame(verifier, NULL)) {
                 fprintf(stderr, FL_Fmt": ERROR: stack underflow\n",
                         FL_Arg(basm->program_locations[ip]));
                 exit(1);
@@ -77,9 +79,9 @@ void verifier_verify(Verifier *verifier, const Basm *basm)
         case INST_DUP: {
             assert(basm->program_operand_types[ip] == TYPE_UNSIGNED_INT);
             Stack_Addr stack_addr = basm->program[ip].operand.as_u64;
-            if (stack_addr < verifier->types_size) {
-                Type type = verifier->types[verifier->types_size - 1 - stack_addr];
-                if (!verifier_push_type(verifier, type)) {
+            if (stack_addr < verifier->stack_size) {
+                Frame frame = verifier->stack[verifier->stack_size - 1 - stack_addr];
+                if (!verifier_push_frame(verifier, frame.type, frame.location)) {
                     fprintf(stderr, FL_Fmt": ERROR: stack overflow\n",
                             FL_Arg(basm->program_locations[ip]));
                     exit(1);
@@ -97,10 +99,10 @@ void verifier_verify(Verifier *verifier, const Basm *basm)
         case INST_SWAP: {
             assert(basm->program_operand_types[ip] == TYPE_UNSIGNED_INT);
             Stack_Addr stack_addr = basm->program[ip].operand.as_u64;
-            if (stack_addr < verifier->types_size) {
-                Type type = verifier->types[verifier->types_size - 1 - stack_addr];
-                verifier->types[verifier->types_size - 1 - stack_addr] = verifier->types[verifier->types_size - 1];
-                verifier->types[verifier->types_size - 1] = type;
+            if (stack_addr < verifier->stack_size) {
+                Frame frame = verifier->stack[verifier->stack_size - 1 - stack_addr];
+                verifier->stack[verifier->stack_size - 1 - stack_addr] = verifier->stack[verifier->stack_size - 1];
+                verifier->stack[verifier->stack_size - 1] = frame;
             } else {
                 fprintf(stderr, FL_Fmt": ERROR: stack underflow\n",
                         FL_Arg(basm->program_locations[ip]));
@@ -165,27 +167,28 @@ void verifier_verify(Verifier *verifier, const Basm *basm)
         case INST_F2I:
         case INST_F2U: {
             for (size_t i = def.input.size; i > 0; --i) {
-                Type actual_type = 0;
-                if (!verifier_pop_type(verifier, &actual_type)) {
+                Frame frame = {0};
+                if (!verifier_pop_frame(verifier, &frame)) {
                     fprintf(stderr, FL_Fmt": ERROR: stack underflow\n",
                             FL_Arg(basm->program_locations[ip]));
                     exit(1);
                 }
 
                 Type expected_type = def.input.types[i - 1];
-                if (actual_type != expected_type) {
-                    // TODO(#359): type check error in the basm_verify_program() should report the argument number as well
+                if (frame.type != expected_type) {
                     fprintf(stderr, FL_Fmt": ERROR: TYPE CHECK ERROR! Instruction `%s` expected `%s`, but found `%s`\n",
                             FL_Arg(basm->program_locations[ip]),
                             def.name,
                             type_name(expected_type),
-                            type_name(actual_type));
+                            type_name(frame.type));
+                    fprintf(stderr, FL_Fmt": NOTE: the argument was introduced here\n",
+                            FL_Arg(frame.location));
                     exit(1);
                 }
             }
 
             for (size_t i = 0; i < def.output.size; ++i) {
-                if (!verifier_push_type(verifier, def.output.types[i])) {
+                if (!verifier_push_frame(verifier, def.output.types[i], basm->program_locations[ip])) {
                     fprintf(stderr, FL_Fmt": ERROR: stack overflow\n",
                             FL_Arg(basm->program_locations[ip]));
                     exit(1);
