@@ -936,6 +936,23 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     fclose(f);
 }
 
+Err native_external(Bm *bm)
+{
+    if (bm->stack_size < 1) {
+        return ERR_STACK_UNDERFLOW;
+    }
+
+    Memory_Addr addr = bm->stack[bm->stack_size - 1].as_u64;
+
+    if (addr >= BM_MEMORY_CAPACITY) {
+        return ERR_ILLEGAL_MEMORY_ACCESS;
+    }
+
+    bm->stack[bm->stack_size - 1].as_ptr = &bm->memory[addr];
+
+    return ERR_OK;
+}
+
 Err native_write(Bm *bm)
 {
     if (bm->stack_size < 2) {

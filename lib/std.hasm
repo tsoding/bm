@@ -1,4 +1,5 @@
 %native write
+%native external
 
 %const CHAR_LIT_MAX_SIZE = 8
 

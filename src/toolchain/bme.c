@@ -78,6 +78,8 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < bm.externals_size; ++i) {
         if (strcmp(bm.externals[i].name, "write") == 0) {
             bm_push_native(&bm, native_write);
+        } else if (strcmp(bm.externals[i].name, "external") == 0) {
+            bm_push_native(&bm, native_external);
         } else {
             Bm_Native native = native_loader_find_function(&native_loader, &arena, bm.externals[i].name);
             if (native == NULL) {
