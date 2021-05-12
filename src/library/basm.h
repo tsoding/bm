@@ -132,14 +132,6 @@ typedef struct {
     size_t include_paths_size;
 } Basm;
 
-typedef struct {
-    Type types[BM_STACK_CAPACITY];
-    size_t size;
-} Type_Stack;
-
-bool type_stack_push(Type_Stack *type_stack, Type type);
-bool type_stack_pop(Type_Stack *type_stack, Type *output);
-
 Macrodef *scope_resolve_macrodef(Scope *scope, String_View name);
 void scope_add_macrodef(Scope *scope, Macrodef macrodef);
 
@@ -189,7 +181,5 @@ void basm_translate_emit_inst_statement(Basm *basm, Emit_Inst_Statement emit_ins
 void basm_translate_for_statement(Basm *basm, For_Statement phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
-
-void basm_verify_program(Basm *basm);
 
 #endif // BASM_H_

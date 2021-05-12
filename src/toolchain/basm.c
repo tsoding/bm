@@ -1,6 +1,7 @@
 #include "./basm.h"
 #include "./bm.h"
 #include "./path.h"
+#include "./verifier.h"
 
 typedef enum {
     BASM_OUTPUT_BM = 0,
@@ -130,7 +131,8 @@ int main(int argc, char **argv)
     basm_translate_root_source_file(&basm, sv_from_cstr(input_file_path));
 
     if (verify) {
-        basm_verify_program(&basm);
+        static Verifier verifier = {0};
+        verifier_verify(&verifier, &basm);
     }
 
     switch (output_format) {
