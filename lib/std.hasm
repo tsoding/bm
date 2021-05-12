@@ -3,8 +3,7 @@
 
 %const CHAR_LIT_MAX_SIZE = 8
 
-;; TODO(#127): a better way of allocating memory for standard printing functions
-%const print_memory = "******************************"
+%const print_memory = byte_array(30, 0)
 %const FRAC_PRECISION = 10
 
 ;; addr_a
