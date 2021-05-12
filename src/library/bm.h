@@ -209,5 +209,6 @@ PACK(struct Bm_File_Meta {
 typedef struct Bm_File_Meta Bm_File_Meta;
 
 Err native_write(Bm *bm);
+Err native_external(Bm *bm);
 
 #endif // BM_H_

@@ -183,6 +183,8 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < bm.externals_size; ++i) {
         if (strcmp(bm.externals[i].name, "write") == 0) {
             bm_push_native(&bm, bmr_write);
+        } else if (strcmp(bm.externals[i].name, "external") == 0) {
+            bm_push_native(&bm, native_external);
         } else {
             fprintf(stderr, "ERROR: bmr does not provide native function `%s`\n", bm.externals[i].name);
             exit(1);
