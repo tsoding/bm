@@ -5,7 +5,7 @@
 
 typedef enum {
     BASM_OUTPUT_BM = 0,
-    BASM_OUTPUT_NASM,
+    BASM_OUTPUT_NASM_LINUX_X86_64,
     COUNT_BASM_OUTPUTS
 } Basm_Output_Format;
 
@@ -14,7 +14,7 @@ static String_View output_format_file_ext(Basm_Output_Format format)
     switch (format) {
     case BASM_OUTPUT_BM:
         return SV(".bm");
-    case BASM_OUTPUT_NASM:
+    case BASM_OUTPUT_NASM_LINUX_X86_64:
         return SV(".asm");
     case COUNT_BASM_OUTPUTS:
     default:
@@ -32,8 +32,8 @@ static bool output_format_by_name(const char *name, Basm_Output_Format *format)
     if (strcmp(name, "bm") == 0) {
         *format = BASM_OUTPUT_BM;
         return true;
-    } else if (strcmp(name, "nasm") == 0) {
-        *format = BASM_OUTPUT_NASM;
+    } else if (strcmp(name, "nasm-linux-x86-64") == 0) {
+        *format = BASM_OUTPUT_NASM_LINUX_X86_64;
         return true;
     } else {
         return false;
@@ -53,11 +53,11 @@ static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.basm>\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -I <include/path/>    Add include path\n");
-    fprintf(stream, "    -o <output.bm>        Provide output path\n");
-    fprintf(stream, "    -f <bm|nasm>          Output format. Default is bm\n");
-    fprintf(stream, "    -verify               Verify the bytecode instructions after the translation\n");
-    fprintf(stream, "    -h                    Print this help to stdout\n");
+    fprintf(stream, "    -I <include/path/>        Add include path\n");
+    fprintf(stream, "    -o <output.bm>            Provide output path\n");
+    fprintf(stream, "    -f <bm|nasm-linux-x86-64> Output format. Default is bm\n");
+    fprintf(stream, "    -verify                   Verify the bytecode instructions after the translation\n");
+    fprintf(stream, "    -h                        Print this help to stdout\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -141,8 +141,8 @@ int main(int argc, char **argv)
     }
     break;
 
-    case BASM_OUTPUT_NASM: {
-        basm_save_to_file_as_nasm(&basm, output_file_path);
+    case BASM_OUTPUT_NASM_LINUX_X86_64: {
+        basm_save_to_file_as_nasm_linux_x86_64(&basm, output_file_path);
     }
     break;
 
