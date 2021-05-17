@@ -272,7 +272,7 @@ void cases_command(int argc, char **argv)
             {
                 CMD(PATH("build", "toolchain", "basm"),
                     "-I", "./lib/",
-                    "-f", "nasm",
+                    "-f", "nasm-linux-x86-64",
                     PATH("test", "cases", caze),
                     "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
                 CMD("nasm", "-felf64",

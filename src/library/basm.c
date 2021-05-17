@@ -1246,7 +1246,7 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
     return NULL;
 }
 
-void basm_save_to_file_as_nasm(Basm *basm, const char *output_file_path)
+void basm_save_to_file_as_nasm_linux_x86_64(Basm *basm, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
