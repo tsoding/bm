@@ -238,6 +238,31 @@ bool basm_string_length_by_addr(Basm *basm, Inst_Addr addr, Word *length)
     return false;
 }
 
+void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Target target)
+{
+    switch (target) {
+    case TARGET_BM: {
+        basm_save_to_file_as_bm(basm, output_file_path);
+    }
+    break;
+
+    case TARGET_NASM_LINUX_X86_64: {
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, SYSCALLTARGET_LINUX, output_file_path);
+    }
+    break;
+
+    case TARGET_NASM_FREEBSD_X86_64: {
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, SYSCALLTARGET_FREEBSD, output_file_path);
+    }
+    break;
+
+    case COUNT_TARGETS:
+    default:
+        assert(false && "basm_save_to_file_as_target: unreachable");
+        exit(1);
+    }
+}
+
 void basm_save_to_file_as_bm(Basm *basm, const char *file_path)
 {
     FILE *f = fopen(file_path, "wb");
@@ -904,7 +929,7 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
 }
 
-static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
+void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
 {
     const size_t actual_arity = funcall_args_len(funcall->args);
     if (actual_arity != expected_arity) {
@@ -1263,11 +1288,13 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
     case SYSCALLTARGET_LINUX: {
         fprintf(output, "%%define SYS_EXIT 60\n");
         fprintf(output, "%%define SYS_WRITE 1\n");
-    } break;
+    }
+    break;
     case SYSCALLTARGET_FREEBSD: {
         fprintf(output, "%%define SYS_EXIT 1\n");
         fprintf(output, "%%define SYS_WRITE 4\n");
-    } break;
+    }
+    break;
     }
 
     fprintf(output, "%%define STDOUT 1\n");

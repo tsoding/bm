@@ -15,6 +15,8 @@ typedef enum {
     TOKEN_KIND_NAME,
     TOKEN_KIND_OPEN_PAREN,
     TOKEN_KIND_CLOSING_PAREN,
+    TOKEN_KIND_OPEN_CURLY,
+    TOKEN_KIND_CLOSING_CURLY,
     TOKEN_KIND_COMMA,
     TOKEN_KIND_GT,
     TOKEN_KIND_EQ,
@@ -24,6 +26,8 @@ typedef enum {
     TOKEN_KIND_FROM,
     TOKEN_KIND_TO,
     TOKEN_KIND_IF,
+    TOKEN_KIND_PROC,
+    TOKEN_KIND_SEMICOLON,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);

@@ -2,49 +2,7 @@
 #include "./bm.h"
 #include "./path.h"
 #include "./verifier.h"
-
-typedef enum {
-    BASM_OUTPUT_BM = 0,
-    BASM_OUTPUT_NASM_LINUX_X86_64,
-    BASM_OUTPUT_NASM_FREEBSD_X86_64,
-    COUNT_BASM_OUTPUTS
-} Basm_Output_Format;
-
-static String_View output_format_file_ext(Basm_Output_Format format)
-{
-    switch (format) {
-    case BASM_OUTPUT_BM:
-        return SV(".bm");
-    case BASM_OUTPUT_NASM_LINUX_X86_64:
-        return SV(".asm");
-    case BASM_OUTPUT_NASM_FREEBSD_X86_64:
-        return SV(".S");
-    case COUNT_BASM_OUTPUTS:
-    default:
-        assert(false && "output_format_file_ext: unreachable");
-        exit(1);
-    }
-}
-
-static bool output_format_by_name(const char *name, Basm_Output_Format *format)
-{
-    static_assert(
-        COUNT_BASM_OUTPUTS == 3,
-        "Please add a condition branch for a new output "
-        "and increment the counter above");
-    if (strcmp(name, "bm") == 0) {
-        *format = BASM_OUTPUT_BM;
-        return true;
-    } else if (strcmp(name, "nasm-linux-x86-64") == 0) {
-        *format = BASM_OUTPUT_NASM_LINUX_X86_64;
-        return true;
-    } else if (strcmp(name, "nasm-freebsd-x86-64") == 0) {
-        *format = BASM_OUTPUT_NASM_FREEBSD_X86_64;
-        return true;
-    } else {
-        return false;
-    }
-}
+#include "./target.h"
 
 static char *shift(int *argc, char ***argv)
 {
@@ -59,11 +17,12 @@ static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.basm>\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -I <include/path/>                            Add include path\n");
-    fprintf(stream, "    -o <output.bm>                                Provide output path\n");
-    fprintf(stream, "    -f <bm|nasm-linux-x86-64|nasm-freebsd-x86-64> Output format. Default is bm\n");
-    fprintf(stream, "    -verify                                       Verify the bytecode instructions after the translation\n");
-    fprintf(stream, "    -h                                            Print this help to stdout\n");
+    fprintf(stream, "    -I <include/path/>    Add include path\n");
+    fprintf(stream, "    -o <output.bm>        Provide output path\n");
+    fprintf(stream, "    -t <target>           Output target. Default is `bm`.\n");
+    fprintf(stream, "                          Provide `list` to get the list of all available targets.\n");
+    fprintf(stream, "    -verify               Verify the bytecode instructions after the translation.\n");
+    fprintf(stream, "    -h                    Print this help to stdout\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -87,7 +46,7 @@ int main(int argc, char **argv)
     const char *program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
-    Basm_Output_Format output_format = BASM_OUTPUT_BM;
+    Target output_target = TARGET_BM;
     bool verify = false;
 
     while (argc > 0) {
@@ -100,11 +59,20 @@ int main(int argc, char **argv)
         } else if (strcmp(flag, "-h") == 0) {
             usage(stdout, program);
             exit(0);
-        } else if (strcmp(flag, "-f") == 0) {
+        } else if (strcmp(flag, "-t") == 0) {
             const char *name = get_flag_value(&argc, &argv, flag, program);
-            if (!output_format_by_name(name, &output_format)) {
+
+            if (strcmp(name, "list") == 0) {
+                printf("Available targets:\n");
+                for (Target target = 0; target < COUNT_TARGETS; ++target) {
+                    printf("  %s\n", target_name(target));
+                }
+                exit(0);
+            }
+
+            if (!target_by_name(name, &output_target)) {
                 usage(stderr, program);
-                fprintf(stderr, "ERROR: unknown output format `%s`\n", name);
+                fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
                 exit(1);
             }
         } else if (strcmp(flag, "-verify") == 0) {
@@ -130,7 +98,7 @@ int main(int argc, char **argv)
             SV_CONCAT(&basm.arena,
                       SV("./"),
                       file_name_of_path(input_file_path),
-                      output_format_file_ext(output_format));
+                      sv_from_cstr(target_file_ext(output_target)));
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
@@ -141,27 +109,7 @@ int main(int argc, char **argv)
         verifier_verify(&verifier, &basm);
     }
 
-    switch (output_format) {
-    case BASM_OUTPUT_BM: {
-        basm_save_to_file_as_bm(&basm, output_file_path);
-    }
-    break;
-
-    case BASM_OUTPUT_NASM_LINUX_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_LINUX, output_file_path);
-    }
-    break;
-
-    case BASM_OUTPUT_NASM_FREEBSD_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_FREEBSD, output_file_path);
-    }
-    break;
-
-    case COUNT_BASM_OUTPUTS:
-    default:
-        assert(false && "basm: unreachable");
-        exit(1);
-    }
+    basm_save_to_file_as_target(&basm, output_file_path, output_target);
 
     arena_free(&basm.arena);
 

@@ -36,14 +36,26 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
     }
     break;
 
-    case '/': {
-        token.kind = TOKEN_KIND_DIV;
+    case ')': {
+        token.kind = TOKEN_KIND_CLOSING_PAREN;
         token.text = sv_chop_left(&tokenizer->source, 1);
     }
     break;
 
-    case ')': {
-        token.kind = TOKEN_KIND_CLOSING_PAREN;
+    case '{': {
+        token.kind = TOKEN_KIND_OPEN_CURLY;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
+    case '}': {
+        token.kind = TOKEN_KIND_CLOSING_CURLY;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
+    case '/': {
+        token.kind = TOKEN_KIND_DIV;
         token.text = sv_chop_left(&tokenizer->source, 1);
     }
     break;
@@ -56,6 +68,12 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
 
     case '%': {
         token.kind = TOKEN_KIND_MOD;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
+    case ';': {
+        token.kind = TOKEN_KIND_SEMICOLON;
         token.text = sv_chop_left(&tokenizer->source, 1);
     }
     break;
@@ -147,6 +165,8 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
                 token.kind = TOKEN_KIND_FROM;
             } else if (sv_eq(token.text, SV("if"))) {
                 token.kind = TOKEN_KIND_IF;
+            } else if (sv_eq(token.text, SV("proc"))) {
+                token.kind = TOKEN_KIND_PROC;
             } else {
                 token.kind = TOKEN_KIND_NAME;
             }
