@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     const char * const program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
-    Target target = TARGET_BM;
+    Target output_target = TARGET_BM;
 
     while (argc > 0) {
         const char *flag = shift(&argc, &argv);
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
                 exit(0);
             }
 
-            if (!target_by_name(name, &target)) {
+            if (!target_by_name(name, &output_target)) {
                 usage(stderr, program);
                 fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
                 exit(1);
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
             SV_CONCAT(&basm.arena,
                       SV("./"),
                       file_name_of_path(input_file_path),
-                      sv_from_cstr(target_file_ext(target)));
+                      sv_from_cstr(target_file_ext(output_target)));
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
     Native_ID write_id = basm_push_external_native(&basm, SV("write"));
     compile_proc_def_into_basm(&basm, proc_def, write_id);
     basm_push_inst(&basm, INST_HALT, word_u64(0));
-    basm_save_to_file_as_target(&basm, output_file_path, target);
+    basm_save_to_file_as_target(&basm, output_file_path, output_target);
 
     arena_free(&basm.arena);
 

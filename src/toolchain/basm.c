@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     const char *program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
-    Target target = TARGET_BM;
+    Target output_target = TARGET_BM;
     bool verify = false;
 
     while (argc > 0) {
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
                 exit(0);
             }
 
-            if (!target_by_name(name, &target)) {
+            if (!target_by_name(name, &output_target)) {
                 usage(stderr, program);
                 fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
                 exit(1);
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
             SV_CONCAT(&basm.arena,
                       SV("./"),
                       file_name_of_path(input_file_path),
-                      sv_from_cstr(target_file_ext(target)));
+                      sv_from_cstr(target_file_ext(output_target)));
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
         verifier_verify(&verifier, &basm);
     }
 
-    basm_save_to_file_as_target(&basm, output_file_path, target);
+    basm_save_to_file_as_target(&basm, output_file_path, output_target);
 
     arena_free(&basm.arena);
 
