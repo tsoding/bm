@@ -139,7 +139,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
                 fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
                 fprintf(output, "    ldr x2, [x3]\n");
                 fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
-                fprintf(output, "    ldr x1, [x3]\n"); // Add the memory offset!
+                fprintf(output, "    ldr x1, [x3]\n");
                 fprintf(output, "    ldr x4, =memory\n");
                 fprintf(output, "    add x1, x1, x4\n");
                 fprintf(output, "    ldr x4, =stack_top\n");
@@ -312,7 +312,6 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(stderr, "Instruction is not yet implemented\n"); abort();
         }
         break;
-        // TODO(#349): try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
         case INST_F2U: {
             fprintf(stderr, "Instruction is not yet implemented\n"); abort();
         }
@@ -329,6 +328,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     fprintf(output, "    .align 8\n");
 
     fprintf(output, "memory:\n");
+    // XXX: Neat formatting
     for (size_t i = 0; i < basm->memory_size; ++i) {
         fprintf(output, "  .byte %u\n", basm->memory[i]);
     }
