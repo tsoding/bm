@@ -527,6 +527,8 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
     }
     break;
 
+    case TOKEN_KIND_OPEN_CURLY:
+    case TOKEN_KIND_CLOSING_CURLY:
     case TOKEN_KIND_DIV:
     case TOKEN_KIND_IF:
     case TOKEN_KIND_EQ:
@@ -621,9 +623,13 @@ const char *token_kind_name(Token_Kind kind)
     case TOKEN_KIND_NAME:
         return "name";
     case TOKEN_KIND_OPEN_PAREN:
-        return "open paren";
+        return "(";
     case TOKEN_KIND_CLOSING_PAREN:
-        return "closing paren";
+        return ")";
+    case TOKEN_KIND_OPEN_CURLY:
+        return "{";
+    case TOKEN_KIND_CLOSING_CURLY:
+        return "}";
     case TOKEN_KIND_COMMA:
         return "comma";
     case TOKEN_KIND_GT:

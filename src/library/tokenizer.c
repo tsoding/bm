@@ -36,14 +36,26 @@ bool tokenizer_peek(Tokenizer *tokenizer, Token *output, File_Location location)
     }
     break;
 
-    case '/': {
-        token.kind = TOKEN_KIND_DIV;
+    case ')': {
+        token.kind = TOKEN_KIND_CLOSING_PAREN;
         token.text = sv_chop_left(&tokenizer->source, 1);
     }
     break;
 
-    case ')': {
-        token.kind = TOKEN_KIND_CLOSING_PAREN;
+    case '{': {
+        token.kind = TOKEN_KIND_OPEN_CURLY;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
+    case '}': {
+        token.kind = TOKEN_KIND_CLOSING_CURLY;
+        token.text = sv_chop_left(&tokenizer->source, 1);
+    }
+    break;
+
+    case '/': {
+        token.kind = TOKEN_KIND_DIV;
         token.text = sv_chop_left(&tokenizer->source, 1);
     }
     break;
