@@ -99,27 +99,7 @@ int main(int argc, char **argv)
         verifier_verify(&verifier, &basm);
     }
 
-    switch (target) {
-    case TARGET_BM: {
-        basm_save_to_file_as_bm(&basm, output_file_path);
-    }
-    break;
-
-    case TARGET_NASM_LINUX_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_LINUX, output_file_path);
-    }
-    break;
-
-    case TARGET_NASM_FREEBSD_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_FREEBSD, output_file_path);
-    }
-    break;
-
-    case COUNT_TARGETS:
-    default:
-        assert(false && "basm: unreachable");
-        exit(1);
-    }
+    basm_save_to_file_as_target(&basm, output_file_path, target);
 
     arena_free(&basm.arena);
 

@@ -7,6 +7,7 @@
 #include "./expr.h"
 #include "./statement.h"
 #include "./types.h"
+#include "./target.h"
 
 #define BASM_BINDINGS_CAPACITY 1024
 #define BASM_MACRODEFS_CAPACITY 1024
@@ -157,6 +158,7 @@ void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location l
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
+void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Target target);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
 void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
