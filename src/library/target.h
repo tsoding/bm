@@ -1,7 +1,7 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-#include "./sv.h"
+#include <stdbool.h>
 
 typedef enum {
     TARGET_BM = 0,
@@ -10,7 +10,8 @@ typedef enum {
     COUNT_TARGETS
 } Target;
 
-String_View target_file_ext(Target target);
-bool target_by_name(const char *name, Target *format);
+const char *target_file_ext(Target target);
+const char *target_name(Target target);
+bool target_by_name(const char *name, Target *target);
 
 #endif // TARGET_H_

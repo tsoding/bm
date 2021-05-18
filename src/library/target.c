@@ -2,38 +2,41 @@
 #include <string.h>
 #include "./target.h"
 
-String_View target_file_ext(Target target)
+static const char * const target_names[COUNT_TARGETS] = {
+    [TARGET_BM] = "bm",
+    [TARGET_NASM_LINUX_X86_64] = "nasm-linux-x86-64",
+    [TARGET_NASM_FREEBSD_X86_64] = "nasm-freebsd-x86-64",
+};
+static_assert(COUNT_TARGETS == 3, "Amount of target names have changed");
+
+static const char * const target_exts[COUNT_TARGETS] = {
+    [TARGET_BM] = ".bm",
+    [TARGET_NASM_LINUX_X86_64] = ".asm",
+    [TARGET_NASM_FREEBSD_X86_64] = ".S",
+};
+static_assert(COUNT_TARGETS == 3, "Amount of target extensions have changed");
+
+const char *target_file_ext(Target target)
 {
-    switch (target) {
-    case TARGET_BM:
-        return SV(".bm");
-    case TARGET_NASM_LINUX_X86_64:
-        return SV(".asm");
-    case TARGET_NASM_FREEBSD_X86_64:
-        return SV(".S");
-    case COUNT_TARGETS:
-    default:
-        assert(false && "output_format_file_ext: unreachable");
-        exit(1);
-    }
+    assert(0 <= target && target < COUNT_TARGETS);
+    return target_exts[target];
 }
 
-bool target_by_name(const char *name, Target *target)
+const char *target_name(Target target)
 {
-    static_assert(
-        COUNT_TARGETS == 3,
-        "Please add a condition branch for a new output "
-        "and increment the counter above");
-    if (strcmp(name, "bm") == 0) {
-        *target = TARGET_BM;
-        return true;
-    } else if (strcmp(name, "nasm-linux-x86-64") == 0) {
-        *target = TARGET_NASM_LINUX_X86_64;
-        return true;
-    } else if (strcmp(name, "nasm-freebsd-x86-64") == 0) {
-        *target = TARGET_NASM_FREEBSD_X86_64;
-        return true;
-    } else {
-        return false;
+    assert(0 <= target && target < COUNT_TARGETS);
+    return target_names[target];
+}
+
+bool target_by_name(const char *name, Target *target_out)
+{
+    for (Target target = 0; target < COUNT_TARGETS; ++target) {
+        if (strcmp(name, target_name(target)) == 0) {
+            if (target_out) {
+                *target_out = target;
+            }
+            return true;
+        }
     }
+    return false;
 }
