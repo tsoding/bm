@@ -186,5 +186,6 @@ void basm_translate_emit_inst_statement(Basm *basm, Emit_Inst_Statement emit_ins
 void basm_translate_for_statement(Basm *basm, For_Statement phor, File_Location location);
 void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
+void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location);
 
 #endif // BASM_H_

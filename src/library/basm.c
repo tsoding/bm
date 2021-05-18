@@ -904,7 +904,7 @@ static Eval_Result basm_binary_op_eval(Basm *basm, Binary_Op *binary_op, File_Lo
     }
 }
 
-static void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
+void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location)
 {
     const size_t actual_arity = funcall_args_len(funcall->args);
     if (actual_arity != expected_arity) {
