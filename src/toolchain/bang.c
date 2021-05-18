@@ -7,6 +7,145 @@
 #include "./arena.h"
 #include "./path.h"
 #include "./tokenizer.h"
+#include "./expr.h"
+#include "./basm.h"
+
+typedef struct {
+    Expr expr;
+} Bang_Statement;
+
+typedef struct Bang_Block Bang_Block;
+
+struct Bang_Block {
+    Bang_Statement statement;
+    Bang_Block *next;
+};
+
+typedef struct {
+    String_View name;
+    Bang_Block *body;
+} Bang_Proc_Def;
+
+static Bang_Block *parse_curly_bang_block(Arena *arena, Tokenizer *tokenizer)
+{
+    File_Location dummy = {0};
+
+    Bang_Block *begin = NULL;
+    Bang_Block *end = NULL;
+
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_CURLY, dummy);
+
+    Token token = {0};
+    while (tokenizer_peek(tokenizer, &token, dummy) &&
+            token.kind != TOKEN_KIND_CLOSING_CURLY) {
+        Bang_Block *node = arena_alloc(arena, sizeof(*node));
+        node->statement.expr = parse_expr_from_tokens(arena, tokenizer, dummy);
+
+        if (end) {
+            end->next = node;
+            end = node;
+        } else {
+            assert(begin == NULL);
+            begin = end = node;
+        }
+
+        expect_token_next(tokenizer, TOKEN_KIND_SEMICOLON, dummy);
+    }
+
+    expect_token_next(tokenizer, TOKEN_KIND_CLOSING_CURLY, dummy);
+
+    return begin;
+}
+
+static Bang_Proc_Def parse_bang_proc_def(Arena *arena, Tokenizer *tokenizer)
+{
+    const File_Location dummy = {0};
+    Bang_Proc_Def result = {0};
+
+    expect_token_next(tokenizer, TOKEN_KIND_PROC, dummy);
+    result.name = expect_token_next(tokenizer, TOKEN_KIND_NAME, dummy).text;
+    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, dummy);
+    expect_token_next(tokenizer, TOKEN_KIND_CLOSING_PAREN, dummy);
+    result.body = parse_curly_bang_block(arena, tokenizer);
+
+    return result;
+}
+
+static Native_ID basm_push_external_native(Basm *basm, String_View native_name)
+{
+    memset(basm->external_natives[basm->external_natives_size].name,
+           0,
+           NATIVE_NAME_CAPACITY);
+
+    memcpy(basm->external_natives[basm->external_natives_size].name,
+           native_name.data,
+           native_name.count);
+
+    Native_ID result = basm->external_natives_size++;
+
+    return result;
+}
+
+static void basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
+{
+    assert(basm->program_size < BM_PROGRAM_CAPACITY);
+    basm->program[basm->program_size].type = inst_type;
+    basm->program[basm->program_size].operand = inst_operand;
+    basm->program_size += 1;
+}
+
+static void compile_expr_into_basm(Basm *basm, Expr expr, Native_ID write_id)
+{
+    File_Location dummy = {0};
+
+    switch (expr.kind) {
+    case EXPR_KIND_LIT_STR: {
+        Word str_addr = basm_push_string_to_memory(basm, expr.value.as_lit_str);
+        basm_push_inst(basm, INST_PUSH, str_addr);
+        basm_push_inst(basm, INST_PUSH, word_u64(expr.value.as_lit_str.count));
+    }
+    break;
+
+    case EXPR_KIND_FUNCALL: {
+        if (sv_eq(expr.value.as_funcall->name, SV("write"))) {
+            funcall_expect_arity(expr.value.as_funcall, 1, dummy);
+            compile_expr_into_basm(basm, expr.value.as_funcall->args->value, write_id);
+            basm_push_inst(basm, INST_NATIVE, word_u64(write_id));
+        } else {
+            assert(false && "Unknown function");
+        }
+    }
+    break;
+
+    case EXPR_KIND_BINDING:
+    case EXPR_KIND_LIT_INT:
+    case EXPR_KIND_LIT_FLOAT:
+    case EXPR_KIND_LIT_CHAR:
+    case EXPR_KIND_BINARY_OP:
+        assert(false && "Compilation of this kind of expressions is not supported yet");
+        exit(1);
+    }
+}
+
+static void compile_statement_into_basm(Basm *basm, Bang_Statement statement, Native_ID write_id)
+{
+    compile_expr_into_basm(basm, statement.expr, write_id);
+}
+
+static void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)
+{
+    while (block) {
+        compile_statement_into_basm(basm, block->statement, write_id);
+        block = block->next;
+    }
+}
+
+static void compile_proc_def_into_basm(Basm *basm, Bang_Proc_Def proc_def, Native_ID write_id)
+{
+    assert(!basm->has_entry);
+    basm->entry = basm->program_size;
+    compile_block_into_basm(basm, proc_def.body, write_id);
+}
 
 static void usage(FILE *stream, const char *program)
 {
@@ -27,7 +166,7 @@ static char *shift(int *argc, char ***argv)
 
 int main(int argc, char **argv)
 {
-    Arena arena = {0};
+    static Basm basm = {0};
 
     const char * const program = shift(&argc, &argv);
     const char *input_file_path = NULL;
@@ -60,12 +199,12 @@ int main(int argc, char **argv)
 
     if (output_file_path == NULL) {
         const String_View output_file_path_sv =
-            SV_CONCAT(&arena, SV("./"), file_name_of_path(input_file_path), SV(".bm"));
-        output_file_path = arena_sv_to_cstr(&arena, output_file_path_sv);
+            SV_CONCAT(&basm.arena, SV("./"), file_name_of_path(input_file_path), SV(".bm"));
+        output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
     String_View content = {0};
-    if (arena_slurp_file(&arena, sv_from_cstr(input_file_path), &content) < 0) {
+    if (arena_slurp_file(&basm.arena, sv_from_cstr(input_file_path), &content) < 0) {
         fprintf(stderr, "ERROR: could not read file `%s`: %s",
                 input_file_path,
                 strerror(errno));
@@ -73,16 +212,14 @@ int main(int argc, char **argv)
     }
 
     Tokenizer tokenizer = tokenizer_from_sv(content);
-    Token token = {0};
-    File_Location dummy_fl = file_location(sv_from_cstr(input_file_path), 0);
+    Bang_Proc_Def proc_def = parse_bang_proc_def(&basm.arena, &tokenizer);
 
-    while (tokenizer_next(&tokenizer, &token, dummy_fl)) {
-        printf("%s -> \""SV_Fmt"\"\n",
-               token_kind_name(token.kind),
-               SV_Arg(token.text));
-    }
+    Native_ID write_id = basm_push_external_native(&basm, SV("write"));
+    compile_proc_def_into_basm(&basm, proc_def, write_id);
+    basm_push_inst(&basm, INST_HALT, word_u64(0));
+    basm_save_to_file_as_bm(&basm, output_file_path);
 
-    arena_free(&arena);
+    arena_free(&basm.arena);
 
     return 0;
 }
