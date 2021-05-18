@@ -26,6 +26,8 @@ typedef enum {
     TOKEN_KIND_FROM,
     TOKEN_KIND_TO,
     TOKEN_KIND_IF,
+    TOKEN_KIND_PROC,
+    TOKEN_KIND_SEMICOLON,
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
