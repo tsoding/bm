@@ -234,11 +234,18 @@ void path_rm(Cstr path);
         closedir(dir);                                  \
     } while(0)
 
+#if defined(__GNUC__) || defined(__clang__)
+// https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
+#define NOBUILD_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK) __attribute__ ((format (printf, STRING_INDEX, FIRST_TO_CHECK)))
+#else
+#define NOBUILD_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK)
+#endif
+
 void VLOG(FILE *stream, Cstr tag, Cstr fmt, va_list args);
-void INFO(Cstr fmt, ...);
-void WARN(Cstr fmt, ...);
-void ERRO(Cstr fmt, ...);
-void PANIC(Cstr fmt, ...);
+void INFO(Cstr fmt, ...) NOBUILD_PRINTF_FORMAT(1, 2);
+void WARN(Cstr fmt, ...) NOBUILD_PRINTF_FORMAT(1, 2);
+void ERRO(Cstr fmt, ...) NOBUILD_PRINTF_FORMAT(1, 2);
+void PANIC(Cstr fmt, ...) NOBUILD_PRINTF_FORMAT(1, 2);
 
 char *shift_args(int *argc, char ***argv);
 
@@ -584,7 +591,7 @@ void pid_wait(Pid pid)
     for (;;) {
         int wstatus = 0;
         if (waitpid(pid, &wstatus, 0) < 0) {
-            PANIC("could not wait on command: %s", pid, strerror(errno));
+            PANIC("could not wait on command (pid %d): %s", pid, strerror(errno));
         }
 
         if (WIFEXITED(wstatus)) {
@@ -918,7 +925,7 @@ void path_rm(Cstr path)
 
         if (rmdir(path) < 0) {
             if (errno == ENOENT) {
-                WARN("directory %s does not exist");
+                WARN("directory %s does not exist", path);
             } else {
                 PANIC("could not remove directory %s: %s", path, strerror(errno));
             }
@@ -926,7 +933,7 @@ void path_rm(Cstr path)
     } else {
         if (unlink(path) < 0) {
             if (errno == ENOENT) {
-                WARN("file %s does not exist");
+                WARN("file %s does not exist", path);
             } else {
                 PANIC("could not remove file %s: %s", path, strerror(errno));
             }
