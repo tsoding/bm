@@ -1288,11 +1288,13 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
     case SYSCALLTARGET_LINUX: {
         fprintf(output, "%%define SYS_EXIT 60\n");
         fprintf(output, "%%define SYS_WRITE 1\n");
-    } break;
+    }
+    break;
     case SYSCALLTARGET_FREEBSD: {
         fprintf(output, "%%define SYS_EXIT 1\n");
         fprintf(output, "%%define SYS_WRITE 4\n");
-    } break;
+    }
+    break;
     }
 
     fprintf(output, "%%define STDOUT 1\n");
