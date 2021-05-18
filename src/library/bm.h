@@ -149,6 +149,7 @@ bool inst_by_name(String_View name, Inst_Def *inst_def);
 typedef uint64_t Inst_Addr;
 typedef uint64_t Memory_Addr;
 typedef uint64_t Stack_Addr;
+typedef uint64_t Native_ID;
 
 static_assert(sizeof(Word) == BM_WORD_SIZE,
               "The BM's Word is expected to be 64 bits");
