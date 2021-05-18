@@ -6,6 +6,7 @@
 typedef enum {
     BASM_OUTPUT_BM = 0,
     BASM_OUTPUT_NASM_LINUX_X86_64,
+    BASM_OUTPUT_NASM_FREEBSD_X86_64,
     COUNT_BASM_OUTPUTS
 } Basm_Output_Format;
 
@@ -16,6 +17,8 @@ static String_View output_format_file_ext(Basm_Output_Format format)
         return SV(".bm");
     case BASM_OUTPUT_NASM_LINUX_X86_64:
         return SV(".asm");
+    case BASM_OUTPUT_NASM_FREEBSD_X86_64:
+        return SV(".S");
     case COUNT_BASM_OUTPUTS:
     default:
         assert(false && "output_format_file_ext: unreachable");
@@ -26,7 +29,7 @@ static String_View output_format_file_ext(Basm_Output_Format format)
 static bool output_format_by_name(const char *name, Basm_Output_Format *format)
 {
     static_assert(
-        COUNT_BASM_OUTPUTS == 2,
+        COUNT_BASM_OUTPUTS == 3,
         "Please add a condition branch for a new output "
         "and increment the counter above");
     if (strcmp(name, "bm") == 0) {
@@ -34,6 +37,9 @@ static bool output_format_by_name(const char *name, Basm_Output_Format *format)
         return true;
     } else if (strcmp(name, "nasm-linux-x86-64") == 0) {
         *format = BASM_OUTPUT_NASM_LINUX_X86_64;
+        return true;
+    } else if (strcmp(name, "nasm-freebsd-x86-64") == 0) {
+        *format = BASM_OUTPUT_NASM_FREEBSD_X86_64;
         return true;
     } else {
         return false;
@@ -53,11 +59,11 @@ static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.basm>\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -I <include/path/>        Add include path\n");
-    fprintf(stream, "    -o <output.bm>            Provide output path\n");
-    fprintf(stream, "    -f <bm|nasm-linux-x86-64> Output format. Default is bm\n");
-    fprintf(stream, "    -verify                   Verify the bytecode instructions after the translation\n");
-    fprintf(stream, "    -h                        Print this help to stdout\n");
+    fprintf(stream, "    -I <include/path/>                            Add include path\n");
+    fprintf(stream, "    -o <output.bm>                                Provide output path\n");
+    fprintf(stream, "    -f <bm|nasm-linux-x86-64|nasm-freebsd-x86-64> Output format. Default is bm\n");
+    fprintf(stream, "    -verify                                       Verify the bytecode instructions after the translation\n");
+    fprintf(stream, "    -h                                            Print this help to stdout\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -142,7 +148,12 @@ int main(int argc, char **argv)
     break;
 
     case BASM_OUTPUT_NASM_LINUX_X86_64: {
-        basm_save_to_file_as_nasm_linux_x86_64(&basm, output_file_path);
+        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_LINUX, output_file_path);
+    }
+    break;
+
+    case BASM_OUTPUT_NASM_FREEBSD_X86_64: {
+        basm_save_to_file_as_nasm_sysv_x86_64(&basm, SYSCALLTARGET_FREEBSD, output_file_path);
     }
     break;
 

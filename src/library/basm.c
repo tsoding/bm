@@ -1246,7 +1246,7 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
     return NULL;
 }
 
-void basm_save_to_file_as_nasm_linux_x86_64(Basm *basm, const char *output_file_path)
+void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
@@ -1258,8 +1258,18 @@ void basm_save_to_file_as_nasm_linux_x86_64(Basm *basm, const char *output_file_
     fprintf(output, "BITS 64\n");
     fprintf(output, "%%define BM_STACK_CAPACITY %d\n", BM_STACK_CAPACITY);
     fprintf(output, "%%define BM_WORD_SIZE %d\n", BM_WORD_SIZE);
-    fprintf(output, "%%define SYS_EXIT 60\n");
-    fprintf(output, "%%define SYS_WRITE 1\n");
+
+    switch (target) {
+    case SYSCALLTARGET_LINUX: {
+        fprintf(output, "%%define SYS_EXIT 60\n");
+        fprintf(output, "%%define SYS_WRITE 1\n");
+    } break;
+    case SYSCALLTARGET_FREEBSD: {
+        fprintf(output, "%%define SYS_EXIT 1\n");
+        fprintf(output, "%%define SYS_WRITE 4\n");
+    } break;
+    }
+
     fprintf(output, "%%define STDOUT 1\n");
     fprintf(output, "segment .text\n");
     fprintf(output, "global _start\n");
