@@ -17,11 +17,12 @@ static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.basm>\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -I <include/path/>                            Add include path\n");
-    fprintf(stream, "    -o <output.bm>                                Provide output path\n");
-    fprintf(stream, "    -t <bm|nasm-linux-x86-64|nasm-freebsd-x86-64> Output target. Default is bm\n");
-    fprintf(stream, "    -verify                                       Verify the bytecode instructions after the translation\n");
-    fprintf(stream, "    -h                                            Print this help to stdout\n");
+    fprintf(stream, "    -I <include/path/>    Add include path\n");
+    fprintf(stream, "    -o <output.bm>        Provide output path\n");
+    fprintf(stream, "    -t <target>           Output target. Default is `bm`.\n");
+    fprintf(stream, "                          Provide `list` to get the list of all available targets.\n");
+    fprintf(stream, "    -verify               Verify the bytecode instructions after the translation.\n");
+    fprintf(stream, "    -h                    Print this help to stdout\n");
 }
 
 static char *get_flag_value(int *argc, char ***argv,
@@ -60,6 +61,15 @@ int main(int argc, char **argv)
             exit(0);
         } else if (strcmp(flag, "-t") == 0) {
             const char *name = get_flag_value(&argc, &argv, flag, program);
+
+            if (strcmp(name, "list") == 0) {
+                printf("Available targets:\n");
+                for (Target target = 0; target < COUNT_TARGETS; ++target) {
+                    printf("  %s\n", target_name(target));
+                }
+                exit(0);
+            }
+
             if (!target_by_name(name, &target)) {
                 usage(stderr, program);
                 fprintf(stderr, "ERROR: unknown output format `%s`\n", name);
@@ -88,7 +98,7 @@ int main(int argc, char **argv)
             SV_CONCAT(&basm.arena,
                       SV("./"),
                       file_name_of_path(input_file_path),
-                      target_file_ext(target));
+                      sv_from_cstr(target_file_ext(target)));
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
