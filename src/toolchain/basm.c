@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
             if (!target_by_name(name, &target)) {
                 usage(stderr, program);
-                fprintf(stderr, "ERROR: unknown output format `%s`\n", name);
+                fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
                 exit(1);
             }
         } else if (strcmp(flag, "-verify") == 0) {

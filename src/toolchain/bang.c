@@ -151,8 +151,10 @@ static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.bang>\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -o <output>       Provide output path\n");
-    fprintf(stream, "    -h                Print this help to stdout\n");
+    fprintf(stream, "    -o <output>    Provide output path\n");
+    fprintf(stream, "    -t <target>    Output target. Default is `bm`.\n");
+    fprintf(stream, "                   Provide `list` to get the list of all available targets.\n");
+    fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
 static char *shift(int *argc, char ***argv)
@@ -171,6 +173,7 @@ int main(int argc, char **argv)
     const char * const program = shift(&argc, &argv);
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
+    Target target = TARGET_BM;
 
     while (argc > 0) {
         const char *flag = shift(&argc, &argv);
@@ -183,6 +186,27 @@ int main(int argc, char **argv)
             }
 
             output_file_path = shift(&argc, &argv);
+        } else if (strcmp(flag, "-t") == 0) {
+            if (argc <= 0) {
+                usage(stderr, program);
+                fprintf(stderr, "ERROR: no value is provided for flag `%s`\n", flag);
+                exit(1);
+            }
+            const char *name = shift(&argc, &argv);
+
+            if (strcmp(name, "list") == 0) {
+                printf("Available targets:\n");
+                for (Target target = 0; target < COUNT_TARGETS; ++target) {
+                    printf("  %s\n", target_name(target));
+                }
+                exit(0);
+            }
+
+            if (!target_by_name(name, &target)) {
+                usage(stderr, program);
+                fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
+                exit(1);
+            }
         } else if (strcmp(flag, "-h") == 0) {
             usage(stdout, program);
             exit(0);
@@ -199,7 +223,10 @@ int main(int argc, char **argv)
 
     if (output_file_path == NULL) {
         const String_View output_file_path_sv =
-            SV_CONCAT(&basm.arena, SV("./"), file_name_of_path(input_file_path), SV(".bm"));
+            SV_CONCAT(&basm.arena,
+                      SV("./"),
+                      file_name_of_path(input_file_path),
+                      sv_from_cstr(target_file_ext(target)));
         output_file_path = arena_sv_to_cstr(&basm.arena, output_file_path_sv);
     }
 
@@ -217,7 +244,7 @@ int main(int argc, char **argv)
     Native_ID write_id = basm_push_external_native(&basm, SV("write"));
     compile_proc_def_into_basm(&basm, proc_def, write_id);
     basm_push_inst(&basm, INST_HALT, word_u64(0));
-    basm_save_to_file_as_bm(&basm, output_file_path);
+    basm_save_to_file_as_target(&basm, output_file_path, target);
 
     arena_free(&basm.arena);
 
