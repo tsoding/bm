@@ -396,11 +396,19 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_I2F: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // i2f\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    scvtf d0, x9\n");
+            fprintf(output, "    fmov x9, d0\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_U2F: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // u2f\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ucvtf d0, x9\n");
+            fprintf(output, "    fmov x9, d0\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_F2I: {
