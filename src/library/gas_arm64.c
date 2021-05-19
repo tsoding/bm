@@ -62,8 +62,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_PUSH: {
             fprintf(output, "    // push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov x2, #%"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    str x2, [x0]\n");
-            fprintf(output, "    add x0, x0, BM_WORD_SIZE\n");
+            fprintf(output, "    str x2, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_DROP: {
@@ -77,8 +76,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(output, "    mov x10, #BM_WORD_SIZE\n");                      // Wordsize
             fprintf(output, "    msub x1, x9, x10, x0\n");                        // x1 = x0 - x9 * x10 = SP - n * BM_WORDSIZE
             fprintf(output, "    ldr x1, [x1]\n");                                // deref
-            fprintf(output, "    str x1, [x0]\n");                                // store at sp
-            fprintf(output, "    add x0, x0, BM_WORD_SIZE\n");                    // inc sp
+            fprintf(output, "    str x1, [x0], #BM_WORD_SIZE\n");                 // store at sp
         }
         break;
         case INST_SWAP: {
@@ -156,10 +154,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 0) {
                 fprintf(output, "    // native write\n");
-                fprintf(output, "    sub x0, x0, BM_WORD_SIZE\n");
-                fprintf(output, "    ldr x2, [x0]\n");
-                fprintf(output, "    sub x0, x0, BM_WORD_SIZE\n");
-                fprintf(output, "    ldr x1, [x0]\n");
+                fprintf(output, "    ldr x2, [x0, #-BM_WORD_SIZE]!\n");
+                fprintf(output, "    ldr x1, [x0, #-BM_WORD_SIZE]!\n");
                 fprintf(output, "    ldr x4, =memory\n");
                 fprintf(output, "    add x1, x1, x4\n");
                 STORE_SP(output);
@@ -287,7 +283,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
             fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
             fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
-            fprintf(output, "    ldursb x10, [x9]\n");              // Read
+            fprintf(output, "    ldursb x10, [x9]\n");              // Read unsigned
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
