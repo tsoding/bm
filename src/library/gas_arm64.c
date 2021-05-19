@@ -275,7 +275,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_READ8I: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // read8i\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
+            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
+            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
+            fprintf(output, "    ldrsb x10, [x9]\n");               // Read signed
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
         case INST_READ8U: {
@@ -292,7 +297,13 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_READ16U: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // read8u\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
+            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
+            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
+            fprintf(output, "    mov x10, #0\n");                   // zero out x10
+            fprintf(output, "    ldurh w10, [x9]\n");               // Load half a word of the lower part of x10 signed
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
         case INST_READ32I: {
