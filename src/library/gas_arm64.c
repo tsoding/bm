@@ -313,7 +313,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_XOR: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // xor\n");
+            BINARY_OP("EOR");
         }
         break;
         case INST_SHR: {
