@@ -88,7 +88,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_PLUSI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // plusi\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    add x9, x9, x10\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_MINUSI: {
@@ -320,7 +324,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_WRITE8: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // write8\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
+            fprintf(output, "    ldr x11, =memory\n");
+            fprintf(output, "    add x10, x10, x11\n");             // Address
+            fprintf(output, "    strb w9, [x10]\n");                // Store byte
         }
         break;
         case INST_WRITE16: {
