@@ -30,6 +30,14 @@
         fprintf(output, "    cset x1, "cc"\n");                     \
         fprintf(output, "    str x1, [x0], #BM_WORD_SIZE\n");       \
     } while(0)
+#define CMP_INT(cc)                                                       \
+    do {                                                                \
+        fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");         \
+        fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");        \
+        fprintf(output, "    cmp x10, x9\n");                           \
+        fprintf(output, "    cset x10, "cc"\n");                        \
+        fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");          \
+    } while(0)
 
 void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const char *output_file_path)
 {
@@ -226,52 +234,58 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_GEI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // gei\n");
+            CMP_INT("GE");
         }
         break;
         case INST_GTI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // gti\n");
+            CMP_INT("GT");
         }
         break;
         case INST_LEI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // lei\n");
+            CMP_INT("LE");
         }
         break;
         case INST_LTI: {
             fprintf(output, "    // lti\n");
-            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    cmp x10, x9\n");
-            fprintf(output, "    cset x10, LT\n");
-            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
+            CMP_INT("LT");
         }
         break;
         case INST_NEI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // nei\n");
+            CMP_INT("NE");
         }
         break;
         case INST_EQU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // equ\n");
+            CMP_INT("EQ");
         }
         break;
         case INST_GEU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // geu\n");
+            CMP_INT("HS");
         }
         break;
         case INST_GTU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // gtu\n");
+            CMP_INT("HI");
         }
         break;
         case INST_LEU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // leu\n");
+            CMP_INT("LS");
         }
         break;
         case INST_LTU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // ltu\n");
+            CMP_INT("LO");
         }
         break;
         case INST_NEU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // neu\n");
+            CMP_INT("NE");
         }
         break;
         case INST_EQF: {
