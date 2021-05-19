@@ -305,28 +305,35 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_ANDB: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // xor\n");
+            BINARY_OP("and");
         }
         break;
         case INST_ORB: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // xor\n");
+            BINARY_OP("orr");
         }
         break;
         case INST_XOR: {
             fprintf(output, "    // xor\n");
-            BINARY_OP("EOR");
+            BINARY_OP("eor");
         }
         break;
         case INST_SHR: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // shr\n");
+            BINARY_OP("lsr");
         }
         break;
         case INST_SHL: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // shr\n");
+            BINARY_OP("lsl");
         }
         break;
         case INST_NOTB: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // notb\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    mvn x9, x9\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_READ8I: {
