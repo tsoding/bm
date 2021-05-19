@@ -1,18 +1,27 @@
 #include "basm.h"
 
-#define LOAD_SP(output)                                 \
+#define LOAD_SP                                         \
     do {                                                \
-        fprintf(output, "    // LOAD SP\n");            \
+        fprintf(output, "    // LOAD_SP\n");            \
         fprintf(output, "    ldr x9, =stack_top\n");    \
         fprintf(output, "    ldr w0, [x9]\n");          \
     } while(0)
 
-#define STORE_SP(output)                                        \
+#define STORE_SP                                                \
     do {                                                        \
         fprintf(output, "    // STORE_SP\n");                   \
         fprintf(output, "    ldr x9, =stack_top\n");            \
         fprintf(output, "    str w0, [x9]\n");                  \
     } while(0)
+
+#define BINARY_OP(op)                                                   \
+    do {                                                                \
+        fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");         \
+        fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");        \
+        fprintf(output, "    "op" x11, x10, x9\n");                     \
+        fprintf(output, "    str x11, [x0], #BM_WORD_SIZE\n");          \
+    } while (0)                                                         \
+
 
 
 void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const char *output_file_path)
@@ -48,7 +57,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
 
         if (i == basm->entry) {
             fprintf(output, "_start:\n");
-            LOAD_SP(output);
+            LOAD_SP;
         }
 
         fprintf(output, "inst_%zu:\n", i);
@@ -89,18 +98,17 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_PLUSI: {
             fprintf(output, "    // plusi\n");
-            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    add x9, x9, x10\n");
-            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
+            BINARY_OP("add");
         }
         break;
         case INST_MINUSI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // plusi\n");
+            BINARY_OP("sub");
         }
         break;
         case INST_MULTI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // multi\n");
+            BINARY_OP("mul");
         }
         break;
         case INST_MULTU: {
@@ -108,11 +116,13 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_DIVI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // divi\n");
+            BINARY_OP("sdiv");
         }
         break;
         case INST_DIVU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // divu\n");
+            BINARY_OP("udiv");
         }
         break;
         case INST_MODI: {
@@ -168,11 +178,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
                 fprintf(output, "    ldr x1, [x0, #-BM_WORD_SIZE]!\n");
                 fprintf(output, "    ldr x4, =memory\n");
                 fprintf(output, "    add x1, x1, x4\n");
-                STORE_SP(output);
+                STORE_SP;
                 fprintf(output, "    mov x8, SYS_WRITE\n");
                 fprintf(output, "    mov x0, STDOUT\n");
                 fprintf(output, "    svc #0\n");
-                LOAD_SP(output);
+                LOAD_SP;
             }
         }
         break;
