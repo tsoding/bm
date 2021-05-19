@@ -72,7 +72,13 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_DUP: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // dup %"PRIu64"\n", inst.operand.as_u64);
+            fprintf(output, "    mov x9, #%"PRIu64"\n", inst.operand.as_u64 + 1); // Offset
+            fprintf(output, "    mov x10, #BM_WORD_SIZE\n");                      // Wordsize
+            fprintf(output, "    msub x1, x9, x10, x0\n");                        // x1 = x0 - x9 * x10 = SP - n * BM_WORDSIZE
+            fprintf(output, "    ldr x1, [x1]\n");                                // deref
+            fprintf(output, "    str x1, [x0]\n");                                // store at sp
+            fprintf(output, "    add x0, x0, BM_WORD_SIZE\n");                    // inc sp
         }
         break;
         case INST_SWAP: {
