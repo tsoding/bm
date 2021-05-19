@@ -82,7 +82,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_SWAP: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // swap %"PRIu64"\n", inst.operand.as_u64);
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-%zu]!         // = %zu * BM_WORD_SIZE\n", inst.operand.as_u64 * BM_WORD_SIZE, inst.operand.as_u64);
+            fprintf(output, "    str x9, [x0], #%zu            // as previous\n", inst.operand.as_u64 * BM_WORD_SIZE);
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_PLUSI: {
