@@ -46,11 +46,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_PUSH: {
             fprintf(output, "    // push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    ldr x0, =stack_top\n");
-            fprintf(output, "    ldr x1, [x0]\n");
+            fprintf(output, "    ldr w1, [x0]\n");
             fprintf(output, "    mov x2, #%"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    str x2, [x1]\n");
             fprintf(output, "    add x1, x1, BM_WORD_SIZE\n");
-            fprintf(output, "    str x1, [x0]\n");
+            fprintf(output, "    str w1, [x0]\n");
         }
         break;
         case INST_DROP: {
@@ -135,7 +135,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
                 fprintf(output, "    mov x8, SYS_WRITE\n");
                 fprintf(output, "    mov x0, STDOUT\n");
                 fprintf(output, "    ldr x3, =stack_top\n");
-                fprintf(output, "    ldr x3, [x3]\n");
+                fprintf(output, "    ldr w3, [x3]\n");
                 fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
                 fprintf(output, "    ldr x2, [x3]\n");
                 fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
@@ -143,7 +143,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
                 fprintf(output, "    ldr x4, =memory\n");
                 fprintf(output, "    add x1, x1, x4\n");
                 fprintf(output, "    ldr x4, =stack_top\n");
-                fprintf(output, "    str x3, [x4]\n");
+                fprintf(output, "    str w3, [x4]\n");
                 fprintf(output, "    svc #0\n");
             }
         }
@@ -325,7 +325,6 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
 
     fprintf(output, "    .data\n");
     fprintf(output, "stack_top: .word stack\n");
-    fprintf(output, "    .align 8\n");
 
     fprintf(output, "memory:\n");
     // XXX: Neat formatting
