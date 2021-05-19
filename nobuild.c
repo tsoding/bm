@@ -123,35 +123,53 @@ void examples_command(int argc, char **argv)
                     "-I", "lib",
                     "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
                     PATH("examples", example));
+            } else if (ENDS_WITH(example, ".bang"))
+            {
+                CMD(PATH("build", "toolchain", "bang"),
+                    "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
+                    PATH("examples", example));
             }
         });
     } else {
-        const char *subcommand = shift_args(&argc, &argv);
+        const char *const subcommand = shift_args(&argc, &argv);
 
         if (strcmp(subcommand, "run") == 0) {
             const char *example = shift_args(&argc, &argv);
-            CMD(PATH("build", "toolchain", "basm"),
-                "-I", "lib",
-                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
-                PATH("examples", CONCAT(example, ".basm")));
+            const char *const input_file_path = PATH("examples", example);
+            const char *const output_file_path = PATH("build", "examples", CONCAT(NOEXT(example), ".bm"));
+            if (ENDS_WITH(example, ".basm")) {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "lib",
+                    "-o", output_file_path,
+                    input_file_path);
+            } else if (ENDS_WITH(example, ".bang")) {
+                CMD(PATH("build", "toolchain", "bang"),
+                    "-o", output_file_path,
+                    input_file_path);
+            } else {
+                PANIC("`%s` has unsupported file name extension", example);
+            }
             CMD(PATH("build", "toolchain", "bme"),
                 "-n", PATH("build", "wrappers", "libbm_sdl.so"),
-                PATH("build", "examples", CONCAT(example, ".bm")));
+                output_file_path);
         } else if (strcmp(subcommand, "debasm") == 0) {
             const char *example = shift_args(&argc, &argv);
-            CMD(PATH("build", "toolchain", "basm"),
-                "-I", "lib",
-                "-o", PATH("build", "examples", CONCAT(example, ".bm")),
-                PATH("examples", CONCAT(example, ".basm")));
+            const char *const input_file_path = PATH("examples", example);
+            const char *const output_file_path = PATH("build", "examples", CONCAT(NOEXT(example), ".bm"));
+            if (ENDS_WITH(example, ".basm")) {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "lib",
+                    "-o", output_file_path,
+                    input_file_path);
+            } else if (ENDS_WITH(example, ".bang")) {
+                CMD(PATH("build", "toolchain", "bang"),
+                    "-o", output_file_path,
+                    input_file_path);
+            } else {
+                PANIC("`%s` has unsupported file name extension", example);
+            }
             CMD(PATH("build", "toolchain", "debasm"),
-                PATH("build", "examples", CONCAT(example, ".bm")));
-        } else if (strcmp(subcommand, "ast2svg") == 0) {
-            MKDIRS("build", "svg");
-            const char *example = shift_args(&argc, &argv);
-            CHAIN(CHAIN_CMD(PATH("build", "toolchain", "basm2dot"),
-                            PATH("examples", CONCAT(example, ".basm"))),
-                  CHAIN_CMD("dot", "-Tsvg"),
-                  OUT(PATH("build", "svg", CONCAT(example, ".svg"))));
+                output_file_path);
         } else {
             fprintf(stderr, "ERROR: unknown subcommand `%s`\n", subcommand);
             exit(1);
@@ -161,6 +179,8 @@ void examples_command(int argc, char **argv)
 
 void wrappers_command(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
     RM(PATH("build", "wrappers"));
     MKDIRS("build", "wrappers");
 
@@ -284,7 +304,7 @@ void cases_command(int argc, char **argv)
             }
         });
 #else
-    assert(0 && "FIXME: right now assembly that basm produces is linux only");
+        assert(0 && "FIXME: right now assembly that basm produces is linux only");
 #endif
     }
 }
@@ -325,6 +345,8 @@ void record_command(int argc, char **argv)
 
 void fmt_command(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
     FOREACH_FILE_IN_DIR(file, PATH("src", "library"), {
         if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
         {
@@ -354,6 +376,8 @@ void print_help(FILE *stream);
 
 void help_command(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
     print_help(stdout);
 }
 
@@ -404,6 +428,8 @@ void link_lib_objects(Cstr *objects, size_t objects_count)
 
 void lib_command(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
     MKDIRS("build", "library");
 
     size_t objects_size = 0;
