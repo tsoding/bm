@@ -123,6 +123,11 @@ void examples_command(int argc, char **argv)
                     "-I", "lib",
                     "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
                     PATH("examples", example));
+            } else if (ENDS_WITH(example, ".bang"))
+            {
+                CMD(PATH("build", "toolchain", "bang"),
+                    "-o", PATH("build", "examples", CONCAT(NOEXT(example), ".bm")),
+                    PATH("examples", example));
             }
         });
     } else {
@@ -284,7 +289,7 @@ void cases_command(int argc, char **argv)
             }
         });
 #else
-    assert(0 && "FIXME: right now assembly that basm produces is linux only");
+        assert(0 && "FIXME: right now assembly that basm produces is linux only");
 #endif
     }
 }
