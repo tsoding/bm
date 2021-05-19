@@ -150,7 +150,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_JMP: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // jmp %"PRIu64"\n", inst.operand.as_u64);
+            fprintf(output, "    b inst_%"PRIu64"\n", inst.operand.as_u64);
         }
         break;
         case INST_JMP_IF: {
