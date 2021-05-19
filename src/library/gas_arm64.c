@@ -51,7 +51,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     fprintf(output, "    .text\n");
     fprintf(output, "    .globl _start\n");
 
-    // size_t jmp_count = 0;
+    size_t jmp_count = 0;
     for (size_t i = 0; i < basm->program_size; ++i) {
         Inst inst = basm->program[i];
 
@@ -154,16 +154,23 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_JMP_IF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // jmp_if\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    cmp x9, 0\n");
+            fprintf(output, "    beq jmp_if_escape_%zu\n", jmp_count);
+            fprintf(output, "    b inst_%"PRIu64"\n", inst.operand.as_u64);
+            fprintf(output, "jmp_if_escape_%zu:\n", jmp_count);
+            jmp_count += 1;
         }
         break;
         case INST_RET: {
             fprintf(output, "    // ret\n");
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    mov x10, #BM_WORD_SIZE\n");
-            fprintf(output, "    mul x11, x9, x10\n");
-            fprintf(output, "    ldr x9, =inst_map\n");
-            fprintf(output, "    ldr w10, [x9, x11]\n");
+            // XXX: Hack to make ret work
+            fprintf(output, "    mov x10, #4\n");
+            fprintf(output, "    ldr x11, =inst_map\n");
+            fprintf(output, "    madd x12, x9, x10, x11\n");
+            fprintf(output, "    ldr w10, [x12]\n");
             fprintf(output, "    br x10\n");
         }
         break;
@@ -220,7 +227,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_LTI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // lti\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    cmp x10, x9\n");
+            fprintf(output, "    cset x10, LT\n");
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_NEI: {
@@ -389,10 +401,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     }
 
     fprintf(output, "    .data\n");
-
     fprintf(output, "inst_map:\n");
     for (size_t i = 0; i < basm->program_size; ++i) {
-        fprintf(output, "    .align =BASM_WORD_SIZE\n");
         fprintf(output, "    .word inst_%zu\n", i);
     }
 
