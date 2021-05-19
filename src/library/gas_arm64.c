@@ -175,7 +175,10 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_CALL: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // call\n");
+            fprintf(output, "    mov x9, #%zu\n", i + 1);
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
+            fprintf(output, "    b inst_%"PRIu64"\n", inst.operand.as_u64);
         }
         break;
         case INST_NATIVE: {
