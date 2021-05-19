@@ -1,5 +1,20 @@
 #include "basm.h"
 
+#define LOAD_SP(output)                                 \
+    do {                                                \
+        fprintf(output, "    // LOAD SP\n");            \
+        fprintf(output, "    ldr x9, =stack_top\n");    \
+        fprintf(output, "    ldr w0, [x9]\n");          \
+    } while(0)
+
+#define STORE_SP(output)                                        \
+    do {                                                        \
+        fprintf(output, "    // STORE_SP\n");                   \
+        fprintf(output, "    ldr x9, =stack_top\n");            \
+        fprintf(output, "    str w0, [x9]\n");                  \
+    } while(0)
+
+
 void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
@@ -33,6 +48,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
 
         if (i == basm->entry) {
             fprintf(output, "_start:\n");
+            LOAD_SP(output);
         }
 
         fprintf(output, "inst_%zu:\n", i);
@@ -45,20 +61,14 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_PUSH: {
             fprintf(output, "    // push %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    ldr x0, =stack_top\n");
-            fprintf(output, "    ldr w1, [x0]\n");
             fprintf(output, "    mov x2, #%"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    str x2, [x1]\n");
-            fprintf(output, "    add x1, x1, BM_WORD_SIZE\n");
-            fprintf(output, "    str w1, [x0]\n");
+            fprintf(output, "    str x2, [x0]\n");
+            fprintf(output, "    add x0, x0, BM_WORD_SIZE\n");
         }
         break;
         case INST_DROP: {
             fprintf(output, "    // drop\n");
-            fprintf(output, "    ldr x0, =stack_top\n");
-            fprintf(output, "    ldr w1, [x0]\n");
-            fprintf(output, "    sub w1, w1, BM_WORD_SIZE\n");
-            fprintf(output, "    str w1, [x0]\n");
+            fprintf(output, "    sub x0, x0, BM_WORD_SIZE\n");
         }
         break;
         case INST_DUP: {
@@ -136,23 +146,22 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 0) {
                 fprintf(output, "    // native write\n");
-                fprintf(output, "    mov x8, SYS_WRITE\n");
-                fprintf(output, "    mov x0, STDOUT\n");
-                fprintf(output, "    ldr x3, =stack_top\n");
-                fprintf(output, "    ldr w3, [x3]\n");
-                fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
-                fprintf(output, "    ldr x2, [x3]\n");
-                fprintf(output, "    sub x3, x3, BM_WORD_SIZE\n");
-                fprintf(output, "    ldr x1, [x3]\n");
+                fprintf(output, "    sub x0, x0, BM_WORD_SIZE\n");
+                fprintf(output, "    ldr x2, [x0]\n");
+                fprintf(output, "    sub x0, x0, BM_WORD_SIZE\n");
+                fprintf(output, "    ldr x1, [x0]\n");
                 fprintf(output, "    ldr x4, =memory\n");
                 fprintf(output, "    add x1, x1, x4\n");
-                fprintf(output, "    ldr x4, =stack_top\n");
-                fprintf(output, "    str w3, [x4]\n");
+                STORE_SP(output);
+                fprintf(output, "    mov x8, SYS_WRITE\n");
+                fprintf(output, "    mov x0, STDOUT\n");
                 fprintf(output, "    svc #0\n");
+                LOAD_SP(output);
             }
         }
         break;
         case INST_HALT: {
+            // Clobber like hell ... we're gonna exit here anyways
             fprintf(output, "    // halt\n");
             fprintf(output, "    mov x0, #0\n");
             fprintf(output, "    mov x8, SYS_EXIT\n");
