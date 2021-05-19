@@ -272,7 +272,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_GEF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // gef\n");
+            fprintf(output, "    ldr d1, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr d2, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    fcmp d2, d1\n");
+            fprintf(output, "    cset x1, GE\n");
+            fprintf(output, "    str x1, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_GTF: {
