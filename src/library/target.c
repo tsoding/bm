@@ -6,15 +6,17 @@ static const char * const target_names[COUNT_TARGETS] = {
     [TARGET_BM] = "bm",
     [TARGET_NASM_LINUX_X86_64] = "nasm-linux-x86-64",
     [TARGET_NASM_FREEBSD_X86_64] = "nasm-freebsd-x86-64",
+    [TARGET_NASM_WINDOWS_X86_64] = "nasm-windows-x86-64",
 };
-static_assert(COUNT_TARGETS == 3, "Amount of target names have changed");
+static_assert(COUNT_TARGETS == 4, "Amount of target names have changed");
 
 static const char * const target_exts[COUNT_TARGETS] = {
     [TARGET_BM] = ".bm",
     [TARGET_NASM_LINUX_X86_64] = ".asm",
     [TARGET_NASM_FREEBSD_X86_64] = ".S",
+    [TARGET_NASM_WINDOWS_X86_64] = ".asm",
 };
-static_assert(COUNT_TARGETS == 3, "Amount of target extensions have changed");
+static_assert(COUNT_TARGETS == 4, "Amount of target extensions have changed");
 
 const char *target_file_ext(Target target)
 {

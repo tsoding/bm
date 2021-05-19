@@ -7,6 +7,7 @@ typedef enum {
     TARGET_BM = 0,
     TARGET_NASM_LINUX_X86_64,
     TARGET_NASM_FREEBSD_X86_64,
+    TARGET_NASM_WINDOWS_X86_64,
     COUNT_TARGETS
 } Target;
 
