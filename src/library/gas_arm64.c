@@ -54,7 +54,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_DROP: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // drop\n");
+            fprintf(output, "    ldr x0, =stack_top\n");
+            fprintf(output, "    ldr w1, [x0]\n");
+            fprintf(output, "    sub w1, w1, BM_WORD_SIZE\n");
+            fprintf(output, "    str w1, [x0]\n");
         }
         break;
         case INST_DUP: {
