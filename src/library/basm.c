@@ -2179,7 +2179,7 @@ void basm_save_to_file_as_nasm_x86_64(Basm *basm, Syscall_Target target, const c
     switch (target) {
     case SYSCALLTARGET_LINUX:
     case SYSCALLTARGET_FREEBSD:
-    break;
+        break;
     case SYSCALLTARGET_WINDOWS: {
         fprintf(output, "stdout_handler: dd 0\n");
     }
@@ -2215,7 +2215,7 @@ void basm_save_to_file_as_nasm_x86_64(Basm *basm, Syscall_Target target, const c
     switch (target) {
     case SYSCALLTARGET_LINUX:
     case SYSCALLTARGET_FREEBSD:
-    break;
+        break;
     case SYSCALLTARGET_WINDOWS: {
         fprintf(output, "STD_OUTPUT_HANDLE equ -11\n");
     }
