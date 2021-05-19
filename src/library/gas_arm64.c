@@ -412,11 +412,17 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_F2I: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // f2i\n");
+            fprintf(output, "    ldr d0, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    fcvtzs x9, d0\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_F2U: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // f2u\n");
+            fprintf(output, "    ldr d0, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    fcvtzu x9, d0\n");
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case NUMBER_OF_INSTS:
