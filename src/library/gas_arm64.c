@@ -70,8 +70,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_PUSH: {
             fprintf(output, "    // push %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov x2, #%"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    str x2, [x0], #BM_WORD_SIZE\n");
+            fprintf(output, "    ldr x9, =0x%"PRIx64"\n", inst.operand.as_u64);
+            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_DROP: {
