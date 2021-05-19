@@ -199,7 +199,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_EQI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // eqi\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    cmp x9, x10\n");
+            fprintf(output, "    cset x10, EQ\n");
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_GEI: {
