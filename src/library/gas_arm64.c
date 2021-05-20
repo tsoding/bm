@@ -14,13 +14,21 @@
         fprintf(output, "    str w0, [x9]\n");                  \
     } while(0)
 
-#define BINARY_OP(op)                                                   \
+#define BINARY_OP_INT(op)                                               \
     do {                                                                \
         fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");         \
         fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");        \
         fprintf(output, "    "op" x11, x10, x9\n");                     \
         fprintf(output, "    str x11, [x0], #BM_WORD_SIZE\n");          \
     } while (0)
+
+#define BINARY_OP_FLT(op)                                           \
+    do {                                                            \
+        fprintf(output, "    ldr d1, [x0, #-BM_WORD_SIZE]!\n");     \
+        fprintf(output, "    ldr d2, [x0, #-BM_WORD_SIZE]!\n");     \
+        fprintf(output, "    "op" d1, d2, d1\n");                   \
+        fprintf(output, "    str d1, [x0], #BM_WORD_SIZE\n");       \
+    } while(0)
 
 #define CMP_FLT(cc)                                                 \
     do {                                                            \
@@ -113,32 +121,32 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_PLUSI: {
             fprintf(output, "    // plusi\n");
-            BINARY_OP("add");
+            BINARY_OP_INT("add");
         }
         break;
         case INST_MINUSI: {
             fprintf(output, "    // plusi\n");
-            BINARY_OP("sub");
+            BINARY_OP_INT("sub");
         }
         break;
         case INST_MULTI: {
             fprintf(output, "    // multi\n");
-            BINARY_OP("mul");
+            BINARY_OP_INT("mul");
         }
         break;
         case INST_MULTU: {
             fprintf(output, "    // multu\n");
-            BINARY_OP("mul");
+            BINARY_OP_INT("mul");
         }
         break;
         case INST_DIVI: {
             fprintf(output, "    // divi\n");
-            BINARY_OP("sdiv");
+            BINARY_OP_INT("sdiv");
         }
         break;
         case INST_DIVU: {
             fprintf(output, "    // divu\n");
-            BINARY_OP("udiv");
+            BINARY_OP_INT("udiv");
         }
         break;
         case INST_MODI: {
@@ -176,19 +184,23 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_PLUSF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // plusf\n");
+            BINARY_OP_FLT("fadd");
         }
         break;
         case INST_MINUSF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // minusf\n");
+            BINARY_OP_FLT("fsub");
         }
         break;
         case INST_MULTF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // multf\n");
+            BINARY_OP_FLT("fmul");
         }
         break;
         case INST_DIVF: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // divf\n");
+            BINARY_OP_FLT("fdiv");
         }
         break;
         case INST_JMP: {
@@ -252,7 +264,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
             fprintf(output, "    mov x10, #0\n");
             fprintf(output, "    cmp x9, #0\n");
-            fprintf(output, "    cset x10, NE\n");
+            fprintf(output, "    cset x10, EQ\n");
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
@@ -352,27 +364,27 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_ANDB: {
             fprintf(output, "    // xor\n");
-            BINARY_OP("and");
+            BINARY_OP_INT("and");
         }
         break;
         case INST_ORB: {
             fprintf(output, "    // xor\n");
-            BINARY_OP("orr");
+            BINARY_OP_INT("orr");
         }
         break;
         case INST_XOR: {
             fprintf(output, "    // xor\n");
-            BINARY_OP("eor");
+            BINARY_OP_INT("eor");
         }
         break;
         case INST_SHR: {
             fprintf(output, "    // shr\n");
-            BINARY_OP("lsr");
+            BINARY_OP_INT("lsr");
         }
         break;
         case INST_SHL: {
             fprintf(output, "    // shr\n");
-            BINARY_OP("lsl");
+            BINARY_OP_INT("lsl");
         }
         break;
         case INST_NOTB: {
@@ -406,12 +418,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_READ16U: {
             fprintf(output, "    // read8u\n");
-            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
-            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
-            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
-            fprintf(output, "    mov x10, #0\n");                   // zero out x10
-            fprintf(output, "    ldurh w10, [x9]\n");               // Load half a word of the lower part of x10 signed
-            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, =memory\n");
+            fprintf(output, "    add x9, x9, x10\n");
+            fprintf(output, "    mov x10, #0\n");
+            fprintf(output, "    ldursh x10, [x9]\n");
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_READ32I: {
@@ -429,7 +441,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_WRITE8: {
             fprintf(output, "    // write8\n");
-            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr w9, [x0, #-BM_WORD_SIZE]!\n");  // Value
             fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
             fprintf(output, "    ldr x11, =memory\n");
             fprintf(output, "    add x10, x10, x11\n");             // Address
