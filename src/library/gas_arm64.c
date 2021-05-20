@@ -410,7 +410,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
             fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
             fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
-            fprintf(output, "    ldursb x10, [x9]\n");              // Read unsigned
+            fprintf(output, "    ldurb x10, [x9]\n");               // Read unsigned
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
