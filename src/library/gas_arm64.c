@@ -223,11 +223,10 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_RET: {
             fprintf(output, "    // ret\n");
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
-            // XXX: Hack to make ret work
-            fprintf(output, "    mov x10, #4\n");
+            fprintf(output, "    mov x10, #BM_WORD_SIZE\n");
             fprintf(output, "    ldr x11, =inst_map\n");
             fprintf(output, "    madd x12, x9, x10, x11\n");
-            fprintf(output, "    ldr w10, [x12]\n");
+            fprintf(output, "    ldr x10, [x12]\n");
             fprintf(output, "    br x10\n");
         }
         break;
@@ -538,13 +537,12 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     fprintf(output, "    .data\n");
     fprintf(output, "inst_map:\n");
     for (size_t i = 0; i < basm->program_size; ++i) {
-        fprintf(output, "    .word inst_%zu\n", i);
+        fprintf(output, "    .dc.a inst_%zu\n", i);
     }
 
     fprintf(output, "stack_top: .word stack\n");
 
     fprintf(output, "memory:\n");
-    // XXX: Neat formatting
     for (size_t i = 0; i < basm->memory_size; ++i) {
         fprintf(output, "    .byte %u\n", basm->memory[i]);
     }
