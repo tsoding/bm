@@ -63,11 +63,13 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     case SYSCALLTARGET_LINUX: {
         fprintf(stderr, "ERROR: Linux is not supported on arm64/aarch64\n");
         exit(1);
-    } break;
+    }
+    break;
     case SYSCALLTARGET_FREEBSD: {
         fprintf(output, "#define SYS_EXIT #1\n");
         fprintf(output, "#define SYS_WRITE #4\n");
-    } break;
+    }
+    break;
     }
 
     fprintf(output, "#define STDOUT #1\n");
@@ -413,7 +415,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_READ16I: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_READ16U: {
@@ -427,16 +430,19 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_READ32I: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_READ32U: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_READ64I:
         case INST_READ64U: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_WRITE8: {
@@ -449,15 +455,18 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_WRITE16: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_WRITE32: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_WRITE64: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(stderr, "Instruction is not yet implemented\n");
+            abort();
         }
         break;
         case INST_I2F: {
