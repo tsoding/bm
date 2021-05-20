@@ -454,8 +454,10 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         break;
         case INST_READ64I:
         case INST_READ64U: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // read64?\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x9]\n");
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_WRITE8: {
