@@ -410,7 +410,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
             fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
             fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
-            fprintf(output, "    ldurb x10, [x9]\n");               // Read unsigned
+            fprintf(output, "    ldurb w10, [x9]\n");               // Read unsigned
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
@@ -456,13 +456,15 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         case INST_READ64U: {
             fprintf(output, "    // read64?\n");
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, =memory\n");
+            fprintf(output, "    add x9, x9, x10\n");
             fprintf(output, "    ldr x10, [x9]\n");
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_WRITE8: {
             fprintf(output, "    // write8\n");
-            fprintf(output, "    ldr w9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
             fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
             fprintf(output, "    ldr x11, =memory\n");
             fprintf(output, "    add x10, x10, x11\n");             // Address
@@ -470,18 +472,30 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_WRITE16: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // write16\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
+            fprintf(output, "    ldr x11, =memory\n");
+            fprintf(output, "    add x10, x10, x11\n");              // Address
+            fprintf(output, "    strh w9, [x10]\n");                 // Store halfword
         }
         break;
         case INST_WRITE32: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // write32\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
+            fprintf(output, "    ldr x11, =memory\n");
+            fprintf(output, "    add x10, x10, x11\n");              // Address
+            fprintf(output, "    str w9, [x10]\n");                  // Store word
         }
         break;
         case INST_WRITE64: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // write64\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");  // Value
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
+            fprintf(output, "    ldr x11, =memory\n");
+            fprintf(output, "    add x10, x10, x11\n");              // Address
+            fprintf(output, "    str x9, [x10]\n");                 // Store doubleword
         }
         break;
         case INST_I2F: {
