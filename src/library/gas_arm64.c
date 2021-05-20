@@ -127,7 +127,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_MULTU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            fprintf(output, "    // multu\n");
+            BINARY_OP("mul");
         }
         break;
         case INST_DIVI: {
@@ -141,11 +142,37 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_MODI: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            /*
+             * See comment underneath
+             */
+            fprintf(output, "    // modi\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    sdiv x11, x10, x9\n");
+            fprintf(output, "    msub x12, x11, x9, x10\n");
+            fprintf(output, "    str x12, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_MODU: {
-            fprintf(stderr, "Instruction is not yet implemented\n"); abort();
+            /* A64 neither has a mod nor a div instr that produces the
+             * rest of a division. So here we do a division first and
+             * with a subtraction, we determine what is missing to
+             * complete the division.
+             *
+             * Example:
+             *     50 % 7
+             *     x9 = 7                                          (ldr)
+             *    x10 = 50                                         (ldr)
+             *    x11 = x10 / x9 = 50 / 7 = 7                      (udiv)
+             *    x12 = x10 - x11 * x9 = 50 - 7 * 7 = 50 - 49 = 1  (msub)
+             *    store x12                                        (str)
+             */
+            fprintf(output, "    // modu\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    udiv x11, x10, x9\n");
+            fprintf(output, "    msub x12, x11, x9, x10\n");
+            fprintf(output, "    str x12, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_PLUSF: {
