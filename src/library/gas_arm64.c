@@ -517,9 +517,9 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     fprintf(output, "memory:\n");
     // XXX: Neat formatting
     for (size_t i = 0; i < basm->memory_size; ++i) {
-        fprintf(output, "  .byte %u\n", basm->memory[i]);
+        fprintf(output, "    .byte %u\n", basm->memory[i]);
     }
-    fprintf(output, "  .fill %zu, 1, 0\n", BM_MEMORY_CAPACITY - basm->memory_size);
+    fprintf(output, "    .fill %zu, 1, 0\n", BM_MEMORY_CAPACITY - basm->memory_size);
 
     fprintf(output, "    .bss\n");
     fprintf(output, "stack: .fill BM_STACK_CAPACITY, 1, 0\n");
