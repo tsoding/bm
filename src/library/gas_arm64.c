@@ -415,28 +415,41 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
         }
         break;
         case INST_READ16I: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // read16i\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
+            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
+            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
+            fprintf(output, "    ldrsh x10, [x9]\n");               // Read
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
         case INST_READ16U: {
-            fprintf(output, "    // read8u\n");
+            fprintf(output, "    // read16u\n");
             fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
             fprintf(output, "    ldr x10, =memory\n");
             fprintf(output, "    add x9, x9, x10\n");
-            fprintf(output, "    mov x10, #0\n");
-            fprintf(output, "    ldursh x10, [x9]\n");
+            fprintf(output, "    sub x10, x10, x10\n");
+            fprintf(output, "    ldurh w10, [x9]\n");
             fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");
         }
         break;
         case INST_READ32I: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // read32i\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
+            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
+            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
+            fprintf(output, "    ldrsw x10, [x9]\n");               // Read
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
         case INST_READ32U: {
-            fprintf(stderr, "Instruction is not yet implemented\n");
-            abort();
+            fprintf(output, "    // read32u\n");
+            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n"); // Load address from stack
+            fprintf(output, "    ldr x10, =memory\n");              // Load memory offset
+            fprintf(output, "    add x9, x9, x10\n");               // Calculate address to load
+            fprintf(output, "    sub x10, x10, x10\n");             // Zero out the register
+            fprintf(output, "    ldur w10, [x9]\n");                // Read
+            fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");  // Store on stack
         }
         break;
         case INST_READ64I:
