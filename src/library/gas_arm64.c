@@ -61,7 +61,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
 
     switch (target) {
     case SYSCALLTARGET_LINUX: {
-        fprintf(stderr, "ERROR: Linux is not supported on arm64/aarch64\n");
+        fprintf(stderr, "TODO(#378): Linux is not supported on arm64/aarch64\n");
         exit(1);
     }
     break;
