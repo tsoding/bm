@@ -19,7 +19,8 @@
 
 typedef enum {
     SYSCALLTARGET_LINUX = 0,
-    SYSCALLTARGET_FREEBSD
+    SYSCALLTARGET_FREEBSD,
+    SYSCALLTARGET_WINDOWS,
 } Syscall_Target;
 
 typedef enum {
