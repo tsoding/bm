@@ -1,0 +1,11 @@
+#+AUTHOR: Nico Sonack
+#+TITLE: How the ARM64 Assembly generator works
+#+EMAIL: nsonack@outlook.com
+#+OPTIONS: toc:nil
+
+* Register Conventions
+  - x0 always contains the stack pointer
+  - before we do a syscall / native call, it gets stored to a dedicated place
+    - for this two macros are available (=STORE_SP= and =LOAD_SP=)
+    - =LOAD_SP= gets called on the entry
+    - both of those macros clobber x9
