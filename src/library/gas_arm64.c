@@ -68,7 +68,8 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
     case OS_TARGET_WINDOWS: {
         fprintf(stderr, "TODO: Windows is not supported on arm64/aarch64\n");
         exit(1);
-    } break;
+    }
+    break;
     case OS_TARGET_FREEBSD: {
         fprintf(output, "#define SYS_EXIT #1\n");
         fprintf(output, "#define SYS_WRITE #4\n");
