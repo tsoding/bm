@@ -1,6 +1,6 @@
 #include "basm.h"
 
-void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, const char *output_file_path)
+void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
@@ -13,20 +13,20 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
     fprintf(output, "%%define BM_STACK_CAPACITY %d\n", BM_STACK_CAPACITY);
     fprintf(output, "%%define BM_WORD_SIZE %d\n", BM_WORD_SIZE);
 
-    switch (target) {
-    case SYSCALLTARGET_LINUX: {
+    switch (os_target) {
+    case OS_TARGET_LINUX: {
         fprintf(output, "%%define SYS_EXIT 60\n");
         fprintf(output, "%%define SYS_WRITE 1\n");
         fprintf(output, "%%define STDOUT 1\n");
     }
     break;
-    case SYSCALLTARGET_FREEBSD: {
+    case OS_TARGET_FREEBSD: {
         fprintf(output, "%%define SYS_EXIT 1\n");
         fprintf(output, "%%define SYS_WRITE 4\n");
         fprintf(output, "%%define STDOUT 1\n");
     }
     break;
-    case SYSCALLTARGET_WINDOWS: {
+    case OS_TARGET_WINDOWS: {
         fprintf(output, "extern GetStdHandle\n");
         fprintf(output, "extern WriteFile\n");
         fprintf(output, "extern ExitProcess\n");
@@ -292,9 +292,9 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
         case INST_NATIVE: {
             if (inst.operand.as_u64 == 0) {
                 fprintf(output, "    ;; native write\n");
-                switch (target) {
-                case SYSCALLTARGET_LINUX:
-                case SYSCALLTARGET_FREEBSD: {
+                switch (os_target) {
+                case OS_TARGET_LINUX:
+                case OS_TARGET_FREEBSD: {
                     fprintf(output, "    mov r11, [stack_top]\n");
                     fprintf(output, "    sub r11, BM_WORD_SIZE\n");
                     fprintf(output, "    mov rdx, [r11]\n");
@@ -307,7 +307,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
                     fprintf(output, "    syscall\n");
                 }
                 break;
-                case SYSCALLTARGET_WINDOWS: {
+                case OS_TARGET_WINDOWS: {
                     fprintf(output, "    sub rsp, 40\n");
                     fprintf(output, "    mov ecx, STD_OUTPUT_HANDLE\n");
                     fprintf(output, "    call GetStdHandle\n");
@@ -334,15 +334,15 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
         break;
         case INST_HALT: {
             fprintf(output, "    ;; halt\n");
-            switch (target) {
-            case SYSCALLTARGET_LINUX:
-            case SYSCALLTARGET_FREEBSD: {
+            switch (os_target) {
+            case OS_TARGET_LINUX:
+            case OS_TARGET_FREEBSD: {
                 fprintf(output, "    mov rax, SYS_EXIT\n");
                 fprintf(output, "    mov rdi, 0\n");
                 fprintf(output, "    syscall\n");
             }
             break;
-            case SYSCALLTARGET_WINDOWS: {
+            case OS_TARGET_WINDOWS: {
                 fprintf(output, "    push dword 0\n");
                 fprintf(output, "    call ExitProcess\n");
             }
@@ -900,8 +900,17 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
 
     fprintf(output, "    ret\n");
     fprintf(output, "segment .data\n");
-    if (target == SYSCALLTARGET_WINDOWS) {
+    switch (os_target) {
+    case OS_TARGET_WINDOWS:
         fprintf(output, "stdout_handler: dd 0\n");
+        break;
+    case OS_TARGET_LINUX:
+    case OS_TARGET_FREEBSD:
+        // Nothing to do
+        break;
+    default:
+        assert(false && "unreachable");
+        exit(1);
     }
     fprintf(output, "magic_number_for_f2u: dq 0x43E0000000000000\n");
     fprintf(output, "stack_top: dq stack\n");
@@ -930,8 +939,17 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, co
 #undef ROW_COUNT
     fprintf(output, "\n");
     fprintf(output, "segment .bss\n");
-    if (target == SYSCALLTARGET_WINDOWS) {
+    switch (os_target) {
+    case OS_TARGET_WINDOWS:
         fprintf(output, "STD_OUTPUT_HANDLE equ -11\n");
+        break;
+    case OS_TARGET_LINUX:
+    case OS_TARGET_FREEBSD:
+        // Nothing to do
+        break;
+    default:
+        assert(false && "unreachable");
+        exit(1);
     }
     fprintf(output, "stack: resq BM_STACK_CAPACITY\n");
 

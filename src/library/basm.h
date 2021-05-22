@@ -18,10 +18,10 @@
 #define BASM_INCLUDE_PATHS_CAPACITY 1024
 
 typedef enum {
-    SYSCALLTARGET_LINUX = 0,
-    SYSCALLTARGET_FREEBSD,
-    SYSCALLTARGET_WINDOWS,
-} Syscall_Target;
+    OS_TARGET_LINUX = 0,
+    OS_TARGET_FREEBSD,
+    OS_TARGET_WINDOWS,
+} OS_Target;
 
 typedef enum {
     BINDING_UNEVALUATED = 0,
@@ -161,8 +161,8 @@ void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_L
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
 void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Target target);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
-void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, Syscall_Target target, const char *output_file_path);
-void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const char *output_file_path);
+void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, const char *output_file_path);
+void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char *output_file_path);
 Word basm_push_string_to_memory(Basm *basm, String_View sv);
 Word basm_push_byte_array_to_memory(Basm *basm, uint64_t size, uint8_t value);
 Word basm_push_buffer_to_memory(Basm *basm, uint8_t *buffer, uint64_t buffer_size);
