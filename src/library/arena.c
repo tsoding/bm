@@ -13,7 +13,7 @@ Region *region_create(size_t capacity)
     return region;
 }
 
-void *arena_alloc(Arena *arena, size_t size)
+void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment)
 {
     if (arena->last == NULL) {
         assert(arena->first == NULL);
@@ -25,23 +25,56 @@ void *arena_alloc(Arena *arena, size_t size)
         arena->first = region;
     }
 
-    while (arena->last->size + size > arena->last->capacity &&
-            arena->last->next) {
-        arena->last = arena->last->next;
+    // deal with the zero case here specially to simplify the alignment-calculating code below.
+    if (size == 0) {
+        // anyway, we now know we have *a* region -- so it's valid to just return it.
+        return arena->last->buffer + arena->last->size;
     }
 
-    if (arena->last->size + size > arena->last->capacity) {
-        Region *region = region_create(
-                             size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
+    // alignment must be a power of two.
+    assert((alignment & (alignment - 1)) == 0);
 
-        arena->last->next = region;
-        arena->last = region;
+    Region *cur = arena->last;
+    while (true) {
+
+        char *ptr = (char*) (((uintptr_t) (cur->buffer + cur->size + (alignment - 1))) & ~(alignment - 1));
+        size_t real_size = (size_t) ((ptr + size) - (cur->buffer + cur->size));
+
+        if (cur->size + real_size > cur->capacity) {
+            if (cur->next) {
+                cur = cur->next;
+                continue;
+            } else {
+                // out of space, make a new one. even though we are making a new region, there
+                // aren't really any guarantees on the alignment of memory that malloc() returns.
+                // so, allocate enough extra bytes to fix the 'worst case' alignment.
+                size_t worst_case = size + (alignment - 1);
+
+                Region *region = region_create(worst_case > ARENA_DEFAULT_CAPACITY
+                                               ? worst_case
+                                               : ARENA_DEFAULT_CAPACITY);
+
+                arena->last->next = region;
+                arena->last = region;
+                cur = arena->last;
+
+                // ok, now we know we have enough space. just go back to the top of the loop here,
+                // so we don't duplicate the code. we now know that we will definitely succeed,
+                // so there won't be any infinite looping here.
+                continue;
+            }
+        } else {
+            memset(ptr, 0, real_size);
+            cur->size += real_size;
+            return ptr;
+        }
     }
+}
 
-    void *result = arena->last->buffer + arena->last->size;
-    memset(result, 0, size);
-    arena->last->size += size;
-    return result;
+void *arena_alloc(Arena *arena, size_t size)
+{
+    // by default, align to a pointer size. this should be sufficient on most platforms.
+    return arena_alloc_aligned(arena, size, sizeof(void*));
 }
 
 void arena_clean(Arena *arena)
