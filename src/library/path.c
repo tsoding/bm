@@ -13,7 +13,6 @@
 
 #include <assert.h>
 #include <string.h>
-#include <stdalign.h>
 #include "./path.h"
 
 static bool is_path_sep(char x)
@@ -81,7 +80,7 @@ String_View path_join(Arena *arena, String_View base, String_View file_path)
     const String_View sep = sv_from_cstr("\\");
 #endif // _WIN32
     const size_t result_size = base.count + sep.count + file_path.count;
-    char *result = arena_alloc(arena, result_size, alignof(char));
+    char *result = arena_alloc(arena, result_size);
     assert(result);
 
     {

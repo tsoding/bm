@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <stdalign.h>
 
 #include "./sv.h"
 
@@ -27,8 +26,8 @@ typedef struct {
     Region *last;
 } Arena;
 
-void *arena_alloc(Arena *arena, size_t size, size_t alignment);
-void *arena_alloc_unaligned(Arena *arena, size_t size);
+void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment);
+void *arena_alloc(Arena *arena, size_t size);
 void arena_clean(Arena *arena);
 void arena_free(Arena *arena);
 void arena_summary(Arena *arena);
