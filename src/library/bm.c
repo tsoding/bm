@@ -381,7 +381,11 @@ Err bm_execute_program(Bm *bm, int limit)
         if (addr >= BM_MEMORY_CAPACITY) { \
             return ERR_ILLEGAL_MEMORY_ACCESS; \
         } \
-        (bm)->stack[(bm)->stack_size - 1].as_##out = *(type*)&(bm)->memory[addr]; \
+        /* note: since we are relying on some integer widening conversions here, */ \
+        /* we must create a temporary variable so the compiler can do the implicit cast. */ \
+        type tmp; \
+        memcpy(&tmp, &(bm)->memory[addr], sizeof(type)); \
+        (bm)->stack[(bm)->stack_size - 1].as_##out = tmp; \
         (bm)->ip += 1; \
     } while(false)
 
@@ -749,7 +753,8 @@ Err bm_execute_inst(Bm *bm)
         if (addr >= BM_MEMORY_CAPACITY - 1) {
             return ERR_ILLEGAL_MEMORY_ACCESS;
         }
-        *(uint16_t*)&bm->memory[addr] = (uint16_t) bm->stack[bm->stack_size - 1].as_u64;
+        uint16_t value = (uint16_t) bm->stack[bm->stack_size - 1].as_u64;
+        memcpy(&bm->memory[addr], &value, sizeof(value));
         bm->stack_size -= 2;
         bm->ip += 1;
     }
@@ -763,7 +768,8 @@ Err bm_execute_inst(Bm *bm)
         if (addr >= BM_MEMORY_CAPACITY - 3) {
             return ERR_ILLEGAL_MEMORY_ACCESS;
         }
-        *(uint32_t*)&bm->memory[addr] = (uint32_t) bm->stack[bm->stack_size - 1].as_u64;
+        uint32_t value = (uint32_t) bm->stack[bm->stack_size - 1].as_u64;
+        memcpy(&bm->memory[addr], &value, sizeof(value));
         bm->stack_size -= 2;
         bm->ip += 1;
     }
@@ -777,7 +783,8 @@ Err bm_execute_inst(Bm *bm)
         if (addr >= BM_MEMORY_CAPACITY - 7) {
             return ERR_ILLEGAL_MEMORY_ACCESS;
         }
-        *(uint64_t*)&bm->memory[addr] = bm->stack[bm->stack_size - 1].as_u64;
+        uint64_t value = bm->stack[bm->stack_size - 1].as_u64;
+        memcpy(&bm->memory[addr], &value, sizeof(value));
         bm->stack_size -= 2;
         bm->ip += 1;
     }
@@ -926,7 +933,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
 
     bm->externals_size = fread(bm->externals, sizeof(bm->externals[0]), meta.externals_size, f);
     if (bm->externals_size != meta.externals_size) {
-        fprintf(stderr, "ERROR: %s: read %"PRIu64" external names, but expected %"PRIu64"\n",
+        fprintf(stderr, "ERROR: %s: read %zu external names, but expected %"PRIu64"\n",
                 file_path,
                 bm->externals_size,
                 meta.externals_size);
