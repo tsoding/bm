@@ -41,7 +41,7 @@ void basm_push_scope(Basm *basm, Scope *scope)
 
 void basm_push_new_scope(Basm *basm)
 {
-    basm_push_scope(basm, arena_alloc(&basm->arena, sizeof(*basm->scope)));
+    basm_push_scope(basm, arena_alloc(&basm->arena, sizeof(*basm->scope), alignof(Scope)));
 }
 
 void basm_pop_scope(Basm *basm)
@@ -1191,7 +1191,7 @@ void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocal
         exit(1);
     }
 
-    Scope *args_scope = arena_alloc(&basm->arena, sizeof(*args_scope));
+    Scope *args_scope = arena_alloc(&basm->arena, sizeof(*args_scope), alignof(*args_scope));
 
     Funcall_Arg *call_args = macrocall.args;
     Fundef_Arg *def_args = macrodef->args;

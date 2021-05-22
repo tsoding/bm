@@ -38,7 +38,7 @@ static Bang_Block *parse_curly_bang_block(Arena *arena, Tokenizer *tokenizer)
     Token token = {0};
     while (tokenizer_peek(tokenizer, &token, dummy) &&
             token.kind != TOKEN_KIND_CLOSING_CURLY) {
-        Bang_Block *node = arena_alloc(arena, sizeof(*node));
+        Bang_Block *node = arena_alloc(arena, sizeof(*node), alignof(*node));
         node->statement.expr = parse_expr_from_tokens(arena, tokenizer, dummy);
 
         if (end) {

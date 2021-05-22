@@ -37,7 +37,7 @@ Fundef_Arg *parse_fundef_args(Arena *arena, Tokenizer *tokenizer, File_Location 
     Fundef_Arg *last = NULL;
 
     do {
-        Fundef_Arg *arg = arena_alloc(arena, sizeof(*arg));
+        Fundef_Arg *arg = arena_alloc(arena, sizeof(*arg), alignof(*arg));
         arg->name = expect_token_next(tokenizer, TOKEN_KIND_NAME, location).text;
 
         if (first == NULL) {
@@ -82,7 +82,7 @@ Funcall_Arg *parse_funcall_args(Arena *arena, Tokenizer *tokenizer, File_Locatio
     Funcall_Arg *last = NULL;
 
     do {
-        Funcall_Arg *arg = arena_alloc(arena, sizeof(Funcall_Arg));
+        Funcall_Arg *arg = arena_alloc(arena, sizeof(Funcall_Arg), alignof(Funcall_Arg));
         arg->value = parse_expr_from_tokens(arena, tokenizer, location);
 
         if (first == NULL) {
@@ -175,7 +175,7 @@ Expr parse_binary_op_from_tokens(Arena *arena, Tokenizer *tokenizer,
 
         Expr right = parse_binary_op_from_tokens(arena, tokenizer, location, precedence + 1);
 
-        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op));
+        Binary_Op *binary_op = arena_alloc(arena, sizeof(Binary_Op), alignof(Binary_Op));
         binary_op->kind = binary_op_kind;
         binary_op->left = left;
         binary_op->right = right;
@@ -394,7 +394,7 @@ static Expr parse_number_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Lo
 
 String_View unescape_string_literal(Arena *arena, File_Location location, String_View str_lit)
 {
-    char *unescaped = arena_alloc(arena, str_lit.count);
+    char *unescaped = arena_alloc(arena, str_lit.count, alignof(char));
     size_t unescaped_size = 0;
 
     for (size_t i = 0; i < str_lit.count; ) {
@@ -485,7 +485,7 @@ Expr parse_primary_from_tokens(Arena *arena, Tokenizer *tokenizer, File_Location
         Token next = {0};
         if (tokenizer_peek(tokenizer, &next, location) && next.kind == TOKEN_KIND_OPEN_PAREN) {
             result.kind = EXPR_KIND_FUNCALL;
-            result.value.as_funcall = arena_alloc(arena, sizeof(Funcall));
+            result.value.as_funcall = arena_alloc(arena, sizeof(Funcall), alignof(Funcall));
             result.value.as_funcall->name = token.text;
             result.value.as_funcall->args = parse_funcall_args(arena, tokenizer, location);
         } else {

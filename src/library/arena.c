@@ -13,7 +13,7 @@ Region *region_create(size_t capacity)
     return region;
 }
 
-void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment)
+void *arena_alloc(Arena *arena, size_t size, size_t alignment)
 {
     if (arena->last == NULL) {
         assert(arena->first == NULL);
@@ -70,31 +70,11 @@ void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment)
             return ptr;
         }
     }
-
-#if 0
-    while (arena->last->size + size > arena->last->capacity &&
-            arena->last->next) {
-        arena->last = arena->last->next;
-    }
-
-    if (arena->last->size + size > arena->last->capacity) {
-        Region *region = region_create(
-                             size > ARENA_DEFAULT_CAPACITY ? size : ARENA_DEFAULT_CAPACITY);
-
-        arena->last->next = region;
-        arena->last = region;
-    }
-
-    void *result = arena->last->buffer + arena->last->size;
-    memset(result, 0, size);
-    arena->last->size += size;
-    return result;
-#endif
 }
 
-void *arena_alloc(Arena *arena, size_t size)
+void *arena_alloc_unaligned(Arena *arena, size_t size)
 {
-    return arena_alloc_aligned(arena, size, 1);
+    return arena_alloc(arena, size, 1);
 }
 
 void arena_clean(Arena *arena)
@@ -147,7 +127,7 @@ const char *arena_cstr_concat(Arena *arena, ...)
     }
     va_end(args);
 
-    char *buffer = arena_alloc(arena, len + 1);
+    char *buffer = arena_alloc(arena, len + 1, alignof(char));
     len = 0;
 
     va_start(args, arena);
@@ -183,7 +163,7 @@ int arena_slurp_file(Arena *arena, String_View file_path, String_View *content)
         return -1;
     }
 
-    char *buffer = arena_alloc(arena, (size_t) m);
+    char *buffer = arena_alloc(arena, (size_t) m, alignof(char));
     if (buffer == NULL) {
         return -1;
     }
@@ -220,7 +200,7 @@ String_View arena_sv_concat(Arena *arena, ...)
     }
     va_end(args);
 
-    char *buffer = arena_alloc(arena, len);
+    char *buffer = arena_alloc(arena, len, alignof(char));
     len = 0;
 
     va_start(args, arena);
@@ -240,7 +220,7 @@ String_View arena_sv_concat(Arena *arena, ...)
 
 String_View arena_sv_dup(Arena *arena, String_View sv)
 {
-    char *buffer = arena_alloc(arena, sv.count);
+    char *buffer = arena_alloc(arena, sv.count, alignof(char));
     memcpy(buffer, sv.data, sv.count);
     return (String_View) {
         .count = sv.count,
@@ -250,7 +230,7 @@ String_View arena_sv_dup(Arena *arena, String_View sv)
 
 const char *arena_sv_to_cstr(Arena *arena, String_View sv)
 {
-    char *cstr = arena_alloc(arena, sv.count + 1);
+    char *cstr = arena_alloc(arena, sv.count + 1, alignof(char));
     memcpy(cstr, sv.data, sv.count);
     cstr[sv.count] = '\0';
     return cstr;

@@ -447,13 +447,13 @@ void block_list_push(Arena *arena, Block_List *list, Statement statement)
 
     if (list->end == NULL) {
         assert(list->begin == NULL);
-        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement));
+        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement), alignof(Block_Statement));
         block->statement = statement;
         list->begin = block;
         list->end = block;
     } else {
         assert(list->begin != NULL);
-        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement));
+        Block_Statement *block = arena_alloc(arena, sizeof(Block_Statement), alignof(Block_Statement));
         block->statement = statement;
         list->end->next = block;
         list->end = block;
@@ -495,7 +495,10 @@ Statement parse_if_else_body_from_lines(Arena *arena, Linizer *linizer,
         // Elseless if
     } else if (sv_eq(line.value.as_directive.name, SV("elif"))) {
         Expr elif_condition = parse_expr_from_sv(arena, line.value.as_directive.body, line.location);
-        statement.value.as_if.elze = arena_alloc(arena, sizeof(*statement.value.as_if.elze));
+        statement.value.as_if.elze = arena_alloc(arena,
+            sizeof(*statement.value.as_if.elze),
+            alignof(*statement.value.as_if.elze)
+        );
         statement.value.as_if.elze->statement =
             parse_if_else_body_from_lines(arena, linizer, elif_condition, line.location);
     } else {
@@ -689,7 +692,7 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
         if (tokenizer_peek(&tokenizer, &token, location) &&
                 token.kind == TOKEN_KIND_IF) {
             tokenizer_next(&tokenizer, NULL, location);
-            statement.value.as_fundef.guard = arena_alloc(arena, sizeof(Expr));
+            statement.value.as_fundef.guard = arena_alloc(arena, sizeof(Expr), alignof(Expr));
             *statement.value.as_fundef.guard = parse_expr_from_tokens(arena, &tokenizer, location);
         }
 
