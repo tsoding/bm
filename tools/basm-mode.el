@@ -67,7 +67,7 @@
     (,(regexp-opt basm-keywords 'symbols) . font-lock-preprocessor-face)))
 
 ;;;###autoload
-(define-derived-mode basm-mode fundamental-mode "basm"
+(define-derived-mode basm-mode prog-mode "basm"
   "Major Mode for editing BASM Assembly Code."
   (setq font-lock-defaults '(basm-highlights))
   (set-syntax-table basm-mode-syntax-table))
