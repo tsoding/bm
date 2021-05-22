@@ -247,17 +247,22 @@ void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Targe
     break;
 
     case TARGET_NASM_LINUX_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(basm, SYSCALLTARGET_LINUX, output_file_path);
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, OS_TARGET_LINUX, output_file_path);
     }
     break;
 
     case TARGET_NASM_FREEBSD_X86_64: {
-        basm_save_to_file_as_nasm_sysv_x86_64(basm, SYSCALLTARGET_FREEBSD, output_file_path);
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, OS_TARGET_FREEBSD, output_file_path);
+    }
+    break;
+
+    case TARGET_NASM_WINDOWS_X86_64: {
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, OS_TARGET_WINDOWS, output_file_path);
     }
     break;
 
     case TARGET_GAS_FREEBSD_ARM64: {
-        basm_save_to_file_as_gas_arm64(basm, SYSCALLTARGET_FREEBSD, output_file_path);
+        basm_save_to_file_as_gas_arm64(basm, OS_TARGET_FREEBSD, output_file_path);
     }
     break;
 

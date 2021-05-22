@@ -47,7 +47,7 @@
         fprintf(output, "    str x10, [x0], #BM_WORD_SIZE\n");          \
     } while(0)
 
-void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const char *output_file_path)
+void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
     if (output == NULL) {
@@ -59,13 +59,18 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, Syscall_Target target, const cha
     fprintf(output, "#define BM_STACK_CAPACITY %d\n", BM_STACK_CAPACITY);
     fprintf(output, "#define BM_WORD_SIZE %d\n", BM_WORD_SIZE);
 
-    switch (target) {
-    case SYSCALLTARGET_LINUX: {
+    switch (os_target) {
+    case OS_TARGET_LINUX: {
         fprintf(stderr, "TODO(#378): Linux is not supported on arm64/aarch64\n");
         exit(1);
     }
     break;
-    case SYSCALLTARGET_FREEBSD: {
+    case OS_TARGET_WINDOWS: {
+        fprintf(stderr, "TODO: Windows is not supported on arm64/aarch64\n");
+        exit(1);
+    }
+    break;
+    case OS_TARGET_FREEBSD: {
         fprintf(output, "#define SYS_EXIT #1\n");
         fprintf(output, "#define SYS_WRITE #4\n");
     }

@@ -304,7 +304,27 @@ void cases_command(int argc, char **argv)
             }
         });
 #else
-        assert(0 && "FIXME: right now assembly that basm produces is linux only");
+        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+            if (ENDS_WITH(caze, ".basm"))
+            {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", ".\\lib\\",
+                    "-t", "nasm-windows-x86-64",
+                    PATH("test", "cases", caze),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
+                CMD("nasm", "-fwin64",
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".obj")));
+                CMD("link", "/ENTRY:_start",
+                    "/SUBSYSTEM:CONSOLE",
+                    "/MACHINE:X64",
+                    "/defaultlib:Kernel32.lib",
+                    "/LargeAddressAware:NO",
+                    "/nologo",
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".obj")),
+                    CONCAT("/OUT:", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".exe"))));
+            }
+        });
 #endif
     }
 }
