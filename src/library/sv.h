@@ -16,6 +16,12 @@ typedef struct {
         .data = (cstr_lit) \
     })
 
+#define SV_STATIC(cstr_lit) \
+    { \
+        .count = sizeof(cstr_lit) - 1, \
+        .data = (cstr_lit) \
+    }
+
 #define SV_NULL (String_View) {0}
 
 // printf macros for String_View
