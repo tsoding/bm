@@ -263,7 +263,18 @@ void tools_command(int argc, char **argv)
     FOREACH_FILE_IN_DIR(file, PATH("src", "toolchain"), {
         if (ENDS_WITH(file, ".c"))
         {
-            build_tool(NOEXT(file));
+            Cstr tool_name = NOEXT(file);
+            int should_build = (argc <= 0);
+            for (int i = 0; i < argc; i++) {
+                if (strcmp(tool_name, argv[i]) == 0) {
+                    should_build = 1;
+                    break;
+                }
+            }
+
+            if (should_build) {
+                build_tool(NOEXT(file));
+            }
         }
     });
 }
