@@ -6,12 +6,42 @@
 
 #include "./arena.h"
 #include "./path.h"
-#include "./tokenizer.h"
 #include "./expr.h"
 #include "./basm.h"
+#include "./bang_lexer.h"
+
+typedef enum {
+    BANG_EXPR_KIND_LIT_STR,
+    BANG_EXPR_KIND_FUNCALL,
+} Bang_Expr_Kind;
+
+typedef struct Bang_Funcall_Arg Bang_Funcall_Arg;
 
 typedef struct {
-    Expr expr;
+    Bang_Loc loc;
+    String_View name;
+    Bang_Funcall_Arg *args;
+} Bang_Funcall;
+
+typedef union {
+    String_View as_lit_str;
+    Bang_Funcall as_funcall;
+} Bang_Expr_Value;
+
+typedef struct {
+    Bang_Expr_Kind kind;
+    Bang_Expr_Value value;
+} Bang_Expr;
+
+typedef struct Bang_Funcall_Arg Bang_Funcall_Arg;
+
+struct Bang_Funcall_Arg {
+    Bang_Expr value;
+    Bang_Funcall_Arg *next;
+};
+
+typedef struct {
+    Bang_Expr expr;
 } Bang_Statement;
 
 typedef struct Bang_Block Bang_Block;
@@ -26,20 +56,146 @@ typedef struct {
     Bang_Block *body;
 } Bang_Proc_Def;
 
-static Bang_Block *parse_curly_bang_block(Arena *arena, Tokenizer *tokenizer)
+static String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
 {
-    File_Location dummy = {0};
+    Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_LIT_STR);
+    String_View lit_str = token.text;
+    assert(lit_str.count >= 2);
+    sv_chop_left(&lit_str, 1);
+    sv_chop_right(&lit_str, 1);
 
+    char *unescaped = arena_alloc(arena, lit_str.count);
+    size_t unescaped_size = 0;
+
+    for (size_t i = 0; i < lit_str.count; ) {
+        if (lit_str.data[i] == '\\') {
+            if (i + 1 >= lit_str.count) {
+                Bang_Loc loc = token.loc;
+                loc.col += i + 1;
+
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: unfinished string literal escape sequence\n",
+                        Bang_Loc_Arg(loc));
+                exit(1);
+            }
+
+            switch (lit_str.data[i + 1]) {
+            case '0':
+                assert(unescaped_size < lit_str.count);
+                unescaped[unescaped_size++] = '\0';
+                break;
+
+            case 'n':
+                assert(unescaped_size < lit_str.count);
+                unescaped[unescaped_size++] = '\n';
+                break;
+
+            default: {
+                Bang_Loc loc = token.loc;
+                loc.col += i + 2;
+
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown escape character `%c`",
+                        Bang_Loc_Arg(loc), lit_str.data[i + 1]);
+                exit(1);
+            }
+            }
+
+            i += 2;
+        } else {
+            assert(unescaped_size < lit_str.count);
+            unescaped[unescaped_size++] = lit_str.data[i];
+            i += 1;
+        }
+    }
+
+    return (String_View) {
+        .count = unescaped_size,
+        .data = unescaped,
+    };
+}
+
+static Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
+
+static Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Funcall_Arg *result = NULL;
+
+    // TODO: parse_bang_funcall_args only parses a single argument
+
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+    result = arena_alloc(arena, sizeof(*result));
+    result->value = parse_bang_expr(arena, lexer);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+
+    return result;
+}
+
+static Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Funcall funcall = {0};
+    Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+    funcall.name = token.text;
+    funcall.loc  = token.loc;
+    funcall.args = parse_bang_funcall_args(arena, lexer);
+    return funcall;
+}
+
+static Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Token token = {0};
+
+    if (!bang_lexer_peek(lexer, &token)) {
+        const Bang_Loc eof_loc = bang_lexer_loc(lexer);
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected expression but got end of the file\n",
+                Bang_Loc_Arg(eof_loc));
+        exit(1);
+    }
+
+    switch (token.kind) {
+    case BANG_TOKEN_KIND_NAME: {
+        Bang_Expr expr = {0};
+        expr.kind = BANG_EXPR_KIND_FUNCALL;
+        expr.value.as_funcall = parse_bang_funcall(arena, lexer);
+        return expr;
+    }
+
+    case BANG_TOKEN_KIND_LIT_STR: {
+        Bang_Expr expr = {0};
+        expr.kind = BANG_EXPR_KIND_LIT_STR;
+        expr.value.as_lit_str = parse_bang_lit_str(arena, lexer);
+        return expr;
+    }
+
+    case BANG_TOKEN_KIND_OPEN_PAREN:
+    case BANG_TOKEN_KIND_CLOSE_PAREN:
+    case BANG_TOKEN_KIND_OPEN_CURLY:
+    case BANG_TOKEN_KIND_CLOSE_CURLY:
+    case BANG_TOKEN_KIND_SEMICOLON: {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: no expression starts with `%s`\n",
+                Bang_Loc_Arg(token.loc),
+                bang_token_kind_name(token.kind));
+        exit(1);
+    }
+    break;
+
+    default: {
+        assert(false && "parse_bang_expr: unreachable");
+        exit(1);
+    }
+    }
+}
+
+static Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
+{
     Bang_Block *begin = NULL;
     Bang_Block *end = NULL;
 
-    expect_token_next(tokenizer, TOKEN_KIND_OPEN_CURLY, dummy);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_CURLY);
 
-    Token token = {0};
-    while (tokenizer_peek(tokenizer, &token, dummy) &&
-            token.kind != TOKEN_KIND_CLOSING_CURLY) {
+    Bang_Token token = {0};
+    while (bang_lexer_peek(lexer, &token) &&
+            token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
         Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->statement.expr = parse_expr_from_tokens(arena, tokenizer, dummy);
+        node->statement.expr = parse_bang_expr(arena, lexer);
 
         if (end) {
             end->next = node;
@@ -49,24 +205,23 @@ static Bang_Block *parse_curly_bang_block(Arena *arena, Tokenizer *tokenizer)
             begin = end = node;
         }
 
-        expect_token_next(tokenizer, TOKEN_KIND_SEMICOLON, dummy);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
     }
 
-    expect_token_next(tokenizer, TOKEN_KIND_CLOSING_CURLY, dummy);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_CURLY);
 
     return begin;
 }
 
-static Bang_Proc_Def parse_bang_proc_def(Arena *arena, Tokenizer *tokenizer)
+static Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 {
-    const File_Location dummy = {0};
     Bang_Proc_Def result = {0};
 
-    expect_token_next(tokenizer, TOKEN_KIND_PROC, dummy);
-    result.name = expect_token_next(tokenizer, TOKEN_KIND_NAME, dummy).text;
-    expect_token_next(tokenizer, TOKEN_KIND_OPEN_PAREN, dummy);
-    expect_token_next(tokenizer, TOKEN_KIND_CLOSING_PAREN, dummy);
-    result.body = parse_curly_bang_block(arena, tokenizer);
+    bang_lexer_expect_keyword(lexer, SV("proc"));
+    result.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+    result.body = parse_curly_bang_block(arena, lexer);
 
     return result;
 }
@@ -94,42 +249,61 @@ static void basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
     basm->program_size += 1;
 }
 
-static void compile_expr_into_basm(Basm *basm, Expr expr, Native_ID write_id)
+static void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
 {
-    File_Location dummy = {0};
+    size_t actual_arity = 0;
 
+    {
+        Bang_Funcall_Arg *args = funcall.args;
+        while (args != NULL) {
+            actual_arity += 1;
+            args = args->next;
+        }
+    }
+
+    if (expected_arity != actual_arity) {
+        fprintf(stderr, Bang_Loc_Fmt"ERROR: function `"SV_Fmt"` expectes %zu amoutn of arguments but provided %zu\n",
+                Bang_Loc_Arg(funcall.loc),
+                SV_Arg(funcall.name),
+                expected_arity,
+                actual_arity);
+        exit(1);
+    }
+}
+
+static void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
+{
     switch (expr.kind) {
-    case EXPR_KIND_LIT_STR: {
+    case BANG_EXPR_KIND_LIT_STR: {
         Word str_addr = basm_push_string_to_memory(basm, expr.value.as_lit_str);
         basm_push_inst(basm, INST_PUSH, str_addr);
         basm_push_inst(basm, INST_PUSH, word_u64(expr.value.as_lit_str.count));
     }
     break;
 
-    case EXPR_KIND_FUNCALL: {
-        if (sv_eq(expr.value.as_funcall->name, SV("write"))) {
-            funcall_expect_arity(expr.value.as_funcall, 1, dummy);
-            compile_expr_into_basm(basm, expr.value.as_funcall->args->value, write_id);
+    case BANG_EXPR_KIND_FUNCALL: {
+        if (sv_eq(expr.value.as_funcall.name, SV("write"))) {
+            bang_funcall_expect_arity(expr.value.as_funcall, 1);
+            compile_bang_expr_into_basm(basm, expr.value.as_funcall.args->value, write_id);
             basm_push_inst(basm, INST_NATIVE, word_u64(write_id));
         } else {
-            assert(false && "Unknown function");
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
+                    Bang_Loc_Arg(expr.value.as_funcall.loc),
+                    SV_Arg(expr.value.as_funcall.name));
+            exit(1);
         }
     }
     break;
 
-    case EXPR_KIND_BINDING:
-    case EXPR_KIND_LIT_INT:
-    case EXPR_KIND_LIT_FLOAT:
-    case EXPR_KIND_LIT_CHAR:
-    case EXPR_KIND_BINARY_OP:
-        assert(false && "Compilation of this kind of expressions is not supported yet");
+    default:
+        assert(false && "compile_bang_expr_into_basm: unreachable");
         exit(1);
     }
 }
 
 static void compile_statement_into_basm(Basm *basm, Bang_Statement statement, Native_ID write_id)
 {
-    compile_expr_into_basm(basm, statement.expr, write_id);
+    compile_bang_expr_into_basm(basm, statement.expr, write_id);
 }
 
 static void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)
@@ -238,8 +412,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    Tokenizer tokenizer = tokenizer_from_sv(content);
-    Bang_Proc_Def proc_def = parse_bang_proc_def(&basm.arena, &tokenizer);
+    Bang_Lexer lexer = bang_lexer_from_sv(content, input_file_path);
+    Bang_Proc_Def proc_def = parse_bang_proc_def(&basm.arena, &lexer);
 
     Native_ID write_id = basm_push_external_native(&basm, SV("write"));
     compile_proc_def_into_basm(&basm, proc_def, write_id);

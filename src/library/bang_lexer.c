@@ -4,37 +4,37 @@
 
 typedef struct {
     String_View text;
-    Bang_Token_Type type;
+    Bang_Token_Kind kind;
 } Hardcoded_Token;
 
 static const Hardcoded_Token hardcoded_bang_tokens[] = {
-    {.type = BANG_TOKEN_TYPE_OPEN_PAREN,  .text = SV_STATIC("(")},
-    {.type = BANG_TOKEN_TYPE_CLOSE_PAREN, .text = SV_STATIC(")")},
-    {.type = BANG_TOKEN_TYPE_OPEN_CURLY,  .text = SV_STATIC("{")},
-    {.type = BANG_TOKEN_TYPE_CLOSE_CURLY, .text = SV_STATIC("}")},
-    {.type = BANG_TOKEN_TYPE_SEMICOLON,   .text = SV_STATIC(";")},
+    {.kind = BANG_TOKEN_KIND_OPEN_PAREN,  .text = SV_STATIC("(")},
+    {.kind = BANG_TOKEN_KIND_CLOSE_PAREN, .text = SV_STATIC(")")},
+    {.kind = BANG_TOKEN_KIND_OPEN_CURLY,  .text = SV_STATIC("{")},
+    {.kind = BANG_TOKEN_KIND_CLOSE_CURLY, .text = SV_STATIC("}")},
+    {.kind = BANG_TOKEN_KIND_SEMICOLON,   .text = SV_STATIC(";")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
 
-const char *bang_token_type_name(Bang_Token_Type type)
+const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
-    switch (type) {
-    case BANG_TOKEN_TYPE_NAME:
-        return "BANG_TOKEN_TYPE_NAME";
-    case BANG_TOKEN_TYPE_OPEN_PAREN:
-        return "BANG_TOKEN_TYPE_OPEN_PAREN";
-    case BANG_TOKEN_TYPE_CLOSE_PAREN:
-        return "BANG_TOKEN_TYPE_CLOSE_PAREN";
-    case BANG_TOKEN_TYPE_OPEN_CURLY:
-        return "BANG_TOKEN_TYPE_OPEN_CURLY";
-    case BANG_TOKEN_TYPE_CLOSE_CURLY:
-        return "BANG_TOKEN_TYPE_CLOSE_CURLY";
-    case BANG_TOKEN_TYPE_SEMICOLON:
-        return "BANG_TOKEN_TYPE_SEMICOLON";
-    case BANG_TOKEN_TYPE_LIT_STR:
-        return "BANG_TOKEN_TYPE_LIT_STR";
+    switch (kind) {
+    case BANG_TOKEN_KIND_NAME:
+        return "name";
+    case BANG_TOKEN_KIND_OPEN_PAREN:
+        return "(";
+    case BANG_TOKEN_KIND_CLOSE_PAREN:
+        return ")";
+    case BANG_TOKEN_KIND_OPEN_CURLY:
+        return "{";
+    case BANG_TOKEN_KIND_CLOSE_CURLY:
+        return "}";
+    case BANG_TOKEN_KIND_SEMICOLON:
+        return ";";
+    case BANG_TOKEN_KIND_LIT_STR:
+        return "string literal";
     default:
-        assert(false && "token_type_name: unreachable");
+        assert(false && "token_kind_name: unreachable");
         exit(1);
     }
 }
@@ -47,7 +47,7 @@ Bang_Lexer bang_lexer_from_sv(String_View content, const char *file_path)
     };
 }
 
-void bang_lexer_next_line(Bang_Lexer *lexer)
+static void bang_lexer_next_line(Bang_Lexer *lexer)
 {
     lexer->line = sv_chop_by_delim(&lexer->content, '\n');
     lexer->row += 1;
@@ -66,17 +66,21 @@ Bang_Loc bang_lexer_loc(Bang_Lexer *lexer)
     return result;
 }
 
-Bang_Token bang_lexer_spit_token(Bang_Lexer *lexer, Bang_Token_Type token_type, size_t token_size)
+static Bang_Token bang_lexer_spit_token(Bang_Lexer *lexer, Bang_Token_Kind token_kind, size_t token_size)
 {
     assert(token_size <= lexer->line.count);
+    assert(!lexer->peek_buffer_full);
+
     Bang_Token token = {0};
-    token.type = token_type;
+    token.kind = token_kind;
     token.loc = bang_lexer_loc(lexer);
     token.text = sv_chop_left(&lexer->line, token_size);
+    lexer->peek_buffer = token;
+    lexer->peek_buffer_full = true;
     return token;
 }
 
-bool bang_is_name(char x)
+static bool bang_is_name(char x)
 {
     return ('a' <= x && x <= 'z') ||
            ('A' <= x && x <= 'Z') ||
@@ -84,16 +88,25 @@ bool bang_is_name(char x)
            x == '_';
 }
 
-bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
+bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
 {
-    lexer->line = sv_trim_left(lexer->line);
-    while (lexer->line.count == 0 && lexer->content.count > 0) {
-        bang_lexer_next_line(lexer);
-        lexer->line = sv_trim_left(lexer->line);
+    // Check peek buffer
+    if (lexer->peek_buffer_full) {
+        *token = lexer->peek_buffer;
+        return true;
     }
 
-    if (lexer->line.count == 0) {
-        return false;
+    // Extracting next token
+    {
+        lexer->line = sv_trim_left(lexer->line);
+        while (lexer->line.count == 0 && lexer->content.count > 0) {
+            bang_lexer_next_line(lexer);
+            lexer->line = sv_trim_left(lexer->line);
+        }
+
+        if (lexer->line.count == 0) {
+            return false;
+        }
     }
 
     // Hardcoded Tokens
@@ -101,7 +114,7 @@ bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
         if (sv_starts_with(lexer->line, hardcoded_bang_tokens[i].text)) {
             *token = bang_lexer_spit_token(
                          lexer,
-                         hardcoded_bang_tokens[i].type,
+                         hardcoded_bang_tokens[i].kind,
                          hardcoded_bang_tokens[i].text.count);
             return true;
         }
@@ -114,7 +127,7 @@ bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
             n += 1;
         }
         if (n > 0) {
-            *token = bang_lexer_spit_token(lexer, BANG_TOKEN_TYPE_NAME, n);
+            *token = bang_lexer_spit_token(lexer, BANG_TOKEN_KIND_NAME, n);
             return true;
         }
     }
@@ -137,12 +150,60 @@ bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
         assert(lexer->line.data[n] == '\"');
         n += 1;
 
-        *token = bang_lexer_spit_token(lexer, BANG_TOKEN_TYPE_LIT_STR, n);
+        *token = bang_lexer_spit_token(lexer, BANG_TOKEN_KIND_LIT_STR, n);
         return true;
     }
 
+    // Unknown token
     const Bang_Loc unknown_loc = bang_lexer_loc(lexer);
     fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown token starts with `%c`",
             Bang_Loc_Arg(unknown_loc), *lexer->line.data);
     exit(1);
+}
+
+Bang_Token bang_lexer_expect_token(Bang_Lexer *lexer, Bang_Token_Kind expected_kind)
+{
+    Bang_Token token = {0};
+
+    if (!bang_lexer_next(lexer, &token)) {
+        Bang_Loc eof_loc = bang_lexer_loc(lexer);
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected token `%s` but reached the end of the file\n",
+                Bang_Loc_Arg(eof_loc),
+                bang_token_kind_name(expected_kind));
+        exit(1);
+    }
+
+    if (token.kind != expected_kind) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR expected token `%s` but got `%s`\n",
+                Bang_Loc_Arg(token.loc),
+                bang_token_kind_name(expected_kind),
+                bang_token_kind_name(token.kind));
+        exit(1);
+    }
+
+    return token;
+}
+
+Bang_Token bang_lexer_expect_keyword(Bang_Lexer *lexer, String_View name)
+{
+    Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+    if (!sv_eq(token.text, name)) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected keyword `"SV_Fmt"` but got `"SV_Fmt"`\n",
+                Bang_Loc_Arg(token.loc),
+                SV_Arg(name),
+                SV_Arg(token.text));
+        exit(1);
+    }
+
+    return token;
+}
+
+bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
+{
+    if (!bang_lexer_peek(lexer, token)) {
+        return false;
+    }
+
+    lexer->peek_buffer_full = false;
+    return true;
 }
