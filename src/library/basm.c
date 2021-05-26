@@ -1281,3 +1281,25 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
     return NULL;
 }
 
+Native_ID basm_push_external_native(Basm *basm, String_View native_name)
+{
+    memset(basm->external_natives[basm->external_natives_size].name,
+           0,
+           NATIVE_NAME_CAPACITY);
+
+    memcpy(basm->external_natives[basm->external_natives_size].name,
+           native_name.data,
+           native_name.count);
+
+    Native_ID result = basm->external_natives_size++;
+
+    return result;
+}
+
+void basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
+{
+    assert(basm->program_size < BM_PROGRAM_CAPACITY);
+    basm->program[basm->program_size].type = inst_type;
+    basm->program[basm->program_size].operand = inst_operand;
+    basm->program_size += 1;
+}
