@@ -104,8 +104,9 @@ int main(int argc, char **argv)
     Bang_Lexer lexer = bang_lexer_from_sv(content, input_file_path);
     Bang_Proc_Def proc_def = parse_bang_proc_def(&basm.arena, &lexer);
 
-    Native_ID write_id = basm_push_external_native(&basm, SV("write"));
-    compile_proc_def_into_basm(&basm, proc_def, write_id);
+    Bang bang = {0};
+    bang.write_id = basm_push_external_native(&basm, SV("write"));
+    compile_proc_def_into_basm(&bang, &basm, proc_def);
     basm_push_inst(&basm, INST_HALT, word_u64(0));
     basm_save_to_file_as_target(&basm, output_file_path, output_target);
 
