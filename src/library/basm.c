@@ -569,15 +569,12 @@ void basm_eval_deferred_entry(Basm *basm)
 
 void basm_translate_emit_inst_statement(Basm *basm, Emit_Inst_Statement emit_inst, File_Location location)
 {
-    assert(basm->program_size < BM_PROGRAM_CAPACITY);
-    basm->program[basm->program_size].type = emit_inst.type;
-    basm->program_locations[basm->program_size] = location;
+    Inst_Addr addr = basm_push_inst(basm, emit_inst.type, word_u64(0));
 
+    basm->program_locations[addr] = location;
     if (get_inst_def(emit_inst.type).has_operand) {
-        basm_push_deferred_operand(basm, basm->program_size, emit_inst.operand, location);
+        basm_push_deferred_operand(basm, addr, emit_inst.operand, location);
     }
-
-    basm->program_size += 1;
 }
 
 void basm_translate_entry_statement(Basm *basm, Entry_Statement entry, File_Location location)
