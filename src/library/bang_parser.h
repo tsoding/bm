@@ -34,10 +34,27 @@ struct Bang_Funcall_Arg {
     Bang_Funcall_Arg *next;
 };
 
+typedef enum {
+    BANG_STMT_KIND_EXPR,
+    BANG_STMT_KIND_IF,
+} Bang_Stmt_Kind;
+
 typedef struct Bang_Stmt Bang_Stmt;
 
-struct Bang_Stmt{
+typedef struct {
+    Bang_Expr condition;
+    Bang_Stmt *then;
+    Bang_Stmt *elze;
+} Bang_If;
+
+typedef union {
     Bang_Expr expr;
+    Bang_If eef;
+} Bang_Stmt_As;
+
+struct Bang_Stmt {
+    Bang_Stmt_Kind kind;
+    Bang_Stmt_As as;
 };
 
 typedef struct Bang_Block Bang_Block;
@@ -58,7 +75,6 @@ Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);
 Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer);
-
-
+Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
 
 #endif // BANG_PARSER_H_

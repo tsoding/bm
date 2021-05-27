@@ -32,7 +32,7 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
 
 void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
 {
-    compile_bang_expr_into_basm(basm, stmt.expr, write_id);
+    compile_bang_expr_into_basm(basm, stmt.as.expr, write_id);
 }
 
 void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)

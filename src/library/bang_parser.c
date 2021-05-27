@@ -128,6 +128,15 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
+Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Stmt stmt = {0};
+    stmt.kind = BANG_STMT_KIND_EXPR;
+    stmt.as.expr = parse_bang_expr(arena, lexer);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
+    return stmt;
+}
+
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Block *begin = NULL;
@@ -139,7 +148,7 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
     while (bang_lexer_peek(lexer, &token) &&
             token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
         Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->stmt.expr = parse_bang_expr(arena, lexer);
+        node->stmt = parse_bang_stmt(arena, lexer);
 
         if (end) {
             end->next = node;
@@ -148,8 +157,6 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
             assert(begin == NULL);
             begin = end = node;
         }
-
-        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_CURLY);
@@ -169,5 +176,3 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 
     return result;
 }
-
-
