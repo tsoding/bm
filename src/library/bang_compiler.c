@@ -30,15 +30,15 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
     }
 }
 
-void compile_statement_into_basm(Basm *basm, Bang_Statement statement, Native_ID write_id)
+void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
 {
-    compile_bang_expr_into_basm(basm, statement.expr, write_id);
+    compile_bang_expr_into_basm(basm, stmt.expr, write_id);
 }
 
 void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)
 {
     while (block) {
-        compile_statement_into_basm(basm, block->statement, write_id);
+        compile_stmt_into_basm(basm, block->stmt, write_id);
         block = block->next;
     }
 }

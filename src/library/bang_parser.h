@@ -34,14 +34,16 @@ struct Bang_Funcall_Arg {
     Bang_Funcall_Arg *next;
 };
 
-typedef struct {
+typedef struct Bang_Stmt Bang_Stmt;
+
+struct Bang_Stmt{
     Bang_Expr expr;
-} Bang_Statement;
+};
 
 typedef struct Bang_Block Bang_Block;
 
 struct Bang_Block {
-    Bang_Statement statement;
+    Bang_Stmt stmt;
     Bang_Block *next;
 };
 

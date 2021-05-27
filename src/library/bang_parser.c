@@ -139,7 +139,7 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
     while (bang_lexer_peek(lexer, &token) &&
             token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
         Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->statement.expr = parse_bang_expr(arena, lexer);
+        node->stmt.expr = parse_bang_expr(arena, lexer);
 
         if (end) {
             end->next = node;

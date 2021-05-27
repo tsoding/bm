@@ -6,7 +6,7 @@
 #include "./bang_parser.h"
 
 void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id);
-void compile_statement_into_basm(Basm *basm, Bang_Statement statement, Native_ID write_id);
+void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id);
 void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id);
 void compile_proc_def_into_basm(Basm *basm, Bang_Proc_Def proc_def, Native_ID write_id);
 
