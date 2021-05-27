@@ -128,13 +128,45 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
+Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_If eef = {0};
+    Bang_Token token = bang_lexer_expect_keyword(lexer, SV("if"));
+    eef.loc = token.loc;
+
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+    eef.condition = parse_bang_expr(arena, lexer);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+
+    eef.then = parse_curly_bang_block(arena, lexer);
+
+    // TODO: bang if construction does not support else
+
+    return eef;
+}
+
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
 {
-    Bang_Stmt stmt = {0};
-    stmt.kind = BANG_STMT_KIND_EXPR;
-    stmt.as.expr = parse_bang_expr(arena, lexer);
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
-    return stmt;
+    Bang_Token token = {0};
+    if (!bang_lexer_peek(lexer, &token)) {
+        const Bang_Loc eof_loc = bang_lexer_loc(lexer);
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expect statement but reached the end of the file\n",
+                Bang_Loc_Arg(eof_loc));
+        exit(1);
+    }
+
+    if (token.kind == BANG_TOKEN_KIND_NAME && sv_eq(token.text, SV("if"))) {
+        Bang_Stmt stmt = {0};
+        stmt.kind = BANG_STMT_KIND_IF;
+        stmt.as.eef = parse_bang_if(arena, lexer);
+        return stmt;
+    } else {
+        Bang_Stmt stmt = {0};
+        stmt.kind = BANG_STMT_KIND_EXPR;
+        stmt.as.expr = parse_bang_expr(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
+        return stmt;
+    }
 }
 
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)

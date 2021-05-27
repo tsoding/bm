@@ -1296,10 +1296,11 @@ Native_ID basm_push_external_native(Basm *basm, String_View native_name)
     return result;
 }
 
-void basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
+Inst_Addr basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
 {
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
-    basm->program[basm->program_size].type = inst_type;
-    basm->program[basm->program_size].operand = inst_operand;
-    basm->program_size += 1;
+    Inst_Addr addr = basm->program_size++;
+    basm->program[addr].type = inst_type;
+    basm->program[addr].operand = inst_operand;
+    return addr;
 }

@@ -15,6 +15,10 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
             bang_funcall_expect_arity(expr.value.as_funcall, 1);
             compile_bang_expr_into_basm(basm, expr.value.as_funcall.args->value, write_id);
             basm_push_inst(basm, INST_NATIVE, word_u64(write_id));
+        } else if (sv_eq(expr.value.as_funcall.name, SV("true"))) {
+            basm_push_inst(basm, INST_PUSH, word_u64(1));
+        } else if (sv_eq(expr.value.as_funcall.name, SV("false"))) {
+            basm_push_inst(basm, INST_PUSH, word_u64(0));
         } else {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
                     Bang_Loc_Arg(expr.value.as_funcall.loc),
@@ -30,9 +34,33 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
     }
 }
 
+void compile_bang_if_into_basm(Basm *basm, Bang_If eef, Native_ID write_id)
+{
+    assert(eef.elze == NULL);
+
+    compile_bang_expr_into_basm(basm, eef.condition, write_id);
+    basm_push_inst(basm, INST_NOT, word_u64(0));
+    Inst_Addr jmp_if_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+    compile_block_into_basm(basm, eef.then, write_id);
+    Inst_Addr body_end_addr = basm->program_size;
+    basm->program[jmp_if_addr].operand = word_u64(body_end_addr);
+}
+
 void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
 {
-    compile_bang_expr_into_basm(basm, stmt.as.expr, write_id);
+    switch (stmt.kind) {
+    case BANG_STMT_KIND_EXPR:
+        compile_bang_expr_into_basm(basm, stmt.as.expr, write_id);
+        break;
+
+    case BANG_STMT_KIND_IF:
+        compile_bang_if_into_basm(basm, stmt.as.eef, write_id);
+        break;
+
+    default:
+        assert(false && "compile_stmt_into_basm: unreachable");
+        exit(1);
+    }
 }
 
 void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)
