@@ -612,26 +612,14 @@ void basm_translate_const_statement(Basm *basm, Const_Statement konst, File_Loca
 
 void basm_translate_native_statement(Basm *basm, Native_Statement native, File_Location location)
 {
+    // NOTE: at least one character is reserved for the NULL-terminator
     if (native.name.count >= NATIVE_NAME_CAPACITY - 1) {
         fprintf(stderr, FL_Fmt": ERROR: exceed maximum size of the name for a native function. The limit is %zu.\n", FL_Arg(location), (size_t) (NATIVE_NAME_CAPACITY - 1));
         exit(1);
     }
 
-    memset(basm->external_natives[basm->external_natives_size].name,
-           0,
-           NATIVE_NAME_CAPACITY);
-
-    memcpy(basm->external_natives[basm->external_natives_size].name,
-           native.name.data,
-           native.name.count);
-
-    basm_bind_value(basm,
-                    native.name,
-                    word_u64(basm->external_natives_size),
-                    TYPE_NATIVE_ID,
-                    location);
-
-    basm->external_natives_size += 1;
+    const Native_ID id = basm_push_external_native(basm, native.name);
+    basm_bind_value(basm, native.name, word_u64(id), TYPE_NATIVE_ID, location);
 }
 
 void basm_translate_assert_statement(Basm *basm, Assert_Statement azzert, File_Location location)
@@ -1280,23 +1268,19 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
 
 Native_ID basm_push_external_native(Basm *basm, String_View native_name)
 {
-    memset(basm->external_natives[basm->external_natives_size].name,
-           0,
-           NATIVE_NAME_CAPACITY);
-
-    memcpy(basm->external_natives[basm->external_natives_size].name,
-           native_name.data,
-           native_name.count);
-
-    Native_ID result = basm->external_natives_size++;
-
-    return result;
+    assert(basm->external_natives_size < BM_EXTERNAL_NATIVES_CAPACITY);
+    // NOTE: at least one character is reserved for the NULL-terminator
+    assert(native_name.count < NATIVE_NAME_CAPACITY - 1);
+    const Native_ID id = basm->external_natives_size++;
+    memset(basm->external_natives[id].name, 0, NATIVE_NAME_CAPACITY);
+    memcpy(basm->external_natives[id].name, native_name.data, native_name.count);
+    return id;
 }
 
 Inst_Addr basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand)
 {
     assert(basm->program_size < BM_PROGRAM_CAPACITY);
-    Inst_Addr addr = basm->program_size++;
+    const Inst_Addr addr = basm->program_size++;
     basm->program[addr].type = inst_type;
     basm->program[addr].operand = inst_operand;
     return addr;
