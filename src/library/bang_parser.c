@@ -96,16 +96,30 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
 
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
-        Bang_Expr expr = {0};
-        expr.kind = BANG_EXPR_KIND_FUNCALL;
-        expr.value.as_funcall = parse_bang_funcall(arena, lexer);
-        return expr;
+        if (sv_eq(token.text, SV("true"))) {
+            bang_lexer_next(lexer, &token);
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_LIT_BOOL;
+            expr.as.boolean = true;
+            return expr;
+        } else if (sv_eq(token.text, SV("false"))) {
+            bang_lexer_next(lexer, &token);
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_LIT_BOOL;
+            expr.as.boolean = false;
+            return expr;
+        } else {
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_FUNCALL;
+            expr.as.funcall = parse_bang_funcall(arena, lexer);
+            return expr;
+        }
     }
 
     case BANG_TOKEN_KIND_LIT_STR: {
         Bang_Expr expr = {0};
         expr.kind = BANG_EXPR_KIND_LIT_STR;
-        expr.value.as_lit_str = parse_bang_lit_str(arena, lexer);
+        expr.as.lit_str = parse_bang_lit_str(arena, lexer);
         return expr;
     }
 
@@ -128,6 +142,60 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
+Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_If eef = {0};
+
+    // then
+    {
+        Bang_Token token = bang_lexer_expect_keyword(lexer, SV("if"));
+        eef.loc = token.loc;
+
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+        eef.condition = parse_bang_expr(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+
+        eef.then = parse_curly_bang_block(arena, lexer);
+    }
+
+    // else
+    {
+        Bang_Token token = {0};
+        if (bang_lexer_peek(lexer, &token) &&
+                token.kind == BANG_TOKEN_KIND_NAME &&
+                sv_eq(token.text, SV("else"))) {
+            bang_lexer_next(lexer, &token);
+            eef.elze = parse_curly_bang_block(arena, lexer);
+        }
+    }
+
+    return eef;
+}
+
+Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Token token = {0};
+    if (!bang_lexer_peek(lexer, &token)) {
+        const Bang_Loc eof_loc = bang_lexer_loc(lexer);
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expect statement but reached the end of the file\n",
+                Bang_Loc_Arg(eof_loc));
+        exit(1);
+    }
+
+    if (token.kind == BANG_TOKEN_KIND_NAME && sv_eq(token.text, SV("if"))) {
+        Bang_Stmt stmt = {0};
+        stmt.kind = BANG_STMT_KIND_IF;
+        stmt.as.eef = parse_bang_if(arena, lexer);
+        return stmt;
+    } else {
+        Bang_Stmt stmt = {0};
+        stmt.kind = BANG_STMT_KIND_EXPR;
+        stmt.as.expr = parse_bang_expr(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
+        return stmt;
+    }
+}
+
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Block *begin = NULL;
@@ -139,7 +207,7 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
     while (bang_lexer_peek(lexer, &token) &&
             token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
         Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->statement.expr = parse_bang_expr(arena, lexer);
+        node->stmt = parse_bang_stmt(arena, lexer);
 
         if (end) {
             end->next = node;
@@ -148,8 +216,6 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
             assert(begin == NULL);
             begin = end = node;
         }
-
-        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_CURLY);
@@ -169,5 +235,3 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 
     return result;
 }
-
-

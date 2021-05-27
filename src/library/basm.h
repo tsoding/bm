@@ -192,6 +192,6 @@ void basm_translate_source_file(Basm *basm, String_View input_file_path);
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path);
 void funcall_expect_arity(Funcall *funcall, size_t expected_arity, File_Location location);
 Native_ID basm_push_external_native(Basm *basm, String_View native_name);
-void basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand);
+Inst_Addr basm_push_inst(Basm *basm, Inst_Type inst_type, Word inst_operand);
 
 #endif // BASM_H_

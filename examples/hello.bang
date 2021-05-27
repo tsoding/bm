@@ -1,6 +1,8 @@
 proc main() {
-    write("Hello, Bang\n");
-    write("Hello, Bang\n");
-    write("Hello, Bang\n");
-    write("Hello, Bang\n");
+    if (true) {
+        write("False\n");
+    } else {
+        write("True\n");
+    }
+    write("Hello, Bang!\n");
 }
