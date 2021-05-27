@@ -145,16 +145,29 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_If eef = {0};
-    Bang_Token token = bang_lexer_expect_keyword(lexer, SV("if"));
-    eef.loc = token.loc;
 
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
-    eef.condition = parse_bang_expr(arena, lexer);
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+    // then
+    {
+        Bang_Token token = bang_lexer_expect_keyword(lexer, SV("if"));
+        eef.loc = token.loc;
 
-    eef.then = parse_curly_bang_block(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+        eef.condition = parse_bang_expr(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
 
-    // TODO: bang if construction does not support else
+        eef.then = parse_curly_bang_block(arena, lexer);
+    }
+
+    // else
+    {
+        Bang_Token token = {0};
+        if (bang_lexer_peek(lexer, &token) &&
+                token.kind == BANG_TOKEN_KIND_NAME &&
+                sv_eq(token.text, SV("else"))) {
+            bang_lexer_next(lexer, &token);
+            eef.elze = parse_curly_bang_block(arena, lexer);
+        }
+    }
 
     return eef;
 }

@@ -40,14 +40,18 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
 
 void compile_bang_if_into_basm(Basm *basm, Bang_If eef, Native_ID write_id)
 {
-    assert(eef.elze == NULL);
-
     compile_bang_expr_into_basm(basm, eef.condition, write_id);
     basm_push_inst(basm, INST_NOT, word_u64(0));
-    Inst_Addr jmp_if_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+
+    Inst_Addr then_jmp_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
     compile_block_into_basm(basm, eef.then, write_id);
-    Inst_Addr body_end_addr = basm->program_size;
-    basm->program[jmp_if_addr].operand = word_u64(body_end_addr);
+    Inst_Addr else_jmp_addr = basm_push_inst(basm, INST_JMP, word_u64(0));
+    Inst_Addr else_addr = basm->program_size;
+    compile_block_into_basm(basm, eef.elze, write_id);
+    Inst_Addr end_addr = basm->program_size;
+
+    basm->program[then_jmp_addr].operand = word_u64(else_addr);
+    basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
 void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
