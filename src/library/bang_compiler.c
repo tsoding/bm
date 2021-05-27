@@ -30,7 +30,8 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
         } else {
             basm_push_inst(basm, INST_PUSH, word_u64(0));
         }
-    } break;
+    }
+    break;
 
     default:
         assert(false && "compile_bang_expr_into_basm: unreachable");
