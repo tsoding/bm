@@ -177,7 +177,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     Bang_Token token = {0};
     if (!bang_lexer_peek(lexer, &token)) {
         const Bang_Loc eof_loc = bang_lexer_loc(lexer);
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expect statement but reached the end of the file\n",
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected statement but reached the end of the file\n",
                 Bang_Loc_Arg(eof_loc));
         exit(1);
     }
