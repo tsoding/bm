@@ -1,6 +1,6 @@
 #include "./bang_compiler.h"
 
-void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
+void compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     switch (expr.kind) {
     case BANG_EXPR_KIND_LIT_STR: {
@@ -13,8 +13,8 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
     case BANG_EXPR_KIND_FUNCALL: {
         if (sv_eq(expr.as.funcall.name, SV("write"))) {
             bang_funcall_expect_arity(expr.as.funcall, 1);
-            compile_bang_expr_into_basm(basm, expr.as.funcall.args->value, write_id);
-            basm_push_inst(basm, INST_NATIVE, word_u64(write_id));
+            compile_bang_expr_into_basm(bang, basm, expr.as.funcall.args->value);
+            basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
         } else {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
                     Bang_Loc_Arg(expr.as.funcall.loc),
@@ -39,31 +39,31 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
     }
 }
 
-void compile_bang_if_into_basm(Basm *basm, Bang_If eef, Native_ID write_id)
+void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
 {
-    compile_bang_expr_into_basm(basm, eef.condition, write_id);
+    compile_bang_expr_into_basm(bang, basm, eef.condition);
     basm_push_inst(basm, INST_NOT, word_u64(0));
 
     Inst_Addr then_jmp_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
-    compile_block_into_basm(basm, eef.then, write_id);
+    compile_block_into_basm(bang, basm, eef.then);
     Inst_Addr else_jmp_addr = basm_push_inst(basm, INST_JMP, word_u64(0));
     Inst_Addr else_addr = basm->program_size;
-    compile_block_into_basm(basm, eef.elze, write_id);
+    compile_block_into_basm(bang, basm, eef.elze);
     Inst_Addr end_addr = basm->program_size;
 
     basm->program[then_jmp_addr].operand = word_u64(else_addr);
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
-void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
+void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
     switch (stmt.kind) {
     case BANG_STMT_KIND_EXPR:
-        compile_bang_expr_into_basm(basm, stmt.as.expr, write_id);
+        compile_bang_expr_into_basm(bang, basm, stmt.as.expr);
         break;
 
     case BANG_STMT_KIND_IF:
-        compile_bang_if_into_basm(basm, stmt.as.eef, write_id);
+        compile_bang_if_into_basm(bang, basm, stmt.as.eef);
         break;
 
     default:
@@ -72,19 +72,19 @@ void compile_stmt_into_basm(Basm *basm, Bang_Stmt stmt, Native_ID write_id)
     }
 }
 
-void compile_block_into_basm(Basm *basm, Bang_Block *block, Native_ID write_id)
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
     while (block) {
-        compile_stmt_into_basm(basm, block->stmt, write_id);
+        compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
 }
 
-void compile_proc_def_into_basm(Basm *basm, Bang_Proc_Def proc_def, Native_ID write_id)
+void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
 {
     assert(!basm->has_entry);
     basm->entry = basm->program_size;
-    compile_block_into_basm(basm, proc_def.body, write_id);
+    compile_block_into_basm(bang, basm, proc_def.body);
 }
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
