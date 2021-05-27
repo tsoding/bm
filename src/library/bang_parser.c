@@ -96,16 +96,30 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
 
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
-        Bang_Expr expr = {0};
-        expr.kind = BANG_EXPR_KIND_FUNCALL;
-        expr.value.as_funcall = parse_bang_funcall(arena, lexer);
-        return expr;
+        if (sv_eq(token.text, SV("true"))) {
+            bang_lexer_next(lexer, &token);
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_LIT_BOOL;
+            expr.as.boolean = true;
+            return expr;
+        } else if (sv_eq(token.text, SV("false"))) {
+            bang_lexer_next(lexer, &token);
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_LIT_BOOL;
+            expr.as.boolean = false;
+            return expr;
+        } else {
+            Bang_Expr expr = {0};
+            expr.kind = BANG_EXPR_KIND_FUNCALL;
+            expr.as.funcall = parse_bang_funcall(arena, lexer);
+            return expr;
+        }
     }
 
     case BANG_TOKEN_KIND_LIT_STR: {
         Bang_Expr expr = {0};
         expr.kind = BANG_EXPR_KIND_LIT_STR;
-        expr.value.as_lit_str = parse_bang_lit_str(arena, lexer);
+        expr.as.lit_str = parse_bang_lit_str(arena, lexer);
         return expr;
     }
 

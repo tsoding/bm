@@ -6,7 +6,7 @@
 
 typedef struct Bang_Funcall_Arg Bang_Funcall_Arg;
 typedef struct Bang_Funcall Bang_Funcall;
-typedef union Bang_Expr_Value Bang_Expr_Value;
+typedef union Bang_Expr_As Bang_Expr_As;
 typedef struct Bang_Expr Bang_Expr;
 typedef struct Bang_Funcall_Arg Bang_Funcall_Arg;
 typedef struct Bang_Stmt Bang_Stmt;
@@ -15,25 +15,27 @@ typedef union Bang_Stmt_As Bang_Stmt_As;
 typedef struct Bang_Block Bang_Block;
 typedef struct Bang_Proc_Def Bang_Proc_Def;
 
-typedef enum {
-    BANG_EXPR_KIND_LIT_STR,
-    BANG_EXPR_KIND_FUNCALL,
-} Bang_Expr_Kind;
-
 struct Bang_Funcall {
     Bang_Loc loc;
     String_View name;
     Bang_Funcall_Arg *args;
 };
 
-union Bang_Expr_Value {
-    String_View as_lit_str;
-    Bang_Funcall as_funcall;
+union Bang_Expr_As {
+    String_View lit_str;
+    Bang_Funcall funcall;
+    bool boolean;
 };
+
+typedef enum {
+    BANG_EXPR_KIND_LIT_STR,
+    BANG_EXPR_KIND_LIT_BOOL,
+    BANG_EXPR_KIND_FUNCALL,
+} Bang_Expr_Kind;
 
 struct Bang_Expr {
     Bang_Expr_Kind kind;
-    Bang_Expr_Value value;
+    Bang_Expr_As as;
 };
 
 struct Bang_Funcall_Arg {

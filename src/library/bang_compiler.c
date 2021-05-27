@@ -4,29 +4,33 @@ void compile_bang_expr_into_basm(Basm *basm, Bang_Expr expr, Native_ID write_id)
 {
     switch (expr.kind) {
     case BANG_EXPR_KIND_LIT_STR: {
-        Word str_addr = basm_push_string_to_memory(basm, expr.value.as_lit_str);
+        Word str_addr = basm_push_string_to_memory(basm, expr.as.lit_str);
         basm_push_inst(basm, INST_PUSH, str_addr);
-        basm_push_inst(basm, INST_PUSH, word_u64(expr.value.as_lit_str.count));
+        basm_push_inst(basm, INST_PUSH, word_u64(expr.as.lit_str.count));
     }
     break;
 
     case BANG_EXPR_KIND_FUNCALL: {
-        if (sv_eq(expr.value.as_funcall.name, SV("write"))) {
-            bang_funcall_expect_arity(expr.value.as_funcall, 1);
-            compile_bang_expr_into_basm(basm, expr.value.as_funcall.args->value, write_id);
+        if (sv_eq(expr.as.funcall.name, SV("write"))) {
+            bang_funcall_expect_arity(expr.as.funcall, 1);
+            compile_bang_expr_into_basm(basm, expr.as.funcall.args->value, write_id);
             basm_push_inst(basm, INST_NATIVE, word_u64(write_id));
-        } else if (sv_eq(expr.value.as_funcall.name, SV("true"))) {
-            basm_push_inst(basm, INST_PUSH, word_u64(1));
-        } else if (sv_eq(expr.value.as_funcall.name, SV("false"))) {
-            basm_push_inst(basm, INST_PUSH, word_u64(0));
         } else {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
-                    Bang_Loc_Arg(expr.value.as_funcall.loc),
-                    SV_Arg(expr.value.as_funcall.name));
+                    Bang_Loc_Arg(expr.as.funcall.loc),
+                    SV_Arg(expr.as.funcall.name));
             exit(1);
         }
     }
     break;
+
+    case BANG_EXPR_KIND_LIT_BOOL: {
+        if (expr.as.boolean) {
+            basm_push_inst(basm, INST_PUSH, word_u64(1));
+        } else {
+            basm_push_inst(basm, INST_PUSH, word_u64(0));
+        }
+    } break;
 
     default:
         assert(false && "compile_bang_expr_into_basm: unreachable");
