@@ -38,6 +38,7 @@
         fprintf(output, "    cset x1, "cc"\n");                     \
         fprintf(output, "    str x1, [x0], #BM_WORD_SIZE\n");       \
     } while(0)
+
 #define CMP_INT(cc)                                                       \
     do {                                                                \
         fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");         \
