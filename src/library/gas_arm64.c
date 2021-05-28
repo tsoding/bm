@@ -227,19 +227,15 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
         break;
         case INST_RET: {
             fprintf(output, "    // ret\n");
-            fprintf(output, "    ldr x9, [x0, #-BM_WORD_SIZE]!\n");
-            fprintf(output, "    mov x10, #BM_WORD_SIZE\n");
-            fprintf(output, "    ldr x11, =inst_map\n");
-            fprintf(output, "    madd x12, x9, x10, x11\n");
-            fprintf(output, "    ldr x10, [x12]\n");
-            fprintf(output, "    br x10\n");
+            fprintf(output, "    mov x9, lr\n");
+            fprintf(output, "    ldr lr, [x0, #-BM_WORD_SIZE]!\n");
+            fprintf(output, "    ret x9\n");
         }
         break;
         case INST_CALL: {
             fprintf(output, "    // call\n");
-            fprintf(output, "    mov x9, #%zu\n", i + 1);
-            fprintf(output, "    str x9, [x0], #BM_WORD_SIZE\n");
-            fprintf(output, "    b inst_%"PRIu64"\n", inst.operand.as_u64);
+            fprintf(output, "    str lr, [x0], #BM_WORD_SIZE\n");
+            fprintf(output, "    bl inst_%"PRIu64"\n", inst.operand.as_u64);
         }
         break;
         case INST_NATIVE: {
@@ -540,11 +536,6 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
     }
 
     fprintf(output, "    .data\n");
-    fprintf(output, "inst_map:\n");
-    for (size_t i = 0; i < basm->program_size; ++i) {
-        fprintf(output, "    .dc.a inst_%zu\n", i);
-    }
-
     fprintf(output, "stack_top: .word stack\n");
 
     fprintf(output, "memory:\n");
