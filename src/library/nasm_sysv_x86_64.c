@@ -18,31 +18,43 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         fprintf(output, "%%define SYS_EXIT 60\n");
         fprintf(output, "%%define SYS_WRITE 1\n");
         fprintf(output, "%%define STDOUT 1\n");
+        fprintf(output, "%%define ENTRY_POINT _start\n");
     }
     break;
     case OS_TARGET_FREEBSD: {
         fprintf(output, "%%define SYS_EXIT 1\n");
         fprintf(output, "%%define SYS_WRITE 4\n");
         fprintf(output, "%%define STDOUT 1\n");
+        fprintf(output, "%%define ENTRY_POINT _start\n");
     }
     break;
     case OS_TARGET_WINDOWS: {
         fprintf(output, "extern GetStdHandle\n");
         fprintf(output, "extern WriteFile\n");
         fprintf(output, "extern ExitProcess\n");
+        fprintf(output, "%%define ENTRY_POINT _start\n");
+    }
+    break;
+    case OS_TARGET_MACOS: {
+        // the syscall numbers are actually the same as BSD, but
+        // they need to be left-shifted 24 bits for some reason.
+        fprintf(output, "%%define SYS_EXIT 0x2000001\n");
+        fprintf(output, "%%define SYS_WRITE 0x2000004\n");
+        fprintf(output, "%%define STDOUT 1\n");
+        fprintf(output, "%%define ENTRY_POINT _main\n");
     }
     break;
     }
 
     fprintf(output, "segment .text\n");
-    fprintf(output, "global _start\n");
+    fprintf(output, "global ENTRY_POINT\n");
 
     size_t jmp_count = 0;
     for (size_t i = 0; i < basm->program_size; ++i) {
         Inst inst = basm->program[i];
 
         if (i == basm->entry) {
-            fprintf(output, "_start:\n");
+            fprintf(output, "ENTRY_POINT:\n");
         }
 
         fprintf(output, "inst_%zu:\n", i);
