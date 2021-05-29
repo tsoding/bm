@@ -537,6 +537,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    ucomisd xmm0, xmm1\n");
             fprintf(output, "    mov edx, 0\n");
             fprintf(output, "    setnp al\n");
@@ -553,6 +554,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm1, xmm0\n");
             fprintf(output, "    setae al\n");
             fprintf(output, "    mov [rsi], rax\n");
@@ -567,6 +569,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm1, xmm0\n");
             fprintf(output, "    seta al\n");
             fprintf(output, "    mov [rsi], rax\n");
@@ -581,6 +584,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    setnb al\n");
             fprintf(output, "    mov [rsi], rax\n");
@@ -595,6 +599,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    seta al\n");
             fprintf(output, "    mov [rsi], rax\n");
@@ -609,6 +614,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    ucomisd xmm1, xmm0\n");
             fprintf(output, "    mov edx, 1\n");
             fprintf(output, "    setp al\n");
@@ -828,7 +834,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    mov r11, [stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rdi, [r11]\n");
-            fprintf(output, "    pxor xmm0, xmm1\n");
+            fprintf(output, "    pxor xmm0, xmm0\n");
             fprintf(output, "    cvtsi2sd xmm0, rdi\n");
             fprintf(output, "    movsd [r11], xmm0\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
