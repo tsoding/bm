@@ -4,21 +4,23 @@
 
 static const char * const target_names[COUNT_TARGETS] = {
     [TARGET_BM] = "bm",
-    [TARGET_NASM_LINUX_X86_64] = "nasm-linux-x86-64",
+    [TARGET_NASM_LINUX_X86_64]   = "nasm-linux-x86-64",
     [TARGET_NASM_FREEBSD_X86_64] = "nasm-freebsd-x86-64",
     [TARGET_NASM_WINDOWS_X86_64] = "nasm-windows-x86-64",
-    [TARGET_GAS_FREEBSD_ARM64] = "gas-freebsd-arm64",
+    [TARGET_NASM_MACOS_X86_64]   = "nasm-macos-x86-64",
+    [TARGET_GAS_FREEBSD_ARM64]   = "gas-freebsd-arm64",
 };
-static_assert(COUNT_TARGETS == 5, "Amount of target names have changed");
+static_assert(COUNT_TARGETS == 6, "Amount of target names have changed");
 
 static const char * const target_exts[COUNT_TARGETS] = {
     [TARGET_BM] = ".bm",
-    [TARGET_NASM_LINUX_X86_64] = ".asm",
+    [TARGET_NASM_LINUX_X86_64]   = ".asm",
     [TARGET_NASM_FREEBSD_X86_64] = ".S",
     [TARGET_NASM_WINDOWS_X86_64] = ".asm",
-    [TARGET_GAS_FREEBSD_ARM64] = ".S",
+    [TARGET_NASM_MACOS_X86_64]   = ".asm",
+    [TARGET_GAS_FREEBSD_ARM64]   = ".S",
 };
-static_assert(COUNT_TARGETS == 5, "Amount of target extensions have changed");
+static_assert(COUNT_TARGETS == 6, "Amount of target extensions have changed");
 
 const char *target_file_ext(Target target)
 {

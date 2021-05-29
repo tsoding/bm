@@ -75,6 +75,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
         fprintf(output, "#define SYS_WRITE #4\n");
     }
     break;
+    case OS_TARGET_MACOS: {
+        fprintf(stderr, "TODO: macOS is not supported on arm64/aarch64\n");
+        exit(1);
+    }
+    break;
     }
 
     fprintf(output, "#define STDOUT #1\n");

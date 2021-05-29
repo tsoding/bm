@@ -261,6 +261,11 @@ void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Targe
     }
     break;
 
+    case TARGET_NASM_MACOS_X86_64: {
+        basm_save_to_file_as_nasm_sysv_x86_64(basm, OS_TARGET_MACOS, output_file_path);
+    }
+    break;
+
     case TARGET_GAS_FREEBSD_ARM64: {
         basm_save_to_file_as_gas_arm64(basm, OS_TARGET_FREEBSD, output_file_path);
     }

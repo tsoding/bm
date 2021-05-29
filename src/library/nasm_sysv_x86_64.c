@@ -336,6 +336,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    ;; halt\n");
             switch (os_target) {
             case OS_TARGET_LINUX:
+            case OS_TARGET_MACOS:
             case OS_TARGET_FREEBSD: {
                 fprintf(output, "    mov rax, SYS_EXIT\n");
                 fprintf(output, "    mov rdi, 0\n");
@@ -905,6 +906,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         fprintf(output, "stdout_handler: dd 0\n");
         break;
     case OS_TARGET_LINUX:
+    case OS_TARGET_MACOS:
     case OS_TARGET_FREEBSD:
         // Nothing to do
         break;
@@ -944,6 +946,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         fprintf(output, "STD_OUTPUT_HANDLE equ -11\n");
         break;
     case OS_TARGET_LINUX:
+    case OS_TARGET_MACOS:
     case OS_TARGET_FREEBSD:
         // Nothing to do
         break;
