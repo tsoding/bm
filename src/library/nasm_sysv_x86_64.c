@@ -152,11 +152,11 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
 
 #define MULT_DIV_INST(comment_name, inst, ret_reg) do { \
-    fprintf(output, "    ;; " comment_name "\n");       \
-    fprintf(output, "    STACK_POP_TWO rbx, rax\n");     \
-    fprintf(output, "    xor edx, edx\n");              \
-    fprintf(output, "    " inst " rbx\n");              \
-    fprintf(output, "    STACK_PUSH " ret_reg "\n");    \
+fprintf(output, "    ;; " comment_name "\n");           \
+fprintf(output, "    STACK_POP_TWO rbx, rax\n");        \
+fprintf(output, "    xor edx, edx\n");                  \
+fprintf(output, "    " inst " rbx\n");                  \
+fprintf(output, "    STACK_PUSH " ret_reg "\n");        \
 } while(0)
 
         case INST_MULTI:
@@ -181,11 +181,11 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
 #undef MULT_DIV_INST
 
 
-#define FLOAT_BINOP_INST(comment_name, inst) do {           \
-    fprintf(output, "    ;; " comment_name "\n");           \
-    fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");   \
-    fprintf(output, "    " inst " xmm1, xmm0\n");           \
-    fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
+#define FLOAT_BINOP_INST(comment_name, inst) do {       \
+fprintf(output, "    ;; " comment_name "\n");           \
+fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");  \
+fprintf(output, "    " inst " xmm1, xmm0\n");           \
+fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
 } while(0)
 
         case INST_PLUSF:
@@ -299,12 +299,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
 
 #define INT_COMPARISON_INST(comment_name, mnemonic) do {    \
-    fprintf(output, "    ;; " comment_name "\n");           \
-    fprintf(output, "    STACK_POP_TWO rax, rbx\n");         \
-    fprintf(output, "    cmp rbx, rax\n");                  \
-    fprintf(output, "    mov eax, 0\n");                    \
-    fprintf(output, "    " mnemonic " al\n");               \
-    fprintf(output, "    STACK_PUSH rax\n");                \
+fprintf(output, "    ;; " comment_name "\n");               \
+fprintf(output, "    STACK_POP_TWO rax, rbx\n");            \
+fprintf(output, "    cmp rbx, rax\n");                      \
+fprintf(output, "    mov eax, 0\n");                        \
+fprintf(output, "    " mnemonic " al\n");                   \
+fprintf(output, "    STACK_PUSH rax\n");                    \
 } while(0)
 
         case INST_EQI:
@@ -347,12 +347,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
 #undef INT_COMPARISON_INST
 
 #define FLOAT_COMPARISON_INST(comment_name, comisd, mnemonic) do {  \
-    fprintf(output, "    ;; " comment_name "\n");                   \
-    fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");           \
-    fprintf(output, "    xor eax, eax\n");                          \
-    fprintf(output, "    " comisd " xmm1, xmm0\n");                 \
-    fprintf(output, "    " mnemonic " al\n");                       \
-    fprintf(output, "    STACK_PUSH rax\n");                        \
+fprintf(output, "    ;; " comment_name "\n");                       \
+fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");              \
+fprintf(output, "    xor eax, eax\n");                              \
+fprintf(output, "    " comisd " xmm1, xmm0\n");                     \
+fprintf(output, "    " mnemonic " al\n");                           \
+fprintf(output, "    STACK_PUSH rax\n");                            \
 } while(0)
 
         case INST_EQF:
@@ -377,10 +377,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
 #undef FLOAT_COMPARISON_INST
 
 #define BITWISE_INST(comment_name, inst) do {       \
-    fprintf(output, "    ;; " comment_name "\n");   \
-    fprintf(output, "    STACK_POP_TWO rax, rbx\n"); \
-    fprintf(output, "    " inst " rax, rbx\n");     \
-    fprintf(output, "    STACK_PUSH rax\n");        \
+fprintf(output, "    ;; " comment_name "\n");       \
+fprintf(output, "    STACK_POP_TWO rax, rbx\n");    \
+fprintf(output, "    " inst " rax, rbx\n");         \
+fprintf(output, "    STACK_PUSH rax\n");            \
 } while(0)
 
         case INST_ANDB:
@@ -418,22 +418,22 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
 
 #define READ_SIGNED_INST(comment_name, reg, size) do {      \
-    fprintf(output, "    ;; " comment_name "\n");           \
-    fprintf(output, "    STACK_POP rbx\n");                 \
-    fprintf(output, "    add rbx, r14\n");                  \
-    fprintf(output, "    mov " reg ", " size " [rbx]\n");   \
-    fprintf(output, "    movsx rax, " reg "\n");            \
-    fprintf(output, "    STACK_PUSH rax\n");                \
+fprintf(output, "    ;; " comment_name "\n");               \
+fprintf(output, "    STACK_POP rbx\n");                     \
+fprintf(output, "    add rbx, r14\n");                      \
+fprintf(output, "    mov " reg ", " size " [rbx]\n");       \
+fprintf(output, "    movsx rax, " reg "\n");                \
+fprintf(output, "    STACK_PUSH rax\n");                    \
 } while(0)
 
 // note: this changes the semantics slightly; we now zero-extend when reading unsigned
-#define READ_UNSIGNED_INST(comment_name, reg, size, zero_extend) do {    \
-    fprintf(output, "    ;; " comment_name "\n");           \
-    fprintf(output, "    STACK_POP rbx\n");                 \
-    fprintf(output, "    add rbx, r14\n");                  \
-    fprintf(output, "    mov " reg ", " size " [rbx]\n");   \
-    fprintf(output, "    " zero_extend "\n");               \
-    fprintf(output, "    STACK_PUSH rax\n");                \
+#define READ_UNSIGNED_INST(comment_name, reg, size, zero_extend) do {   \
+fprintf(output, "    ;; " comment_name "\n");                           \
+fprintf(output, "    STACK_POP rbx\n");                                 \
+fprintf(output, "    add rbx, r14\n");                                  \
+fprintf(output, "    mov " reg ", " size " [rbx]\n");                   \
+fprintf(output, "    " zero_extend "\n");                               \
+fprintf(output, "    STACK_PUSH rax\n");                                \
 } while(0)
 
         case INST_READ8I:
@@ -465,11 +465,11 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
 #undef READ_SIGNED_INST
 #undef READ_UNSIGNED_INST
 
-#define WRITE_INST(comment_name, reg, size) do {            \
-    fprintf(output, "    ;; " comment_name "\n");           \
-    fprintf(output, "    STACK_POP_TWO rax, rbx\n");         \
-    fprintf(output, "    add rbx, r14\n");                  \
-    fprintf(output, "    mov " size " [rbx], " reg "\n");   \
+#define WRITE_INST(comment_name, reg, size) do {        \
+fprintf(output, "    ;; " comment_name "\n");           \
+fprintf(output, "    STACK_POP_TWO rax, rbx\n");        \
+fprintf(output, "    add rbx, r14\n");                  \
+fprintf(output, "    mov " size " [rbx], " reg "\n");   \
 } while(0)
 
         case INST_WRITE8:
