@@ -284,7 +284,7 @@ void cases_command(int argc, char **argv)
     // due to PR #386, we can't just pass our own argc/argv, because we might
     // have "nasm" as an argument -- which will trigger the selective tool rebuild.
     // so, we pass in an empty argument list.
-    char* dummy_args[] = { };
+    char* dummy_args[] = { "" };
     tools_command(0, dummy_args);
 
     RM(PATH("build", "test", "cases"));
