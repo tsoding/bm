@@ -159,12 +159,24 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH " ret_reg "\n");    \
 } while(0)
 
-        case INST_MULTI: MULT_DIV_INST("multi", "imul", "rax"); break;
-        case INST_MULTU: MULT_DIV_INST("multu", "mul", "rax"); break;
-        case INST_DIVI:  MULT_DIV_INST("divi", "idiv", "rax"); break;
-        case INST_DIVU:  MULT_DIV_INST("divu", "div", "rax"); break;
-        case INST_MODI:  MULT_DIV_INST("modi", "idiv", "rdx"); break;
-        case INST_MODU:  MULT_DIV_INST("modu", "div", "rdx"); break;
+        case INST_MULTI:
+            MULT_DIV_INST("multi", "imul", "rax");
+            break;
+        case INST_MULTU:
+            MULT_DIV_INST("multu", "mul", "rax");
+            break;
+        case INST_DIVI:
+            MULT_DIV_INST("divi", "idiv", "rax");
+            break;
+        case INST_DIVU:
+            MULT_DIV_INST("divu", "div", "rax");
+            break;
+        case INST_MODI:
+            MULT_DIV_INST("modi", "idiv", "rdx");
+            break;
+        case INST_MODU:
+            MULT_DIV_INST("modu", "div", "rdx");
+            break;
 
 #undef MULT_DIV_INST
 
@@ -176,10 +188,18 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
 } while(0)
 
-        case INST_PLUSF:  FLOAT_BINOP_INST("plusf", "addsd"); break;
-        case INST_MINUSF: FLOAT_BINOP_INST("minusf", "subsd"); break;
-        case INST_MULTF: FLOAT_BINOP_INST("multf", "mulsd"); break;
-        case INST_DIVF:  FLOAT_BINOP_INST("divf", "divsd"); break;
+        case INST_PLUSF:
+            FLOAT_BINOP_INST("plusf", "addsd");
+            break;
+        case INST_MINUSF:
+            FLOAT_BINOP_INST("minusf", "subsd");
+            break;
+        case INST_MULTF:
+            FLOAT_BINOP_INST("multf", "mulsd");
+            break;
+        case INST_DIVF:
+            FLOAT_BINOP_INST("divf", "divsd");
+            break;
 
 #undef FLOAT_BINOP_INST
 
@@ -287,18 +307,42 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH rax\n");                \
 } while(0)
 
-        case INST_EQI: INT_COMPARISON_INST("eqi", "setz");  break;
-        case INST_GEI: INT_COMPARISON_INST("gei", "setge"); break;
-        case INST_GTI: INT_COMPARISON_INST("gti", "setg");  break;
-        case INST_LEI: INT_COMPARISON_INST("lei", "setle"); break;
-        case INST_LTI: INT_COMPARISON_INST("lti", "setl");  break;
-        case INST_NEI: INT_COMPARISON_INST("nei", "setne"); break;
-        case INST_EQU: INT_COMPARISON_INST("equ", "sete");  break;
-        case INST_GEU: INT_COMPARISON_INST("geu", "setae"); break;
-        case INST_GTU: INT_COMPARISON_INST("gtu", "seta");  break;
-        case INST_LEU: INT_COMPARISON_INST("leu", "setbe"); break;
-        case INST_LTU: INT_COMPARISON_INST("ltu", "setb");  break;
-        case INST_NEU: INT_COMPARISON_INST("neu", "setne"); break;
+        case INST_EQI:
+            INT_COMPARISON_INST("eqi", "setz");
+            break;
+        case INST_GEI:
+            INT_COMPARISON_INST("gei", "setge");
+            break;
+        case INST_GTI:
+            INT_COMPARISON_INST("gti", "setg");
+            break;
+        case INST_LEI:
+            INT_COMPARISON_INST("lei", "setle");
+            break;
+        case INST_LTI:
+            INT_COMPARISON_INST("lti", "setl");
+            break;
+        case INST_NEI:
+            INT_COMPARISON_INST("nei", "setne");
+            break;
+        case INST_EQU:
+            INT_COMPARISON_INST("equ", "sete");
+            break;
+        case INST_GEU:
+            INT_COMPARISON_INST("geu", "setae");
+            break;
+        case INST_GTU:
+            INT_COMPARISON_INST("gtu", "seta");
+            break;
+        case INST_LEU:
+            INT_COMPARISON_INST("leu", "setbe");
+            break;
+        case INST_LTU:
+            INT_COMPARISON_INST("ltu", "setb");
+            break;
+        case INST_NEU:
+            INT_COMPARISON_INST("neu", "setne");
+            break;
 
 #undef INT_COMPARISON_INST
 
@@ -311,12 +355,24 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH rax\n");                        \
 } while(0)
 
-        case INST_EQF: FLOAT_COMPARISON_INST("eqf", "comisd", "sete");  break;
-        case INST_GEF: FLOAT_COMPARISON_INST("gef", "comisd", "setae"); break;
-        case INST_GTF: FLOAT_COMPARISON_INST("gtf", "comisd", "seta");  break;
-        case INST_LEF: FLOAT_COMPARISON_INST("lef", "comisd", "setbe"); break;
-        case INST_LTF: FLOAT_COMPARISON_INST("ltf", "comisd", "setb");  break;
-        case INST_NEF: FLOAT_COMPARISON_INST("nef", "comisd", "setne"); break;
+        case INST_EQF:
+            FLOAT_COMPARISON_INST("eqf", "comisd", "sete");
+            break;
+        case INST_GEF:
+            FLOAT_COMPARISON_INST("gef", "comisd", "setae");
+            break;
+        case INST_GTF:
+            FLOAT_COMPARISON_INST("gtf", "comisd", "seta");
+            break;
+        case INST_LEF:
+            FLOAT_COMPARISON_INST("lef", "comisd", "setbe");
+            break;
+        case INST_LTF:
+            FLOAT_COMPARISON_INST("ltf", "comisd", "setb");
+            break;
+        case INST_NEF:
+            FLOAT_COMPARISON_INST("nef", "comisd", "setne");
+            break;
 
 #undef FLOAT_COMPARISON_INST
 
@@ -327,9 +383,15 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH rax\n");        \
 } while(0)
 
-        case INST_ANDB: BITWISE_INST("andb", "and"); break;
-        case INST_ORB:  BITWISE_INST("orb", "or"); break;
-        case INST_XOR:  BITWISE_INST("xor", "xor"); break;
+        case INST_ANDB:
+            BITWISE_INST("andb", "and");
+            break;
+        case INST_ORB:
+            BITWISE_INST("orb", "or");
+            break;
+        case INST_XOR:
+            BITWISE_INST("xor", "xor");
+            break;
 
 #undef BITWISE_INST
 
@@ -374,15 +436,31 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    STACK_PUSH rax\n");                \
 } while(0)
 
-        case INST_READ8I:  READ_SIGNED_INST("read8i", "al", "BYTE"); break;
-        case INST_READ16I: READ_SIGNED_INST("read16i", "ax", "WORD"); break;
-        case INST_READ32I: READ_SIGNED_INST("read32i", "eax", "DWORD"); break;
-        case INST_READ64I: READ_SIGNED_INST("read64i", "rax", "QWORD"); break;
+        case INST_READ8I:
+            READ_SIGNED_INST("read8i", "al", "BYTE");
+            break;
+        case INST_READ16I:
+            READ_SIGNED_INST("read16i", "ax", "WORD");
+            break;
+        case INST_READ32I:
+            READ_SIGNED_INST("read32i", "eax", "DWORD");
+            break;
+        case INST_READ64I:
+            READ_SIGNED_INST("read64i", "rax", "QWORD");
+            break;
 
-        case INST_READ8U:  READ_UNSIGNED_INST("read8u", "al", "BYTE", "movzx rax, al"); break;
-        case INST_READ16U: READ_UNSIGNED_INST("read16u", "ax", "WORD", "movzx rax, ax"); break;
-        case INST_READ32U: READ_UNSIGNED_INST("read32u", "eax", "DWORD", "nop"); break;
-        case INST_READ64U: READ_UNSIGNED_INST("read64u", "rax", "QWORD", "nop"); break;
+        case INST_READ8U:
+            READ_UNSIGNED_INST("read8u", "al", "BYTE", "movzx rax, al");
+            break;
+        case INST_READ16U:
+            READ_UNSIGNED_INST("read16u", "ax", "WORD", "movzx rax, ax");
+            break;
+        case INST_READ32U:
+            READ_UNSIGNED_INST("read32u", "eax", "DWORD", "nop");
+            break;
+        case INST_READ64U:
+            READ_UNSIGNED_INST("read64u", "rax", "QWORD", "nop");
+            break;
 
 #undef READ_SIGNED_INST
 #undef READ_UNSIGNED_INST
@@ -394,10 +472,18 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "    mov " size " [rbx], " reg "\n");   \
 } while(0)
 
-        case INST_WRITE8:  WRITE_INST("write8", "al", "BYTE"); break;
-        case INST_WRITE16: WRITE_INST("write16", "ax", "WORD"); break;
-        case INST_WRITE32: WRITE_INST("write32", "eax", "DWORD"); break;
-        case INST_WRITE64: WRITE_INST("write64", "rax", "QWORD"); break;
+        case INST_WRITE8:
+            WRITE_INST("write8", "al", "BYTE");
+            break;
+        case INST_WRITE16:
+            WRITE_INST("write16", "ax", "WORD");
+            break;
+        case INST_WRITE32:
+            WRITE_INST("write32", "eax", "DWORD");
+            break;
+        case INST_WRITE64:
+            WRITE_INST("write64", "rax", "QWORD");
+            break;
 
 #undef WRITE_INST
 
