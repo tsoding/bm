@@ -258,7 +258,8 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_JMP: {
             fprintf(output, "    ;; jmp\n");
-            fprintf(output, "    mov rdi, inst_map\n");
+            // fprintf(output, "    mov rdi, inst_map\n");
+            fprintf(output, "    lea rdi, [REL inst_map]\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
         }
@@ -271,7 +272,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    mov [REL stack_top], rsi\n");
             fprintf(output, "    cmp rax, 0\n");
             fprintf(output, "    je jmp_if_escape_%zu\n", jmp_count);
-            fprintf(output, "    mov rdi, inst_map\n");
+            fprintf(output, "    lea rdi, [REL inst_map]\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
             fprintf(output, "jmp_if_escape_%zu:\n", jmp_count);
