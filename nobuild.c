@@ -330,7 +330,7 @@ void cases_command(int argc, char **argv)
 // TODO: build asm test cases for FreeBSD
 #if defined(__linux__)
     #define NATIVE_TARGET       "nasm-linux-x86-64"
-    #define BINARY_FORMAT       "elf"
+    #define BINARY_FORMAT       "elf64"
     #define ADDITIONAL_LIBS
 #elif defined(__APPLE__)
     #define NATIVE_TARGET       "nasm-macos-x86-64"
