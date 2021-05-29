@@ -21,6 +21,7 @@ typedef enum {
     OS_TARGET_LINUX = 0,
     OS_TARGET_FREEBSD,
     OS_TARGET_WINDOWS,
+    OS_TARGET_MACOS,
 } OS_Target;
 
 typedef enum {
