@@ -301,24 +301,8 @@ void cases_command(int argc, char **argv)
             }
         });
     } else {
-#ifdef __linux__
-        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
-            if (ENDS_WITH(caze, ".basm"))
-            {
-                CMD(PATH("build", "toolchain", "basm"),
-                    "-I", "./lib/",
-                    "-t", "nasm-linux-x86-64",
-                    PATH("test", "cases", caze),
-                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
-                CMD("nasm", "-felf64",
-                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")),
-                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
-                CMD("ld",
-                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")),
-                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".elf")));
-            }
-        });
-#else
+
+#if defined(_WIN32)
         FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
             if (ENDS_WITH(caze, ".basm"))
             {
@@ -338,6 +322,39 @@ void cases_command(int argc, char **argv)
                     "/nologo",
                     PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".obj")),
                     CONCAT("/OUT:", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".exe"))));
+            }
+        });
+#else
+
+
+// TODO: build asm test cases for FreeBSD
+#if defined(__linux__)
+    #define NATIVE_TARGET       "nasm-linux-x86-64"
+    #define BINARY_FORMAT       "elf"
+    #define ADDITIONAL_LIBS
+#elif defined(__APPLE__)
+    #define NATIVE_TARGET       "nasm-macos-x86-64"
+    #define BINARY_FORMAT       "macho64"
+    #define ADDITIONAL_LIBS     "-lSystem",         // this must end with a trailing comma
+#else
+        fprintf(stderr, "ERROR: native codegen is not supported for this platform\n");
+        exit(1);
+#endif
+
+        FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
+            if (ENDS_WITH(caze, ".basm"))
+            {
+                CMD(PATH("build", "toolchain", "basm"),
+                    "-I", "./lib/",
+                    "-t", NATIVE_TARGET,
+                    PATH("test", "cases", caze),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
+                CMD("nasm", "-f" BINARY_FORMAT,
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
+                CMD("ld", ADDITIONAL_LIBS   // note: no trailing comma here
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), "." BINARY_FORMAT)));
             }
         });
 #endif
