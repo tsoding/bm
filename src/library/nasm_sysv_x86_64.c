@@ -417,16 +417,18 @@ fprintf(output, "    STACK_PUSH rax\n");            \
         }
         break;
 
-#define READ_SIGNED_INST(comment_name, reg, size) do {      \
-fprintf(output, "    ;; " comment_name "\n");               \
-fprintf(output, "    STACK_POP rbx\n");                     \
-fprintf(output, "    add rbx, r14\n");                      \
-fprintf(output, "    mov " reg ", " size " [rbx]\n");       \
-fprintf(output, "    movsx rax, " reg "\n");                \
-fprintf(output, "    STACK_PUSH rax\n");                    \
+#define READ_SIGNED_INST(comment_name, reg, size, sign_extend) do { \
+fprintf(output, "    ;; " comment_name "\n");                       \
+fprintf(output, "    STACK_POP rbx\n");                             \
+fprintf(output, "    add rbx, r14\n");                              \
+fprintf(output, "    mov " reg ", " size " [rbx]\n");               \
+fprintf(output, "    " sign_extend "\n");                           \
+fprintf(output, "    STACK_PUSH rax\n");                            \
 } while(0)
 
-// note: this changes the semantics slightly; we now zero-extend when reading unsigned
+// note: this changes the semantics slightly; we now zero-extend when
+// reading unsigned values, where previously the rest of the memory was
+// left undefined
 #define READ_UNSIGNED_INST(comment_name, reg, size, zero_extend) do {   \
 fprintf(output, "    ;; " comment_name "\n");                           \
 fprintf(output, "    STACK_POP rbx\n");                                 \
@@ -437,16 +439,16 @@ fprintf(output, "    STACK_PUSH rax\n");                                \
 } while(0)
 
         case INST_READ8I:
-            READ_SIGNED_INST("read8i", "al", "BYTE");
+            READ_SIGNED_INST("read8i", "al", "BYTE", "movsx rax, al");
             break;
         case INST_READ16I:
-            READ_SIGNED_INST("read16i", "ax", "WORD");
+            READ_SIGNED_INST("read16i", "ax", "WORD", "movsx rax, ax");
             break;
         case INST_READ32I:
-            READ_SIGNED_INST("read32i", "eax", "DWORD");
+            READ_SIGNED_INST("read32i", "eax", "DWORD", "movsx rax, eax");
             break;
         case INST_READ64I:
-            READ_SIGNED_INST("read64i", "rax", "QWORD");
+            READ_SIGNED_INST("read64i", "rax", "QWORD", "nop");
             break;
 
         case INST_READ8U:
