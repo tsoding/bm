@@ -66,33 +66,33 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_PUSH: {
             fprintf(output, "    ;; push %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    mov rax, 0x%"PRIX64"\n", inst.operand.as_u64);
             fprintf(output, "    mov QWORD [rsi], rax\n");
-            fprintf(output, "    add QWORD [stack_top], BM_WORD_SIZE\n");
+            fprintf(output, "    add QWORD [REL stack_top], BM_WORD_SIZE\n");
         }
         break;
         case INST_DROP: {
             fprintf(output, "    ;; drop\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_DUP: {
             fprintf(output, "    ;; dup %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    mov rdi, rsi\n");
             fprintf(output, "    sub rdi, BM_WORD_SIZE * (%"PRIu64" + 1)\n", inst.operand.as_u64);
             fprintf(output, "    mov rax, [rdi]\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_SWAP: {
             fprintf(output, "    ;; swap %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rdi, rsi\n");
             fprintf(output, "    sub rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
@@ -104,7 +104,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_PLUSI: {
             fprintf(output, "    ;; plusi\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -112,12 +112,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    add rax, rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_MINUSI: {
             fprintf(output, "    ;; minusi\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -125,14 +125,14 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    sub rax, rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_MULTI: {
             fprintf(output, "    ;; multi\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [r11]\n");
@@ -142,9 +142,9 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_MULTU: {
             fprintf(output, "    ;; multu\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [r11]\n");
@@ -154,7 +154,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_DIVI: {
             fprintf(output, "    ;; divi\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -163,12 +163,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    idiv rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_DIVU: {
             fprintf(output, "    ;; divu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -177,12 +177,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    div rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_MODI: {
             fprintf(output, "    ;; modi\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -191,12 +191,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    idiv rbx\n");
             fprintf(output, "    mov [rsi], rdx\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_MODU: {
             fprintf(output, "    ;; modu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -205,14 +205,14 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    div rbx\n");
             fprintf(output, "    mov [rsi], rdx\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_PLUSF: {
             fprintf(output, "    ;; plusf\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [r11]\n");
@@ -222,9 +222,9 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_MINUSF: {
             fprintf(output, "    ;; minusf\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [r11]\n");
@@ -234,9 +234,9 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_MULTF: {
             fprintf(output, "    ;; multf\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [r11]\n");
@@ -246,9 +246,9 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_DIVF: {
             fprintf(output, "    ;; divf\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [r11]\n");
@@ -265,10 +265,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_JMP_IF: {
             fprintf(output, "    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
             fprintf(output, "    cmp rax, 0\n");
             fprintf(output, "    je jmp_if_escape_%zu\n", jmp_count);
             fprintf(output, "    mov rdi, inst_map\n");
@@ -280,23 +280,23 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_RET: {
             fprintf(output, "    ;; ret\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rax, [rsi]\n");
-            fprintf(output, "    mov rbx, BM_WORD_SIZE\n");
-            fprintf(output, "    mul rbx\n");
-            fprintf(output, "    add rax, inst_map\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov rbx, [rsi]\n");
+            fprintf(output, "    imul rbx, BM_WORD_SIZE\n");
+            fprintf(output, "    lea rax, [REL inst_map]\n");
+            fprintf(output, "    add rax, rbx\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
             fprintf(output, "    jmp [rax]\n");
         }
         break;
         case INST_CALL: {
             fprintf(output, "    ;; call\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    mov QWORD [rsi], %zu\n", i + 1);
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
-            fprintf(output, "    mov rdi, inst_map\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
+            fprintf(output, "    lea rdi, [REL inst_map]\n");
             fprintf(output, "    add rdi, BM_WORD_SIZE * %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    jmp [rdi]\n");
         }
@@ -306,16 +306,17 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
                 fprintf(output, "    ;; native write\n");
                 switch (os_target) {
                 case OS_TARGET_LINUX:
+                case OS_TARGET_MACOS:
                 case OS_TARGET_FREEBSD: {
-                    fprintf(output, "    mov r11, [stack_top]\n");
+                    fprintf(output, "    mov r11, [REL stack_top]\n");
                     fprintf(output, "    sub r11, BM_WORD_SIZE\n");
                     fprintf(output, "    mov rdx, [r11]\n");
                     fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-                    fprintf(output, "    mov rsi, [r11]\n");
-                    fprintf(output, "    add rsi, memory\n");
+                    fprintf(output, "    lea rsi, [REL memory]\n");
+                    fprintf(output, "    add rsi, [r11]\n");
                     fprintf(output, "    mov rdi, STDOUT\n");
                     fprintf(output, "    mov rax, SYS_WRITE\n");
-                    fprintf(output, "    mov [stack_top], r11\n");
+                    fprintf(output, "    mov [REL stack_top], r11\n");
                     fprintf(output, "    syscall\n");
                 }
                 break;
@@ -325,7 +326,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
                     fprintf(output, "    call GetStdHandle\n");
                     fprintf(output, "    mov DWORD [stdout_handler], eax\n");
                     fprintf(output, "    xor r9, r9\n");
-                    fprintf(output, "    mov r11, [stack_top]\n");
+                    fprintf(output, "    mov r11, [REL stack_top]\n");
                     fprintf(output, "    sub r11, BM_WORD_SIZE\n");
                     fprintf(output, "    mov r8, [r11]\n");
                     fprintf(output, "    sub r11, BM_WORD_SIZE\n");
@@ -333,7 +334,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
                     fprintf(output, "    add rdx, memory\n");
                     fprintf(output, "    xor ecx, ecx\n");
                     fprintf(output, "    mov ecx, dword [stdout_handler]\n");
-                    fprintf(output, "    mov [stack_top], r11\n");
+                    fprintf(output, "    mov [REL stack_top], r11\n");
                     fprintf(output, "    call WriteFile\n");
                     fprintf(output, "    add rsp, 40\n");
                 }
@@ -365,7 +366,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_NOT: {
             fprintf(output, "    ;; not\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    cmp rax, 0\n");
@@ -376,7 +377,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_EQI: {
             fprintf(output, "    ;; eqi\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rbx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -386,12 +387,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setz al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GEI: {
             fprintf(output, "    ;; gei\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -400,12 +401,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setge al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GTI: {
             fprintf(output, "    ;; gti\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -414,12 +415,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setg al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LEI: {
             fprintf(output, "    ;; lei\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -428,12 +429,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setle al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LTI: {
             fprintf(output, "    ;; lti\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -442,12 +443,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setl al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_NEI: {
             fprintf(output, "    ;; equ\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -456,12 +457,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setne al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_EQU: {
             fprintf(output, "    ;; equ\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -470,12 +471,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    sete al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GEU: {
             fprintf(output, "    ;; geu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -484,12 +485,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setnb al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GTU: {
             fprintf(output, "    ;; gtu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -498,12 +499,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    seta al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LEU: {
             fprintf(output, "    ;; leu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -512,12 +513,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setbe al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LTU: {
             fprintf(output, "    ;; ltu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -526,12 +527,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setb al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_NEU: {
             fprintf(output, "    ;; neu\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -540,100 +541,106 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    setne al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_EQF: {
             fprintf(output, "    ;; eqf\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    ucomisd xmm0, xmm1\n");
             fprintf(output, "    mov edx, 0\n");
             fprintf(output, "    setnp al\n");
             fprintf(output, "    cmovne eax, edx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GEF: {
             fprintf(output, "    ;; gef\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm1, xmm0\n");
             fprintf(output, "    setae al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_GTF: {
             fprintf(output, "    ;; gtf\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm1, xmm0\n");
             fprintf(output, "    seta al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LEF: {
             fprintf(output, "    ;; lef\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    setnb al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_LTF: {
             fprintf(output, "    ;; ltf\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    seta al\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_NEF: {
             fprintf(output, "    ;; ltf\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm1, [rsi]\n");
+            fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    ucomisd xmm1, xmm0\n");
             fprintf(output, "    mov edx, 1\n");
             fprintf(output, "    setp al\n");
             fprintf(output, "    cmovne eax, edx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_ANDB: {
             fprintf(output, "    ;; andb\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -641,12 +648,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    and rax, rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_ORB: {
             fprintf(output, "    ;; orb\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -654,12 +661,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    or rax, rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_XOR: {
             fprintf(output, "    ;; xor\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -667,12 +674,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    xor rax, rbx\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_SHR: {
             fprintf(output, "    ;; shr\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rcx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -680,12 +687,12 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    shr rax, cl\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_SHL: {
             fprintf(output, "    ;; shl\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rcx, [rsi]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
@@ -693,26 +700,26 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    shl rax, cl\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_NOTB: {
             fprintf(output, "    ;; notb\n");
-            fprintf(output, "    mov rsi, [stack_top]\n");
+            fprintf(output, "    mov rsi, [REL stack_top]\n");
             fprintf(output, "    sub rsi, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [rsi]\n");
             fprintf(output, "    not rax\n");
             fprintf(output, "    mov [rsi], rax\n");
             fprintf(output, "    add rsi, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], rsi\n");
+            fprintf(output, "    mov [REL stack_top], rsi\n");
         }
         break;
         case INST_READ8I: {
             fprintf(output, "    ;; read8i\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov al, BYTE [rsi]\n");
             fprintf(output, "    movsx rax, al\n");
@@ -721,10 +728,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_READ8U: {
             fprintf(output, "    ;; read8\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov al, BYTE [rsi]\n");
             fprintf(output, "    mov [r11], rax\n");
@@ -732,10 +739,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_READ16I: {
             fprintf(output, "    ;; read16i\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov ax, WORD [rsi]\n");
             fprintf(output, "    movsx rax, ax\n");
@@ -744,10 +751,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_READ16U: {
             fprintf(output, "    ;; read16u\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov ax, WORD [rsi]\n");
             fprintf(output, "    mov [r11], rax\n");
@@ -755,10 +762,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_READ32I: {
             fprintf(output, "    ;; read32i\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov eax, DWORD [rsi]\n");
             fprintf(output, "    movsx rax, eax\n");
@@ -767,10 +774,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_READ32U: {
             fprintf(output, "    ;; read32u\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov eax, DWORD [rsi]\n");
             fprintf(output, "    mov [r11], rax\n");
@@ -779,10 +786,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         case INST_READ64I:
         case INST_READ64U: {
             fprintf(output, "    ;; read64\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    xor rax, rax\n");
             fprintf(output, "    mov rax, QWORD [rsi]\n");
             fprintf(output, "    mov [r11], rax\n");
@@ -790,67 +797,67 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_WRITE8: {
             fprintf(output, "    ;; write8\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    mov BYTE [rsi], al\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case INST_WRITE16: {
             fprintf(output, "    ;; write16\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    mov WORD [rsi], ax\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case INST_WRITE32: {
             fprintf(output, "    ;; write32\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    mov DWORD [rsi], eax\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case INST_WRITE64: {
             fprintf(output, "    ;; write64\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rax, [r11]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov rsi, [r11]\n");
-            fprintf(output, "    add rsi, memory\n");
+            fprintf(output, "    lea rsi, [REL memory]\n");
+            fprintf(output, "    add rsi, [r11]\n");
             fprintf(output, "    mov QWORD [rsi], rax\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case INST_I2F: {
             fprintf(output, "    ;; i2f\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rdi, [r11]\n");
             fprintf(output, "    pxor xmm0, xmm1\n");
             fprintf(output, "    cvtsi2sd xmm0, rdi\n");
             fprintf(output, "    movsd [r11], xmm0\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case INST_U2F: {
             fprintf(output, "    ;; u2f\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    mov rdi, [r11]\n");
             fprintf(output, "    test rdi, rdi\n");
@@ -869,28 +876,28 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    .u2f_end_%zu:\n", jmp_count);
             fprintf(output, "    movsd [r11], xmm0\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
             jmp_count += 1;
         }
         break;
         case INST_F2I: {
             fprintf(output, "    ;; f2i\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
             fprintf(output, "    cvttsd2si rax, xmm0\n");
             fprintf(output, "    mov [r11], rax\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         // TODO(#349): try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
         case INST_F2U: {
             fprintf(output, "    ;; f2i\n");
-            fprintf(output, "    mov r11, [stack_top]\n");
+            fprintf(output, "    mov r11, [REL stack_top]\n");
             fprintf(output, "    sub r11, BM_WORD_SIZE\n");
             fprintf(output, "    movsd xmm0, [r11]\n");
-            fprintf(output, "    movsd xmm1, [magic_number_for_f2u]\n");
+            fprintf(output, "    movsd xmm1, [REL magic_number_for_f2u]\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    jnb .f2u_%zu\n", jmp_count);
             fprintf(output, "    cvttsd2si rax, xmm0\n");
@@ -902,7 +909,7 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "    .f2u_end_%zu:\n", jmp_count);
             fprintf(output, "    mov [r11], rax\n");
             fprintf(output, "    add r11, BM_WORD_SIZE\n");
-            fprintf(output, "    mov [stack_top], r11\n");
+            fprintf(output, "    mov [REL stack_top], r11\n");
         }
         break;
         case NUMBER_OF_INSTS:
