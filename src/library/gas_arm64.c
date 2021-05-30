@@ -501,7 +501,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
             fprintf(output, "    ldr x10, [x0, #-BM_WORD_SIZE]!\n"); // Offset
             fprintf(output, "    ldr x11, =memory\n");
             fprintf(output, "    add x10, x10, x11\n");              // Address
-            fprintf(output, "    str x9, [x10]\n");                 // Store doubleword
+            fprintf(output, "    str x9, [x10]\n");                  // Store doubleword
         }
         break;
         case INST_I2F: {
