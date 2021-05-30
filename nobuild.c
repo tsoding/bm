@@ -282,7 +282,7 @@ void tools_command(int argc, char **argv)
 void cases_command(int argc, char **argv)
 {
     // due to PR #386, we can't just pass our own argc/argv, because we might
-    // have "nasm" as an argument -- which will trigger the selective tool rebuild.
+    // have "asm" as an argument -- which will trigger the selective tool rebuild.
     // so, we pass in an empty argument list.
     char* dummy_args[] = { "" };
     tools_command(0, dummy_args);
@@ -290,7 +290,7 @@ void cases_command(int argc, char **argv)
     RM(PATH("build", "test", "cases"));
     MKDIRS("build", "test", "cases");
 
-    if (argc == 0 || strcmp(argv[0], "nasm") != 0) {
+    if (argc == 0 || strcmp(argv[0], "asm") != 0) {
         FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
             if (ENDS_WITH(caze, ".basm"))
             {
@@ -388,7 +388,7 @@ void test_command(int argc, char **argv)
 {
     cases_command(argc, argv);
 
-    if (argc == 0 || strcmp(argv[0], "nasm") != 0) {
+    if (argc == 0 || strcmp(argv[0], "asm") != 0) {
         FOREACH_FILE_IN_DIR(caze, PATH("test", "cases"), {
             if (ENDS_WITH(caze, ".basm"))
             {
