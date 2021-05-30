@@ -329,10 +329,22 @@ void cases_command(int argc, char **argv)
 
 // TODO: build asm test cases for FreeBSD
 #if defined(__linux__)
+    #define USE_NASM            1
     #define NATIVE_TARGET       "nasm-linux-x86-64"
     #define BINARY_FORMAT       "elf64"
     #define ADDITIONAL_LIBS
+#elif defined(__FreeBSD__) && defined(__amd64__)
+    #define USE_NASM            1
+    #define NATIVE_TARGET       "nasm-freebsd-x86-64"
+    #define BINARY_FORMAT       "elf64"
+    #define ADDITIONAL_LIBS
+#elif defined(__FreeBSD__) && defined(__aarch64__)
+    #define USE_NASM            0
+    #define NATIVE_TARGET       "gas-freebsd-arm64"
+    #define BINARY_FORMAT       "elf64"
+    #define ADDITIONAL_LIBS
 #elif defined(__APPLE__)
+    #define USE_NASM            1
     #define NATIVE_TARGET       "nasm-macos-x86-64"
     #define BINARY_FORMAT       "macho64"
     #define ADDITIONAL_LIBS     "-lSystem",         // this must end with a trailing comma
@@ -348,10 +360,21 @@ void cases_command(int argc, char **argv)
                     "-I", "./lib/",
                     "-t", NATIVE_TARGET,
                     PATH("test", "cases", caze),
+#if USE_NASM
                     "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")));
+#else
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".S")));
+#endif
+
+#if USE_NASM
                 CMD("nasm", "-f" BINARY_FORMAT,
                     PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".asm")),
                     "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
+#else
+                CMD("cc", "-c", "-g",
+                    PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".S")),
+                    "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")));
+#endif
                 CMD("ld", ADDITIONAL_LIBS   // note: no trailing comma here
                     PATH("build", "test", "cases", CONCAT(NOEXT(caze), ".o")),
                     "-o", PATH("build", "test", "cases", CONCAT(NOEXT(caze), "." BINARY_FORMAT)));
