@@ -89,8 +89,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         - %r15 always points to the top of the stack, such that (%r15) contains the topmost value
         - %r14 always points to the base address of memory (`memory`)
         - %r13 always points to the base address of the instruction array (`inst_map`)
+        - %rbp is used as a fake "base pointer" so we can get backtraces
+        - %rsp is used together with %rbp
 
-        other than those 3 special registers, every other register is fair game.
+        other than these special registers, every other register is fair game.
     */
 
     size_t jmp_count = 0;
@@ -221,6 +223,8 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
         break;
         case INST_RET: {
             fprintf(output, "    ;; ret\n");
+            fprintf(output, "    add rsp, 8\n");
+            fprintf(output, "    leave\n");
             fprintf(output, "    STACK_POP rax\n");
             fprintf(output, "    imul rax, rax, BM_WORD_SIZE\n");
             fprintf(output, "    jmp [rax + r13]\n");
@@ -230,6 +234,9 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
             fprintf(output, "    ;; call\n");
             fprintf(output, "    mov rax, %zu\n", i + 1);
             fprintf(output, "    STACK_PUSH rax\n");
+            fprintf(output, "    push rbp\n");
+            fprintf(output, "    mov rbp, rsp\n");
+            fprintf(output, "    push QWORD [r13 + (BM_WORD_SIZE * %zu)]\n", i + 1);
             fprintf(output, "    jmp [r13 + BM_WORD_SIZE * %"PRIu64"]\n", inst.operand.as_u64);
         }
         break;
