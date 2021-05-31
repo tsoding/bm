@@ -77,7 +77,7 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
     }
     break;
     case OS_TARGET_MACOS: {
-        fprintf(stderr, "TODO: macOS is not supported on arm64/aarch64\n");
+        fprintf(stderr, "TODO(#402): macOS is not supported on arm64/aarch64\n");
         exit(1);
     }
     break;
