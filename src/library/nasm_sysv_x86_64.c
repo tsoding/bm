@@ -133,9 +133,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_SWAP: {
             fprintf(output, "    ;; swap %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    mov rax, [r15 - (BM_WORD_SIZE * %"PRIu64")]\n", inst.operand.as_u64);
-            fprintf(output, "    xchg [r15], rax\n");
-            fprintf(output, "    mov [r15 - (BM_WORD_SIZE * %"PRIu64")], rax\n", inst.operand.as_u64);
+            fprintf(output, "    mov rax, [r15]\n");
+            fprintf(output, "    mov rbx, [r15 - BM_WORD_SIZE * %"PRIu64"]\n", inst.operand.as_u64);
+            fprintf(output, "    mov [r15], rbx\n");
+            fprintf(output, "    mov [r15 - BM_WORD_SIZE * %"PRIu64"], rax\n", inst.operand.as_u64);
         }
         break;
         case INST_PLUSI: {
