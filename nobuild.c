@@ -326,8 +326,6 @@ void cases_command(int argc, char **argv)
         });
 #else
 
-
-// TODO: build asm test cases for FreeBSD
 #if defined(__linux__)
     #define USE_NASM            1
     #define NATIVE_TARGET       "nasm-linux-x86-64"
