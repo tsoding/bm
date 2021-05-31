@@ -135,7 +135,7 @@ bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
     // String Literal
     if (lexer->line.data[0] == '"') {
         size_t n = 1;
-        // TODO: lexer does not support new lines inside of the string literals
+        // TODO(#399): lexer does not support new lines inside of the string literals
         while (n < lexer->line.count && lexer->line.data[n] != '\"') {
             n += 1;
         }
