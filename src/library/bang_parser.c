@@ -63,7 +63,7 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Funcall_Arg *result = NULL;
 
-    // TODO: parse_bang_funcall_args only parses a single argument
+    // TODO(#400): parse_bang_funcall_args only parses a single argument
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
     result = arena_alloc(arena, sizeof(*result));
