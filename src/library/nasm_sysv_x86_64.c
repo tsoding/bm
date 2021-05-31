@@ -226,8 +226,7 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
             fprintf(output, "    add rsp, 8\n");
             fprintf(output, "    leave\n");
             fprintf(output, "    STACK_POP rax\n");
-            fprintf(output, "    imul rax, rax, BM_WORD_SIZE\n");
-            fprintf(output, "    jmp [rax + r13]\n");
+            fprintf(output, "    jmp [r13 + rax * BM_WORD_SIZE]\n");
         }
         break;
         case INST_CALL: {
@@ -427,8 +426,7 @@ fprintf(output, "    STACK_PUSH rax\n");            \
 #define READ_SIGNED_INST(comment_name, reg, size, sign_extend) do { \
 fprintf(output, "    ;; " comment_name "\n");                       \
 fprintf(output, "    STACK_POP rbx\n");                             \
-fprintf(output, "    add rbx, r14\n");                              \
-fprintf(output, "    mov " reg ", " size " [rbx]\n");               \
+fprintf(output, "    mov " reg ", " size " [rbx + r14]\n");         \
 fprintf(output, "    " sign_extend "\n");                           \
 fprintf(output, "    STACK_PUSH rax\n");                            \
 } while(0)
@@ -439,8 +437,7 @@ fprintf(output, "    STACK_PUSH rax\n");                            \
 #define READ_UNSIGNED_INST(comment_name, reg, size, zero_extend) do {   \
 fprintf(output, "    ;; " comment_name "\n");                           \
 fprintf(output, "    STACK_POP rbx\n");                                 \
-fprintf(output, "    add rbx, r14\n");                                  \
-fprintf(output, "    mov " reg ", " size " [rbx]\n");                   \
+fprintf(output, "    mov " reg ", " size " [rbx + r14]\n");             \
 fprintf(output, "    " zero_extend "\n");                               \
 fprintf(output, "    STACK_PUSH rax\n");                                \
 } while(0)
@@ -474,11 +471,10 @@ fprintf(output, "    STACK_PUSH rax\n");                                \
 #undef READ_SIGNED_INST
 #undef READ_UNSIGNED_INST
 
-#define WRITE_INST(comment_name, reg, size) do {        \
-fprintf(output, "    ;; " comment_name "\n");           \
-fprintf(output, "    STACK_POP_TWO rax, rbx\n");        \
-fprintf(output, "    add rbx, r14\n");                  \
-fprintf(output, "    mov " size " [rbx], " reg "\n");   \
+#define WRITE_INST(comment_name, reg, size) do {            \
+fprintf(output, "    ;; " comment_name "\n");               \
+fprintf(output, "    STACK_POP_TWO rax, rbx\n");            \
+fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
 } while(0)
 
         case INST_WRITE8:
@@ -499,8 +495,8 @@ fprintf(output, "    mov " size " [rbx], " reg "\n");   \
         case INST_I2F: {
             fprintf(output, "    ;; i2f\n");
             fprintf(output, "    STACK_POP rax\n");
-            fprintf(output, "    pxor xmm0, xmm0\n");
-            fprintf(output, "    cvtsi2sd xmm0, rax\n");
+            fprintf(output, "    pxor xmm0, xmm0\n");       // while not strictly necessary, the xor clears
+            fprintf(output, "    cvtsi2sd xmm0, rax\n");    // the register dependencies or whatever it's called
             fprintf(output, "    STACK_PUSH_XMM xmm0\n");
         }
         break;
