@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         printf("%%native %s\n", bm.externals[i].name);
     }
 
-    // TODO: debasm output is not compilable back with basm
+    // TODO(#406): debasm output is not compilable back with basm
     // Since `MEMORY` binding is not used anywhere and the bindings currently are lazy,
     // the memory basically gets eliminated
     printf("%%const MEMORY = \"");
