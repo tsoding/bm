@@ -44,5 +44,6 @@ bool sv_eq(String_View a, String_View b);
 bool sv_starts_with(String_View sv, String_View prefix);
 bool sv_ends_with(String_View sv, String_View suffix);
 uint64_t sv_to_u64(String_View sv);
+bool sv_parse_hex(String_View sv, uint64_t *output);
 
 #endif  // SV_H_

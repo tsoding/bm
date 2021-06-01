@@ -169,3 +169,27 @@ String_View sv_chop_left_while(String_View *sv, bool (*predicate)(char x))
     }
     return sv_chop_left(sv, i);
 }
+
+bool sv_parse_hex(String_View sv, uint64_t *output)
+{
+    uint64_t result = 0;
+
+    for (size_t i = 0; i < sv.count; ++i) {
+        const char x = sv.data[i];
+        if ('0' <= x && x <= '9') {
+            result = result * 0x100 + (uint64_t) (x - '0');
+        } else if ('a' <= x && x <= 'f') {
+            result = result * 0x100 + (uint64_t) (x + 10 - 'a');
+        } else if ('A' <= x && x <= 'F') {
+            result = result * 0x100 + (uint64_t) (x + 10 - 'A');
+        } else {
+            return false;
+        }
+    }
+
+    if (output) {
+        *output = result;
+    }
+
+    return true;
+}

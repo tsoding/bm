@@ -406,15 +406,49 @@ String_View unescape_string_literal(Arena *arena, File_Location location, String
             }
 
             switch (str_lit.data[i + 1]) {
-            case '0':
+            case '0': {
                 assert(unescaped_size < str_lit.count);
                 unescaped[unescaped_size++] = '\0';
-                break;
+                i += 2;
+            }
+            break;
 
-            case 'n':
+            case 'n': {
                 assert(unescaped_size < str_lit.count);
                 unescaped[unescaped_size++] = '\n';
-                break;
+                i += 2;
+            }
+            break;
+
+            case 'x': {
+                if (i + 3 >= str_lit.count) {
+                    fprintf(stderr, FL_Fmt": ERROR: unfinished string literal escape sequence. Expected format `\\xhh` where `hh` are 2 hexadecimal digits\n",
+                            FL_Arg(location));
+                    exit(1);
+                }
+
+                // \x00
+                //     ^
+                // i + 2
+
+                String_View code = {
+                    .count = 2,
+                    .data = &str_lit.data[i + 2],
+                };
+
+                uint64_t value = 0;
+                if (!sv_parse_hex(code, &value)) {
+                    fprintf(stderr, FL_Fmt": ERROR incorrect hexadecimal escape code\n",
+                            FL_Arg(location));
+                    exit(1);
+                }
+                assert(value < 0x100);
+
+                assert(unescaped_size < str_lit.count);
+                unescaped[unescaped_size++] = (char) value;
+                i += 4;
+            }
+            break;
 
             default:
                 fprintf(stderr, FL_Fmt": ERROR: unknown escape character `%c`",
@@ -422,7 +456,6 @@ String_View unescape_string_literal(Arena *arena, File_Location location, String
                 exit(1);
             }
 
-            i += 2;
         } else {
             assert(unescaped_size < str_lit.count);
             unescaped[unescaped_size++] = str_lit.data[i];
