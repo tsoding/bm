@@ -145,15 +145,25 @@ static size_t bang_size_of_type(Bang_Type type)
     }
 }
 
-// TODO: compile_var_def_into_basm does not check if the variable with the same name was already defined
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
 {
-    Bang_Global_Var var = {0};
-    var.addr = basm_push_byte_array_to_memory(basm, bang_size_of_type(var_def.type), 0).as_u64;
-    var.name = var_def.name;
+    Bang_Global_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
+    if (existing_var) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_var->loc));
+        exit(1);
+    }
+
+    Bang_Global_Var new_var = {0};
+    new_var.loc = var_def.loc;
+    new_var.addr = basm_push_byte_array_to_memory(basm, bang_size_of_type(var_def.type), 0).as_u64;
+    new_var.name = var_def.name;
 
     assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
-    bang->global_vars[bang->global_vars_count++] = var;
+    bang->global_vars[bang->global_vars_count++] = new_var;
 }
 
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)

@@ -8,6 +8,7 @@
 #define BANG_GLOBAL_VARS_CAPACITY 1024
 
 typedef struct {
+    Bang_Loc loc;
     Memory_Addr addr;
     String_View name;
 } Bang_Global_Var;
