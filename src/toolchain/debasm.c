@@ -16,6 +16,23 @@ int main(int argc, char *argv[])
     static Bm bm = {0};
     bm_load_program_from_file(&bm, input_file_path);
 
+    for (size_t i = 0; i < bm.externals_size; ++i) {
+        printf("%%native %s\n", bm.externals[i].name);
+    }
+
+    // TODO(#406): debasm output is not compilable back with basm
+    // Since `MEMORY` binding is not used anywhere and the bindings currently are lazy,
+    // the memory basically gets eliminated
+    printf("%%const MEMORY = \"");
+    for (size_t i = 0; i < bm.expected_memory_size; ++i) {
+        if (32 <= bm.memory[i] && bm.memory[i] < 127) {
+            printf("%c", bm.memory[i]);
+        } else {
+            printf("\\x%02x", bm.memory[i]);
+        }
+    }
+    printf("\"\n");
+
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
         if (i == bm.ip) {
             printf("%%entry main:\n");
@@ -25,11 +42,19 @@ int main(int argc, char *argv[])
 
         printf("    %s", inst_def.name);
         if (inst_def.has_operand) {
-            printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
-                   bm.program[i].operand.as_u64,
-                   bm.program[i].operand.as_i64,
-                   bm.program[i].operand.as_f64,
-                   bm.program[i].operand.as_ptr);
+            if (inst_def.type == INST_NATIVE) {
+                printf(" Native_ID(%" PRIu64") ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                       bm.program[i].operand.as_u64,
+                       bm.program[i].operand.as_i64,
+                       bm.program[i].operand.as_f64,
+                       bm.program[i].operand.as_ptr);
+            } else {
+                printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                       bm.program[i].operand.as_u64,
+                       bm.program[i].operand.as_i64,
+                       bm.program[i].operand.as_f64,
+                       bm.program[i].operand.as_ptr);
+            }
         }
         printf("\n");
     }

@@ -184,6 +184,10 @@ struct Bm {
     size_t externals_size;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
+    // NOTE: `expected_memory_size` is the size of the memory from the bm file.
+    // The program is allowed to access memory beyond the `expected_memory_size`.
+    // This variable is needed for debasm to reliably recover the source code.
+    size_t expected_memory_size;
 
     bool halt;
 };

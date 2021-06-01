@@ -922,6 +922,7 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
     }
 
     n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
+    bm->expected_memory_size = meta.memory_size;
 
     if (n != meta.memory_size) {
         fprintf(stderr, "ERROR: %s: read %zd bytes of memory section, but expected %"PRIu64" bytes.\n",
