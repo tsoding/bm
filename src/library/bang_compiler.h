@@ -25,6 +25,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
 void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
+void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
 

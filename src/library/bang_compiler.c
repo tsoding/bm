@@ -55,6 +55,28 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
+// TODO: bang_get_global_var_by_name should be public
+static Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
+{
+    for (size_t i = 0; i < bang->global_vars_count; ++i) {
+        if (sv_eq(bang->global_vars[i].name, name)) {
+            return &bang->global_vars[i];
+        }
+    }
+    return NULL;
+}
+
+void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign)
+{
+    Bang_Global_Var *var =  bang_get_global_var_by_name(bang, var_assign.name);
+    // TODO: properly check assigning non-existing variables
+    assert(var != NULL);
+
+    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+    compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+}
+
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
     switch (stmt.kind) {
@@ -64,6 +86,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
     case BANG_STMT_KIND_IF:
         compile_bang_if_into_basm(bang, basm, stmt.as.eef);
+        break;
+
+    case BANG_STMT_KIND_VAR_ASSIGN:
+        compile_bang_var_assign_into_basm(bang, basm, stmt.as.var_assign);
         break;
 
     default:
@@ -120,6 +146,7 @@ static size_t bang_size_of_type(Bang_Type type)
     }
 }
 
+// TODO: compile_var_def_into_basm does not check if the variable with the same name was already defined
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
 {
     Bang_Global_Var var = {0};

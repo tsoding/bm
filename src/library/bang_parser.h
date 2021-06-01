@@ -18,6 +18,7 @@ typedef struct Bang_Var_Def Bang_Var_Def;
 typedef union Bang_Top_As Bang_Top_As;
 typedef struct Bang_Top Bang_Top;
 typedef struct Bang_Module Bang_Module;
+typedef struct Bang_Var_Assign Bang_Var_Assign;
 
 struct Bang_Funcall {
     Bang_Loc loc;
@@ -50,6 +51,7 @@ struct Bang_Funcall_Arg {
 typedef enum {
     BANG_STMT_KIND_EXPR,
     BANG_STMT_KIND_IF,
+    BANG_STMT_KIND_VAR_ASSIGN,
 } Bang_Stmt_Kind;
 
 struct Bang_If {
@@ -59,9 +61,15 @@ struct Bang_If {
     Bang_Block *elze;
 };
 
+struct Bang_Var_Assign {
+    String_View name;
+    Bang_Expr value;
+};
+
 union Bang_Stmt_As {
     Bang_Expr expr;
     Bang_If eef;
+    Bang_Var_Assign var_assign;
 };
 
 struct Bang_Stmt {
@@ -125,5 +133,6 @@ Bang_Type parse_bang_type(Bang_Lexer *lexer);
 Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
+Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
 
 #endif // BANG_PARSER_H_

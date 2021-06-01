@@ -16,9 +16,10 @@ static const Hardcoded_Token hardcoded_bang_tokens[] = {
     {.kind = BANG_TOKEN_KIND_CLOSE_CURLY, .text = SV_STATIC("}")},
     {.kind = BANG_TOKEN_KIND_SEMICOLON,   .text = SV_STATIC(";")},
     {.kind = BANG_TOKEN_KIND_COLON,       .text = SV_STATIC(":")},
+    {.kind = BANG_TOKEN_KIND_EQUALS,      .text = SV_STATIC("=")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
-static_assert(COUNT_BANG_TOKEN_KINDS == 8, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
+static_assert(COUNT_BANG_TOKEN_KINDS == 9, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
 
 static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_NAME] = "name",
@@ -28,9 +29,10 @@ static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_CLOSE_CURLY] = "}",
     [BANG_TOKEN_KIND_SEMICOLON] = ";",
     [BANG_TOKEN_KIND_COLON] = ":",
+    [BANG_TOKEN_KIND_EQUALS] = "=",
     [BANG_TOKEN_KIND_LIT_STR] = "string literal",
 };
-static_assert(COUNT_BANG_TOKEN_KINDS == 8, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
+static_assert(COUNT_BANG_TOKEN_KINDS == 9, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
 
 const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
@@ -69,14 +71,11 @@ Bang_Loc bang_lexer_loc(Bang_Lexer *lexer)
 static Bang_Token bang_lexer_spit_token(Bang_Lexer *lexer, Bang_Token_Kind token_kind, size_t token_size)
 {
     assert(token_size <= lexer->line.count);
-    assert(!lexer->peek_buffer_full);
 
     Bang_Token token = {0};
     token.kind = token_kind;
     token.loc = bang_lexer_loc(lexer);
     token.text = sv_chop_left(&lexer->line, token_size);
-    lexer->peek_buffer = token;
-    lexer->peek_buffer_full = true;
     return token;
 }
 
@@ -88,14 +87,8 @@ static bool bang_is_name(char x)
            x == '_';
 }
 
-bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
+static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_Token *token)
 {
-    // Check peek buffer
-    if (lexer->peek_buffer_full) {
-        *token = lexer->peek_buffer;
-        return true;
-    }
-
     // Extracting next token
     {
         lexer->line = sv_trim_left(lexer->line);
@@ -161,6 +154,28 @@ bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
     exit(1);
 }
 
+static void bang_lexer_refill_peek_buffer(Bang_Lexer *lexer)
+{
+    Bang_Token token = {0};
+    while (lexer->peek_buffer.count < BANG_TOKEN_BUFFER_CAPACITY &&
+            bang_lexer_next_token_bypassing_peek_buffer(lexer, &token)) {
+        bang_token_buffer_nq(&lexer->peek_buffer, token);
+    }
+}
+
+bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token, size_t offset)
+{
+    bang_lexer_refill_peek_buffer(lexer);
+
+    assert(offset < BANG_TOKEN_BUFFER_CAPACITY);
+    if (offset < lexer->peek_buffer.count) {
+        *token = bang_token_buffer_get(&lexer->peek_buffer, offset);
+        return true;
+    }
+
+    return false;
+}
+
 Bang_Token bang_lexer_expect_token(Bang_Lexer *lexer, Bang_Token_Kind expected_kind)
 {
     Bang_Token token = {0};
@@ -200,10 +215,35 @@ Bang_Token bang_lexer_expect_keyword(Bang_Lexer *lexer, String_View name)
 
 bool bang_lexer_next(Bang_Lexer *lexer, Bang_Token *token)
 {
-    if (!bang_lexer_peek(lexer, token)) {
+    if (!bang_lexer_peek(lexer, token, 0)) {
         return false;
     }
 
-    lexer->peek_buffer_full = false;
+    bang_token_buffer_dq(&lexer->peek_buffer);
     return true;
+}
+
+void bang_token_buffer_nq(Bang_Token_Buffer *buffer, Bang_Token token)
+{
+    assert(buffer->count < BANG_TOKEN_BUFFER_CAPACITY);
+    const size_t internal_index = (buffer->begin + buffer->count) % BANG_TOKEN_BUFFER_CAPACITY;
+    buffer->tokens[internal_index] = token;
+    buffer->count += 1;
+}
+
+Bang_Token bang_token_buffer_dq(Bang_Token_Buffer *buffer)
+{
+    assert(buffer->count > 0);
+    const size_t internal_index = (buffer->begin + buffer->count - 1) % BANG_TOKEN_BUFFER_CAPACITY;
+    const Bang_Token result = buffer->tokens[internal_index];
+    buffer->begin = (buffer->begin + 1) % BANG_TOKEN_BUFFER_CAPACITY;
+    buffer->count -= 1;
+    return result;
+}
+
+Bang_Token bang_token_buffer_get(const Bang_Token_Buffer *buffer, size_t user_index)
+{
+    assert(user_index < buffer->count);
+    const size_t internal_index = (buffer->begin + user_index) % BANG_TOKEN_BUFFER_CAPACITY;
+    return buffer->tokens[internal_index];
 }
