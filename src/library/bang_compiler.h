@@ -16,6 +16,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
 void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
+void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity);
 

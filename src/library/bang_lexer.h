@@ -6,13 +6,15 @@
 #include "./sv.h"
 
 typedef enum {
-    BANG_TOKEN_KIND_NAME,
+    BANG_TOKEN_KIND_NAME = 0,
     BANG_TOKEN_KIND_OPEN_PAREN,
     BANG_TOKEN_KIND_CLOSE_PAREN,
     BANG_TOKEN_KIND_OPEN_CURLY,
     BANG_TOKEN_KIND_CLOSE_CURLY,
     BANG_TOKEN_KIND_SEMICOLON,
+    BANG_TOKEN_KIND_COLON,
     BANG_TOKEN_KIND_LIT_STR,
+    COUNT_BANG_TOKEN_KINDS,
 } Bang_Token_Kind;
 
 const char *bang_token_kind_name(Bang_Token_Kind kind);

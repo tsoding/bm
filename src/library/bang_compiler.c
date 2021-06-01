@@ -108,3 +108,11 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
         exit(1);
     }
 }
+
+void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
+{
+    (void) bang;
+    (void) basm;
+    (void) module;
+    assert(false && "TODO: compile_bang_module_into_basm is not implemented yet");
+}

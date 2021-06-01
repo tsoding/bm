@@ -127,6 +127,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
     case BANG_TOKEN_KIND_CLOSE_CURLY:
+    case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_SEMICOLON: {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: no expression starts with `%s`\n",
                 Bang_Loc_Arg(token.loc),
@@ -135,6 +136,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
     break;
 
+    case COUNT_BANG_TOKEN_KINDS:
     default: {
         assert(false && "parse_bang_expr: unreachable");
         exit(1);
@@ -234,4 +236,75 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
     result.body = parse_curly_bang_block(arena, lexer);
 
     return result;
+}
+
+Bang_Type parse_bang_type(Bang_Lexer *lexer)
+{
+    bang_lexer_expect_keyword(lexer, SV("i64"));
+    return BANG_TYPE_I64;
+}
+
+Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
+{
+    // var i: i64;
+    Bang_Var_Def var_def = {0};
+
+    var_def.loc = bang_lexer_expect_keyword(lexer, SV("var")).loc;
+    var_def.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
+    var_def.type = parse_bang_type(lexer);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
+    
+    return var_def;
+}
+
+Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Module module = {0};
+    Bang_Token token = {0};
+
+    while (bang_lexer_peek(lexer, &token)) {
+        if (token.kind != BANG_TOKEN_KIND_NAME) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: expected token `%s` but got `%s`",
+                    Bang_Loc_Arg(token.loc),
+                    bang_token_kind_name(BANG_TOKEN_KIND_NAME),
+                    bang_token_kind_name(token.kind));
+            exit(1);
+        }
+
+        Bang_Top *top = arena_alloc(arena, sizeof(*top));
+
+        if (sv_eq(token.text, SV("proc"))) {
+            top->kind = BANG_TOP_KIND_PROC;
+            top->as.proc = parse_bang_proc_def(arena, lexer);
+        } else if (sv_eq(token.text, SV("var"))) {
+            top->kind = BANG_TOP_KIND_VAR;
+            top->as.var = parse_bang_var_def(lexer);
+        } else {
+            static_assert(COUNT_BANG_TOP_KINDS == 2, "The error message below assumes that there is only two top level definition kinds");
+            (void) BANG_TOP_KIND_PROC; // The error message below assumes there is a proc top level definition. Please update the message if needed.
+            (void) BANG_TOP_KIND_VAR; // The error message below assumes there is a var top level definition. Please update the message if needed.
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: expected top level module definition (proc or var) but got `"SV_Fmt"`",
+                    Bang_Loc_Arg(token.loc),
+                    SV_Arg(token.text));
+            exit(1);
+        }
+
+        bang_module_push_top(&module, top);
+    }
+
+    return module;
+}
+
+void bang_module_push_top(Bang_Module *module, Bang_Top *top)
+{
+    if (module->tops_end == NULL) {
+        assert(module->tops_begin == NULL);
+        module->tops_begin = top;
+        module->tops_end = top;
+    } else {
+        assert(module->tops_begin != NULL);
+        module->tops_end->next = top;
+        module->tops_end = top;
+    }
 }

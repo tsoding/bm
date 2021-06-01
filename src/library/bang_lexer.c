@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "./bang_lexer.h"
 
+// TODO: Merge hardcoded_bang_tokens and token_kind_names into a single Token_Def table
+
 typedef struct {
     String_View text;
     Bang_Token_Kind kind;
@@ -13,30 +15,28 @@ static const Hardcoded_Token hardcoded_bang_tokens[] = {
     {.kind = BANG_TOKEN_KIND_OPEN_CURLY,  .text = SV_STATIC("{")},
     {.kind = BANG_TOKEN_KIND_CLOSE_CURLY, .text = SV_STATIC("}")},
     {.kind = BANG_TOKEN_KIND_SEMICOLON,   .text = SV_STATIC(";")},
+    {.kind = BANG_TOKEN_KIND_COLON,       .text = SV_STATIC(":")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
+static_assert(COUNT_BANG_TOKEN_KINDS == 8, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
+
+static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
+    [BANG_TOKEN_KIND_NAME] = "name",
+    [BANG_TOKEN_KIND_OPEN_PAREN] = "(",
+    [BANG_TOKEN_KIND_CLOSE_PAREN] = ")",
+    [BANG_TOKEN_KIND_OPEN_CURLY] = "{",
+    [BANG_TOKEN_KIND_CLOSE_CURLY] = "}",
+    [BANG_TOKEN_KIND_SEMICOLON] = ";",
+    [BANG_TOKEN_KIND_COLON] = ":",
+    [BANG_TOKEN_KIND_LIT_STR] = "string literal",
+};
+static_assert(COUNT_BANG_TOKEN_KINDS == 8, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
 
 const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
-    switch (kind) {
-    case BANG_TOKEN_KIND_NAME:
-        return "name";
-    case BANG_TOKEN_KIND_OPEN_PAREN:
-        return "(";
-    case BANG_TOKEN_KIND_CLOSE_PAREN:
-        return ")";
-    case BANG_TOKEN_KIND_OPEN_CURLY:
-        return "{";
-    case BANG_TOKEN_KIND_CLOSE_CURLY:
-        return "}";
-    case BANG_TOKEN_KIND_SEMICOLON:
-        return ";";
-    case BANG_TOKEN_KIND_LIT_STR:
-        return "string literal";
-    default:
-        assert(false && "token_kind_name: unreachable");
-        exit(1);
-    }
+    assert(0 <= kind);
+    assert(kind < COUNT_BANG_TOKEN_KINDS);
+    return token_kind_names[kind];
 }
 
 Bang_Lexer bang_lexer_from_sv(String_View content, const char *file_path)
@@ -156,7 +156,7 @@ bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
 
     // Unknown token
     const Bang_Loc unknown_loc = bang_lexer_loc(lexer);
-    fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown token starts with `%c`",
+    fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown token starts with `%c`\n",
             Bang_Loc_Arg(unknown_loc), *lexer->line.data);
     exit(1);
 }
