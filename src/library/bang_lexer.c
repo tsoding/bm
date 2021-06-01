@@ -99,7 +99,7 @@ bool bang_lexer_peek(Bang_Lexer *lexer, Bang_Token *token)
     // Extracting next token
     {
         lexer->line = sv_trim_left(lexer->line);
-        while (lexer->line.count == 0 && lexer->content.count > 0) {
+        while ((lexer->line.count == 0 || *lexer->line.data == '#') && lexer->content.count > 0) {
             bang_lexer_next_line(lexer);
             lexer->line = sv_trim_left(lexer->line);
         }
