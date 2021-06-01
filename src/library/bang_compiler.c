@@ -55,6 +55,31 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
+Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
+{
+    for (size_t i = 0; i < bang->global_vars_count; ++i) {
+        if (sv_eq(bang->global_vars[i].name, name)) {
+            return &bang->global_vars[i];
+        }
+    }
+    return NULL;
+}
+
+void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign)
+{
+    Bang_Global_Var *var =  bang_get_global_var_by_name(bang, var_assign.name);
+    if (var == NULL) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign non-existing variable `"SV_Fmt"`\n",
+                Bang_Loc_Arg(var_assign.loc),
+                SV_Arg(var_assign.name));
+        exit(1);
+    }
+
+    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+    compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+}
+
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
     switch (stmt.kind) {
@@ -64,6 +89,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
     case BANG_STMT_KIND_IF:
         compile_bang_if_into_basm(bang, basm, stmt.as.eef);
+        break;
+
+    case BANG_STMT_KIND_VAR_ASSIGN:
+        compile_bang_var_assign_into_basm(bang, basm, stmt.as.var_assign);
         break;
 
     default:
@@ -106,5 +135,55 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
                 expected_arity,
                 actual_arity);
         exit(1);
+    }
+}
+
+static size_t bang_size_of_type(Bang_Type type)
+{
+    switch (type) {
+    case BANG_TYPE_I64:
+        return 8;
+    default:
+        assert(false && "bang_size_of_type: unreachable");
+        exit(1);
+    }
+}
+
+void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    Bang_Global_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
+    if (existing_var) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_var->loc));
+        exit(1);
+    }
+
+    Bang_Global_Var new_var = {0};
+    new_var.loc = var_def.loc;
+    new_var.addr = basm_push_byte_array_to_memory(basm, bang_size_of_type(var_def.type), 0).as_u64;
+    new_var.name = var_def.name;
+
+    assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
+    bang->global_vars[bang->global_vars_count++] = new_var;
+}
+
+void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
+{
+    for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
+        switch (top->kind) {
+        case BANG_TOP_KIND_PROC:
+            compile_proc_def_into_basm(bang, basm, top->as.proc);
+            break;
+        case BANG_TOP_KIND_VAR:
+            compile_var_def_into_basm(bang, basm, top->as.var);
+            break;
+        case COUNT_BANG_TOP_KINDS:
+        default:
+            assert(false && "compile_bang_module_into_basm: unreachable");
+            exit(1);
+        }
     }
 }
