@@ -109,10 +109,41 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 }
 
+static size_t bang_size_of_type(Bang_Type type)
+{
+    switch (type) {
+    case BANG_TYPE_I64:
+        return 8;
+    default:
+        assert(false && "bang_size_of_type: unreachable");
+        exit(1);
+    }
+}
+
+void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    Bang_Global_Var var = {0};
+    var.addr = basm_push_byte_array_to_memory(basm, bang_size_of_type(var_def.type), 0).as_u64;
+    var.name = var_def.name;
+
+    assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
+    bang->global_vars[bang->global_vars_count++] = var;
+}
+
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
 {
-    (void) bang;
-    (void) basm;
-    (void) module;
-    assert(false && "TODO: compile_bang_module_into_basm is not implemented yet");
+    for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
+        switch (top->kind) {
+        case BANG_TOP_KIND_PROC:
+            compile_proc_def_into_basm(bang, basm, top->as.proc);
+            break;
+        case BANG_TOP_KIND_VAR:
+            compile_var_def_into_basm(bang, basm, top->as.var);
+            break;
+        case COUNT_BANG_TOP_KINDS:
+        default:
+            assert(false && "compile_bang_module_into_basm: unreachable");
+            exit(1);
+        }
+    }
 }

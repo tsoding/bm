@@ -254,7 +254,7 @@ Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
     var_def.type = parse_bang_type(lexer);
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
-    
+
     return var_def;
 }
 
