@@ -55,8 +55,7 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
-// TODO: bang_get_global_var_by_name should be public
-static Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
+Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
 {
     for (size_t i = 0; i < bang->global_vars_count; ++i) {
         if (sv_eq(bang->global_vars[i].name, name)) {

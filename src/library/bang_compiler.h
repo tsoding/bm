@@ -20,6 +20,8 @@ typedef struct {
 
 void compile_begin_begin(Bang *bang);
 
+Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
+
 void compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
