@@ -179,7 +179,11 @@ Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Var_Assign var_assign = {0};
 
-    var_assign.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+    {
+        Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+        var_assign.loc = token.loc;
+        var_assign.name = token.text;
+    }
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_EQUALS);
     var_assign.value = parse_bang_expr(arena, lexer);
 
@@ -213,7 +217,8 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
                 return stmt;
             }
         }
-    } break;
+    }
+    break;
 
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:

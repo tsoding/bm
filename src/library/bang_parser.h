@@ -62,6 +62,7 @@ struct Bang_If {
 };
 
 struct Bang_Var_Assign {
+    Bang_Loc loc;
     String_View name;
     Bang_Expr value;
 };
