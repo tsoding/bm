@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include "./bang_lexer.h"
 
-// TODO: Merge hardcoded_bang_tokens and token_kind_names into a single Token_Def table
-
 typedef struct {
     String_View text;
     Bang_Token_Kind kind;
