@@ -189,11 +189,12 @@ void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
     }
 }
 
-void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
+Inst_Addr compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
 {
     assert(!basm->has_entry);
-    basm->entry = basm->program_size;
+    Inst_Addr addr = basm->program_size;
     compile_block_into_basm(bang, basm, proc_def.body);
+    return addr;
 }
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
@@ -254,9 +255,28 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
 {
     for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
         switch (top->kind) {
-        case BANG_TOP_KIND_PROC:
-            compile_proc_def_into_basm(bang, basm, top->as.proc);
-            break;
+        case BANG_TOP_KIND_PROC: {
+            if (sv_eq(top->as.proc.name, SV("main"))) {
+                if (!basm->has_entry) {
+                    const Inst_Addr proc_addr = compile_proc_def_into_basm(bang, basm, top->as.proc);
+                    basm->entry = proc_addr;
+                    basm->has_entry = true;
+                    bang->entry_loc = top->as.proc.loc;
+                } else {
+                    fprintf(stderr, Bang_Loc_Fmt": ERROR: redefinition of the entry point\n",
+                            Bang_Loc_Arg(top->as.proc.loc));
+                    fprintf(stderr, Bang_Loc_Fmt": NOTE: the entry point is already defined here\n",
+                            Bang_Loc_Arg(bang->entry_loc));
+                    exit(1);
+                }
+            } else {
+                // TODO(#415): Bang does not support additional procedures
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: Bang does not support additional procedures. Only `main`. We are working on adding more procedures. Stay tuned!\n",
+                        Bang_Loc_Arg(top->as.proc.loc));
+                exit(1);
+            }
+        }
+        break;
         case BANG_TOP_KIND_VAR:
             compile_var_def_into_basm(bang, basm, top->as.var);
             break;

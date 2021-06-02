@@ -17,6 +17,7 @@ typedef struct {
     Native_ID write_id;
     Bang_Global_Var global_vars[BANG_GLOBAL_VARS_CAPACITY];
     size_t global_vars_count;
+    Bang_Loc entry_loc;
 } Bang;
 
 void compile_begin_begin(Bang *bang);
@@ -26,7 +27,7 @@ Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
 Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
-void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
+Inst_Addr compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);

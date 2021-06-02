@@ -397,7 +397,7 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Proc_Def result = {0};
 
-    bang_lexer_expect_keyword(lexer, SV("proc"));
+    result.loc = bang_lexer_expect_keyword(lexer, SV("proc")).loc;
     result.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
