@@ -270,6 +270,7 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
                     exit(1);
                 }
             } else {
+                // TODO(#415): Bang does not support additional procedures
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: Bang does not support additional procedures. Only `main`. We are working on adding more procedures. Stay tuned!\n",
                         Bang_Loc_Arg(top->as.proc.loc));
                 exit(1);
