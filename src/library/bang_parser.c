@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <ctype.h>
 #include "./bang_parser.h"
 
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
@@ -94,6 +95,12 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
         exit(1);
     }
 
+    static_assert(
+        COUNT_BANG_EXPR_KINDS == 4,
+        "The amount of the expression kinds have changed. "
+        "Please update the parser to take that into account. "
+        "Thanks!");
+
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
         if (sv_eq(token.text, SV("true"))) {
@@ -115,6 +122,30 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
             return expr;
         }
     }
+
+    case BANG_TOKEN_KIND_NUMBER: {
+        bang_lexer_next(lexer, &token);
+
+        int64_t result = 0;
+        for (size_t i = 0; i < token.text.count; ++i) {
+            const char ch = token.text.data[i];
+            if (isdigit(ch)) {
+                result = result * 10 + ch - '0';
+            } else {
+                Bang_Loc ch_loc = token.loc;
+                ch_loc.col += i;
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: incorrect character `%c` inside of the integer literal\n",
+                        Bang_Loc_Arg(ch_loc), ch);
+                exit(1);
+            }
+        }
+
+        Bang_Expr expr = {0};
+        expr.kind = BANG_EXPR_KIND_LIT_INT;
+        expr.as.lit_int = result;
+        return expr;
+    }
+    break;
 
     case BANG_TOKEN_KIND_LIT_STR: {
         Bang_Expr expr = {0};
@@ -190,6 +221,15 @@ Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer)
     return var_assign;
 }
 
+Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_While result = {0};
+    result.loc = bang_lexer_expect_keyword(lexer, SV("while")).loc;
+    result.condition = parse_bang_expr(arena, lexer);
+    result.body = parse_curly_bang_block(arena, lexer);
+    return result;
+}
+
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = {0};
@@ -200,12 +240,19 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
         exit(1);
     }
 
+    static_assert(COUNT_BANG_STMT_KINDS == 4, "The amount of statements have changed. Please update the parse_bang_stmt function to take that into account");
+
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
         if (sv_eq(token.text, SV("if"))) {
             Bang_Stmt stmt = {0};
             stmt.kind = BANG_STMT_KIND_IF;
             stmt.as.eef = parse_bang_if(arena, lexer);
+            return stmt;
+        } else if (sv_eq(token.text, SV("while"))) {
+            Bang_Stmt stmt = {0};
+            stmt.kind = BANG_STMT_KIND_WHILE;
+            stmt.as.hwile = parse_bang_while(arena, lexer);
             return stmt;
         } else {
             Bang_Token next_token = {0};
@@ -227,6 +274,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_SEMICOLON:
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQUALS:
+    case BANG_TOKEN_KIND_NUMBER:
     case BANG_TOKEN_KIND_LIT_STR: {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: no statement starts with `%s`\n",
                 Bang_Loc_Arg(token.loc),

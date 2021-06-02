@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "./bang_lexer.h"
 
 typedef struct {
@@ -17,10 +18,11 @@ static const Hardcoded_Token hardcoded_bang_tokens[] = {
     {.kind = BANG_TOKEN_KIND_EQUALS,      .text = SV_STATIC("=")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
-static_assert(COUNT_BANG_TOKEN_KINDS == 9, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
+static_assert(COUNT_BANG_TOKEN_KINDS == 10, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
 
 static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_NAME] = "name",
+    [BANG_TOKEN_KIND_NUMBER] = "number",
     [BANG_TOKEN_KIND_OPEN_PAREN] = "(",
     [BANG_TOKEN_KIND_CLOSE_PAREN] = ")",
     [BANG_TOKEN_KIND_OPEN_CURLY] = "{",
@@ -30,7 +32,7 @@ static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_EQUALS] = "=",
     [BANG_TOKEN_KIND_LIT_STR] = "string literal",
 };
-static_assert(COUNT_BANG_TOKEN_KINDS == 9, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
+static_assert(COUNT_BANG_TOKEN_KINDS == 10, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
 
 const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
@@ -100,6 +102,12 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
         }
     }
 
+    static_assert(
+        COUNT_BANG_TOKEN_KINDS == 10,
+        "The amount of token kinds have changed. "
+        "Please update the lexer to take that into account. "
+        "Thanks!");
+
     // Hardcoded Tokens
     for (size_t i = 0; i < hardcoded_bang_tokens_count; ++i) {
         if (sv_starts_with(lexer->line, hardcoded_bang_tokens[i].text)) {
@@ -111,14 +119,18 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
         }
     }
 
-    // Name token
+    // Name or Number token
     {
         size_t n = 0;
         while (n < lexer->line.count && bang_is_name(lexer->line.data[n])) {
             n += 1;
         }
         if (n > 0) {
-            *token = bang_lexer_spit_token(lexer, BANG_TOKEN_KIND_NAME, n);
+            if (isdigit(*lexer->line.data)) {
+                *token = bang_lexer_spit_token(lexer, BANG_TOKEN_KIND_NUMBER, n);
+            } else {
+                *token = bang_lexer_spit_token(lexer, BANG_TOKEN_KIND_NAME, n);
+            }
             return true;
         }
     }
