@@ -84,6 +84,15 @@ Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer)
     return funcall;
 }
 
+Bang_Var_Read parse_var_read(Bang_Lexer *lexer)
+{
+    const Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+    Bang_Var_Read var_read = {0};
+    var_read.loc = token.loc;
+    var_read.name = token.text;
+    return var_read;
+}
+
 Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = {0};
@@ -96,7 +105,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
 
     static_assert(
-        COUNT_BANG_EXPR_KINDS == 4,
+        COUNT_BANG_EXPR_KINDS == 5,
         "The amount of the expression kinds have changed. "
         "Please update the parser to take that into account. "
         "Thanks!");
@@ -116,10 +125,18 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
             expr.as.boolean = false;
             return expr;
         } else {
-            Bang_Expr expr = {0};
-            expr.kind = BANG_EXPR_KIND_FUNCALL;
-            expr.as.funcall = parse_bang_funcall(arena, lexer);
-            return expr;
+            Bang_Token next_token = {0};
+            if (bang_lexer_peek(lexer, &next_token, 1) && next_token.kind == BANG_TOKEN_KIND_OPEN_PAREN) {
+                Bang_Expr expr = {0};
+                expr.kind = BANG_EXPR_KIND_FUNCALL;
+                expr.as.funcall = parse_bang_funcall(arena, lexer);
+                return expr;
+            } else {
+                Bang_Expr expr = {0};
+                expr.kind = BANG_EXPR_KIND_VAR_READ;
+                expr.as.var_read = parse_var_read(lexer);
+                return expr;
+            }
         }
     }
 

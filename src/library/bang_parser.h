@@ -19,6 +19,7 @@ typedef union Bang_Top_As Bang_Top_As;
 typedef struct Bang_Top Bang_Top;
 typedef struct Bang_Module Bang_Module;
 typedef struct Bang_Var_Assign Bang_Var_Assign;
+typedef struct Bang_Var_Read Bang_Var_Read;
 typedef struct Bang_While Bang_While;
 
 struct Bang_Funcall {
@@ -27,20 +28,32 @@ struct Bang_Funcall {
     Bang_Funcall_Arg *args;
 };
 
-union Bang_Expr_As {
-    String_View lit_str;
-    int64_t lit_int;
-    Bang_Funcall funcall;
-    bool boolean;
-};
-
 typedef enum {
     BANG_EXPR_KIND_LIT_STR,
     BANG_EXPR_KIND_LIT_BOOL,
     BANG_EXPR_KIND_LIT_INT,
     BANG_EXPR_KIND_FUNCALL,
+    BANG_EXPR_KIND_VAR_READ,
     COUNT_BANG_EXPR_KINDS,
 } Bang_Expr_Kind;
+
+struct Bang_Var_Read {
+    Bang_Loc loc;
+    String_View name;
+};
+
+union Bang_Expr_As {
+    String_View lit_str;
+    int64_t lit_int;
+    Bang_Funcall funcall;
+    bool boolean;
+    Bang_Var_Read var_read;
+    static_assert(
+        COUNT_BANG_EXPR_KINDS == 5,
+        "The amount of expression kinds has changed. "
+        "Please update the union of those expressions accordingly. "
+        "Thanks!");
+};
 
 struct Bang_Expr {
     Bang_Expr_Kind kind;
@@ -84,6 +97,11 @@ union Bang_Stmt_As {
     Bang_If eef;
     Bang_Var_Assign var_assign;
     Bang_While hwile;
+    static_assert(
+        COUNT_BANG_STMT_KINDS == 4,
+        "The amount of statement kinds has changed. "
+        "Please update the union of those statements accordingly. "
+        "Thanks!");
 };
 
 struct Bang_Stmt {
@@ -149,5 +167,6 @@ Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
 Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer);
+Bang_Var_Read parse_var_read(Bang_Lexer *lexer);
 
 #endif // BANG_PARSER_H_
