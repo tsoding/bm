@@ -14,6 +14,35 @@ void compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
     basm_push_inst(basm, INST_READ64I, word_u64(0));
 }
 
+void compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op)
+{
+    switch (binary_op.kind) {
+    case BANG_BINARY_OP_KIND_PLUS: {
+        assert(binary_op.lhs != NULL);
+        compile_bang_expr_into_basm(bang, basm, *binary_op.lhs);
+        assert(binary_op.rhs != NULL);
+        compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
+        basm_push_inst(basm, INST_PLUSI, word_u64(0));
+    }
+    break;
+
+    case BANG_BINARY_OP_KIND_LESS: {
+        assert(binary_op.lhs != NULL);
+        compile_bang_expr_into_basm(bang, basm, *binary_op.lhs);
+        assert(binary_op.rhs != NULL);
+        compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
+        basm_push_inst(basm, INST_LTI, word_u64(0));
+    }
+    break;
+
+    case COUNT_BANG_BINARY_OP_KINDS:
+    default: {
+        assert(false && "compile_binary_op_into_basm: unreachable");
+        exit(1);
+    }
+    }
+}
+
 Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     Inst_Addr result = basm->program_size;
@@ -56,6 +85,11 @@ Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 
     case BANG_EXPR_KIND_VAR_READ: {
         compile_var_read_into_basm(bang, basm, expr.as.var_read);
+    }
+    break;
+
+    case BANG_EXPR_KIND_BINARY_OP: {
+        compile_binary_op_into_basm(bang, basm, expr.as.binary_op);
     }
     break;
 

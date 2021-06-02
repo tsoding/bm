@@ -33,6 +33,7 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
 void compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
+void compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity);
 
