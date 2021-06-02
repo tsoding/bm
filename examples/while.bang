@@ -1,10 +1,14 @@
-var i: i64;
+# var i: i64;
 
 proc main() {
+  while true {
+    write("hey!\n");
+  }
+
   # i = 0;
   # while i < 10 {
   #   write("Hey!\n");
   #   i = i + 1;
   # }
-  write("End\n");
+  # write("End\n");
 }

@@ -1,7 +1,9 @@
 #include "./bang_compiler.h"
 
-void compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
+Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
+    Inst_Addr result = basm->program_size;
+
     switch (expr.kind) {
     case BANG_EXPR_KIND_LIT_STR: {
         Word str_addr = basm_push_string_to_memory(basm, expr.as.lit_str);
@@ -37,6 +39,8 @@ void compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
         assert(false && "compile_bang_expr_into_basm: unreachable");
         exit(1);
     }
+
+    return result;
 }
 
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
@@ -80,6 +84,18 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     basm_push_inst(basm, INST_WRITE64, word_u64(0));
 }
 
+void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
+{
+    const Inst_Addr cond_addr = compile_bang_expr_into_basm(bang, basm, hwile.condition);
+    basm_push_inst(basm, INST_NOT, word_u64(0));
+    Inst_Addr fallthrough_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+    compile_block_into_basm(bang, basm, hwile.body);
+    basm_push_inst(basm, INST_JMP, word_u64(cond_addr));
+
+    const Inst_Addr body_end_addr = basm->program_size;
+    basm->program[fallthrough_addr].operand = word_u64(body_end_addr);
+}
+
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
     switch (stmt.kind) {
@@ -95,6 +111,11 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         compile_bang_var_assign_into_basm(bang, basm, stmt.as.var_assign);
         break;
 
+    case BANG_STMT_KIND_WHILE:
+        compile_bang_while_into_basm(bang, basm, stmt.as.hwile);
+        break;
+
+    case COUNT_BANG_STMT_KINDS:
     default:
         assert(false && "compile_stmt_into_basm: unreachable");
         exit(1);

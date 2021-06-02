@@ -19,6 +19,7 @@ typedef union Bang_Top_As Bang_Top_As;
 typedef struct Bang_Top Bang_Top;
 typedef struct Bang_Module Bang_Module;
 typedef struct Bang_Var_Assign Bang_Var_Assign;
+typedef struct Bang_While Bang_While;
 
 struct Bang_Funcall {
     Bang_Loc loc;
@@ -49,10 +50,18 @@ struct Bang_Funcall_Arg {
 };
 
 typedef enum {
-    BANG_STMT_KIND_EXPR,
+    BANG_STMT_KIND_EXPR = 0,
     BANG_STMT_KIND_IF,
     BANG_STMT_KIND_VAR_ASSIGN,
+    BANG_STMT_KIND_WHILE,
+    COUNT_BANG_STMT_KINDS,
 } Bang_Stmt_Kind;
+
+struct Bang_While {
+    Bang_Loc loc;
+    Bang_Expr condition;
+    Bang_Block *body;
+};
 
 struct Bang_If {
     Bang_Loc loc;
@@ -71,6 +80,7 @@ union Bang_Stmt_As {
     Bang_Expr expr;
     Bang_If eef;
     Bang_Var_Assign var_assign;
+    Bang_While hwile;
 };
 
 struct Bang_Stmt {
@@ -135,5 +145,6 @@ Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
+Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer);
 
 #endif // BANG_PARSER_H_
