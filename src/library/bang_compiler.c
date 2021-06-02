@@ -1,5 +1,19 @@
 #include "./bang_compiler.h"
 
+void compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
+{
+    Bang_Global_Var *var = bang_get_global_var_by_name(bang, var_read.name);
+    if (var == NULL) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: could not read non-existing variable `"SV_Fmt"`\n",
+                Bang_Loc_Arg(var_read.loc),
+                SV_Arg(var_read.name));
+        exit(1);
+    }
+
+    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+    basm_push_inst(basm, INST_READ64I, word_u64(0));
+}
+
 Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     Inst_Addr result = basm->program_size;
@@ -37,6 +51,11 @@ Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 
     case BANG_EXPR_KIND_LIT_INT: {
         basm_push_inst(basm, INST_PUSH, word_i64(expr.as.lit_int));
+    }
+    break;
+
+    case BANG_EXPR_KIND_VAR_READ: {
+        compile_var_read_into_basm(bang, basm, expr.as.var_read);
     }
     break;
 

@@ -1,7 +1,9 @@
-# var i: i64;
+var i: i64;
 
 proc main() {
-  while true {
+  write("Begin\n");
+  i = 1;
+  while i {
     write("hey!\n");
   }
 
@@ -10,5 +12,5 @@ proc main() {
   #   write("Hey!\n");
   #   i = i + 1;
   # }
-  # write("End\n");
+  write("End\n");
 }
