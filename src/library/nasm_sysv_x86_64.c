@@ -1,5 +1,46 @@
 #include "basm.h"
 
+static inline void stack_push(FILE* stream, const char* reg)
+{
+    fprintf(stream, "    add r15, BM_WORD_SIZE\n");
+    fprintf(stream, "    mov [r15], %s\n", reg);
+}
+
+static inline void stack_pop(FILE* stream, const char* reg)
+{
+    fprintf(stream, "    mov %s, [r15]\n", reg);
+    fprintf(stream, "    sub r15, BM_WORD_SIZE\n");
+}
+
+static inline void stack_push_xmm(FILE* stream, const char* reg)
+{
+    fprintf(stream, "    add r15, BM_WORD_SIZE\n");
+    fprintf(stream, "    movsd [r15], %s\n", reg);
+}
+
+static inline void stack_pop_xmm(FILE* stream, const char* reg)
+{
+    fprintf(stream, "    movsd %s, [r15]\n", reg);
+    fprintf(stream, "    sub r15, BM_WORD_SIZE\n");
+}
+
+static inline void stack_pop_two(FILE* stream, const char* fst, const char* snd)
+{
+    fprintf(stream, "    mov %s, [r15]\n", fst);
+    fprintf(stream, "    mov %s, [r15 - BM_WORD_SIZE]\n", snd);
+    fprintf(stream, "    sub r15, 2 * BM_WORD_SIZE\n");
+}
+
+static inline void stack_pop_two_xmm(FILE* stream, const char* fst, const char* snd)
+{
+    fprintf(stream, "    movsd %s, [r15]\n", fst);
+    fprintf(stream, "    movsd %s, [r15 - BM_WORD_SIZE]\n", snd);
+    fprintf(stream, "    sub r15, 2 * BM_WORD_SIZE\n");
+}
+
+
+
+
 void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, const char *output_file_path)
 {
     FILE *output = fopen(output_file_path, "wb");
@@ -49,38 +90,6 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "segment .text\n");
     fprintf(output, "global ENTRY_POINT\n\n");
 
-    fprintf(output, "%%macro STACK_PUSH 1\n");
-    fprintf(output, "    add r15, BM_WORD_SIZE\n");
-    fprintf(output, "    mov [r15], %%1\n");
-    fprintf(output, "%%endmacro\n\n");
-
-    fprintf(output, "%%macro STACK_PUSH_XMM 1\n");
-    fprintf(output, "    add r15, BM_WORD_SIZE\n");
-    fprintf(output, "    movsd [r15], %%1\n");
-    fprintf(output, "%%endmacro\n\n");
-
-    fprintf(output, "%%macro STACK_POP 1\n");
-    fprintf(output, "    mov %%1, [r15]\n");
-    fprintf(output, "    sub r15, BM_WORD_SIZE\n");
-    fprintf(output, "%%endmacro\n\n");
-
-    fprintf(output, "%%macro STACK_POP_XMM 1\n");
-    fprintf(output, "    movsd %%1, [r15]\n");
-    fprintf(output, "    sub r15, BM_WORD_SIZE\n");
-    fprintf(output, "%%endmacro\n\n");
-
-    fprintf(output, "%%macro STACK_POP_TWO 2\n");
-    fprintf(output, "    mov %%1, [r15]\n");
-    fprintf(output, "    mov %%2, [r15 - BM_WORD_SIZE]\n");
-    fprintf(output, "    sub r15, 2 * BM_WORD_SIZE\n");
-    fprintf(output, "%%endmacro\n\n");
-
-    fprintf(output, "%%macro STACK_POP_TWO_XMM 2\n");
-    fprintf(output, "    movsd %%1, [r15]\n");
-    fprintf(output, "    movsd %%2, [r15 - BM_WORD_SIZE]\n");
-    fprintf(output, "    sub r15, 2 * BM_WORD_SIZE\n");
-    fprintf(output, "%%endmacro\n\n");
-
 
     /*
         "calling convention"
@@ -117,18 +126,18 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         case INST_PUSH: {
             fprintf(output, "    ;; push %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rax, 0x%"PRIX64"\n", inst.operand.as_u64);
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
         case INST_DROP: {
             fprintf(output, "    ;; drop\n");
-            fprintf(output, "    STACK_POP rax\n");
+            stack_pop(output, "rax");
         }
         break;
         case INST_DUP: {
             fprintf(output, "    ;; dup %"PRIu64"\n", inst.operand.as_u64);
             fprintf(output, "    mov rax, [r15 - (BM_WORD_SIZE * %"PRIu64")]\n", inst.operand.as_u64);
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
         case INST_SWAP: {
@@ -141,25 +150,25 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
         break;
         case INST_PLUSI: {
             fprintf(output, "    ;; plusi\n");
-            fprintf(output, "    STACK_POP_TWO rax, rbx\n");
+            stack_pop_two(output, "rax", "rbx");
             fprintf(output, "    add rbx, rax\n");
-            fprintf(output, "    STACK_PUSH rbx\n");
+            stack_push(output, "rbx");
         }
         break;
         case INST_MINUSI: {
             fprintf(output, "    ;; minusi\n");
-            fprintf(output, "    STACK_POP_TWO rax, rbx\n");
+            stack_pop_two(output, "rax", "rbx");
             fprintf(output, "    sub rbx, rax\n");
-            fprintf(output, "    STACK_PUSH rbx\n");
+            stack_push(output, "rbx");
         }
         break;
 
 #define MULT_DIV_INST(comment_name, inst, ret_reg) do { \
 fprintf(output, "    ;; " comment_name "\n");           \
-fprintf(output, "    STACK_POP_TWO rbx, rax\n");        \
+stack_pop_two(output, "rbx", "rax");                    \
 fprintf(output, "    xor edx, edx\n");                  \
 fprintf(output, "    " inst " rbx\n");                  \
-fprintf(output, "    STACK_PUSH " ret_reg "\n");        \
+stack_push(output, ret_reg);                            \
 } while(0)
 
         case INST_MULTI:
@@ -186,9 +195,9 @@ fprintf(output, "    STACK_PUSH " ret_reg "\n");        \
 
 #define FLOAT_BINOP_INST(comment_name, inst) do {       \
 fprintf(output, "    ;; " comment_name "\n");           \
-fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");  \
+stack_pop_two_xmm(output, "xmm0", "xmm1");              \
 fprintf(output, "    " inst " xmm1, xmm0\n");           \
-fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
+stack_push_xmm(output, "xmm1");                         \
 } while(0)
 
         case INST_PLUSF:
@@ -214,7 +223,7 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
         break;
         case INST_JMP_IF: {
             fprintf(output, "    ;; jmp_if %"PRIu64"\n", inst.operand.as_u64);
-            fprintf(output, "    STACK_POP rax\n");
+            stack_pop(output, "rax");
             fprintf(output, "    cmp rax, 0\n");
             fprintf(output, "    je jmp_if_escape_%zu\n", jmp_count);
             fprintf(output, "    jmp [r13 + BM_WORD_SIZE * %"PRIu64"]\n", inst.operand.as_u64);
@@ -226,14 +235,14 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
             fprintf(output, "    ;; ret\n");
             fprintf(output, "    add rsp, 8\n");
             fprintf(output, "    leave\n");
-            fprintf(output, "    STACK_POP rax\n");
+            stack_pop(output, "rax");
             fprintf(output, "    jmp [r13 + rax * BM_WORD_SIZE]\n");
         }
         break;
         case INST_CALL: {
             fprintf(output, "    ;; call\n");
             fprintf(output, "    mov rax, %zu\n", i + 1);
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
             fprintf(output, "    push rbp\n");
             fprintf(output, "    mov rbp, rsp\n");
             fprintf(output, "    push QWORD [r13 + (BM_WORD_SIZE * %zu)]\n", i + 1);
@@ -248,8 +257,8 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
                 case OS_TARGET_MACOS:
                 case OS_TARGET_FREEBSD: {
                     fprintf(output, "    mov rdi, STDOUT\n");
-                    fprintf(output, "    STACK_POP rdx\n");
-                    fprintf(output, "    STACK_POP rsi\n");
+                    stack_pop(output, "rdx");
+                    stack_pop(output, "rsi");
                     fprintf(output, "    add rsi, r14\n");
                     fprintf(output, "    mov rax, SYS_WRITE\n");
                     fprintf(output, "    syscall\n");
@@ -262,8 +271,8 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
                     fprintf(output, "    call GetStdHandle\n");
                     fprintf(output, "    mov DWORD [stdout_handler], eax\n");
                     fprintf(output, "    xor r9, r9\n");
-                    fprintf(output, "    STACK_POP r8\n");
-                    fprintf(output, "    STACK_POP rdx\n");
+                    stack_pop(output, "r8");
+                    stack_pop(output, "rdx");
                     fprintf(output, "    add rdx, r14\n");
                     fprintf(output, "    mov ecx, DWORD [stdout_handler]\n");
                     fprintf(output, "    call WriteFile\n");
@@ -297,21 +306,21 @@ fprintf(output, "    STACK_PUSH_XMM xmm1\n");           \
         break;
         case INST_NOT: {
             fprintf(output, "    ;; not\n");
-            fprintf(output, "    STACK_POP rbx\n");
+            stack_pop(output, "rbx");
             fprintf(output, "    xor eax, eax\n");
             fprintf(output, "    cmp rbx, 0\n");
             fprintf(output, "    setz al\n");
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
 
 #define INT_COMPARISON_INST(comment_name, mnemonic) do {    \
 fprintf(output, "    ;; " comment_name "\n");               \
-fprintf(output, "    STACK_POP_TWO rax, rbx\n");            \
+stack_pop_two(output, "rax", "rbx");                        \
 fprintf(output, "    cmp rbx, rax\n");                      \
 fprintf(output, "    mov eax, 0\n");                        \
 fprintf(output, "    " mnemonic " al\n");                   \
-fprintf(output, "    STACK_PUSH rax\n");                    \
+stack_push(output, "rax");                                  \
 } while(0)
 
         case INST_EQI:
@@ -355,11 +364,11 @@ fprintf(output, "    STACK_PUSH rax\n");                    \
 
 #define FLOAT_COMPARISON_INST(comment_name, comisd, mnemonic) do {  \
 fprintf(output, "    ;; " comment_name "\n");                       \
-fprintf(output, "    STACK_POP_TWO_XMM xmm0, xmm1\n");              \
+stack_pop_two_xmm(output, "xmm0", "xmm1");                          \
 fprintf(output, "    xor eax, eax\n");                              \
 fprintf(output, "    " comisd " xmm1, xmm0\n");                     \
 fprintf(output, "    " mnemonic " al\n");                           \
-fprintf(output, "    STACK_PUSH rax\n");                            \
+stack_push(output, "rax");                                          \
 } while(0)
 
         case INST_EQF:
@@ -385,9 +394,9 @@ fprintf(output, "    STACK_PUSH rax\n");                            \
 
 #define BITWISE_INST(comment_name, inst) do {       \
 fprintf(output, "    ;; " comment_name "\n");       \
-fprintf(output, "    STACK_POP_TWO rax, rbx\n");    \
+stack_pop_two(output, "rax", "rbx");                \
 fprintf(output, "    " inst " rax, rbx\n");         \
-fprintf(output, "    STACK_PUSH rax\n");            \
+stack_push(output, "rax");                          \
 } while(0)
 
         case INST_ANDB:
@@ -404,32 +413,32 @@ fprintf(output, "    STACK_PUSH rax\n");            \
 
         case INST_NOTB: {
             fprintf(output, "    ;; notb\n");
-            fprintf(output, "    STACK_POP rax\n");
+            stack_pop(output, "rax");
             fprintf(output, "    not rax\n");
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
         case INST_SHR: {
             fprintf(output, "    ;; shr\n");
-            fprintf(output, "    STACK_POP_TWO rcx, rax\n");
+            stack_pop_two(output, "rcx", "rax");
             fprintf(output, "    shr rax, cl\n");
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
         case INST_SHL: {
             fprintf(output, "    ;; shl\n");
-            fprintf(output, "    STACK_POP_TWO rcx, rax\n");
+            stack_pop_two(output, "rcx", "rax");
             fprintf(output, "    shl rax, cl\n");
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
 
 #define READ_SIGNED_INST(comment_name, reg, size, sign_extend) do { \
 fprintf(output, "    ;; " comment_name "\n");                       \
-fprintf(output, "    STACK_POP rbx\n");                             \
+stack_pop(output, "rbx");                                           \
 fprintf(output, "    mov " reg ", " size " [rbx + r14]\n");         \
 fprintf(output, "    " sign_extend "\n");                           \
-fprintf(output, "    STACK_PUSH rax\n");                            \
+stack_push(output, "rax");                                          \
 } while(0)
 
 // note: this changes the semantics slightly; we now zero-extend when
@@ -437,10 +446,10 @@ fprintf(output, "    STACK_PUSH rax\n");                            \
 // left undefined
 #define READ_UNSIGNED_INST(comment_name, reg, size, zero_extend) do {   \
 fprintf(output, "    ;; " comment_name "\n");                           \
-fprintf(output, "    STACK_POP rbx\n");                                 \
+stack_pop(output, "rbx");                                               \
 fprintf(output, "    mov " reg ", " size " [rbx + r14]\n");             \
 fprintf(output, "    " zero_extend "\n");                               \
-fprintf(output, "    STACK_PUSH rax\n");                                \
+stack_push(output, "rax");                                              \
 } while(0)
 
         case INST_READ8I:
@@ -474,7 +483,7 @@ fprintf(output, "    STACK_PUSH rax\n");                                \
 
 #define WRITE_INST(comment_name, reg, size) do {            \
 fprintf(output, "    ;; " comment_name "\n");               \
-fprintf(output, "    STACK_POP_TWO rax, rbx\n");            \
+stack_pop_two(output, "rax", "rbx");                        \
 fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
 } while(0)
 
@@ -495,23 +504,23 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
 
         case INST_I2F: {
             fprintf(output, "    ;; i2f\n");
-            fprintf(output, "    STACK_POP rax\n");
+            stack_pop(output, "rax");
             fprintf(output, "    pxor xmm0, xmm0\n");       // while not strictly necessary, the xor clears
             fprintf(output, "    cvtsi2sd xmm0, rax\n");    // the register dependencies or whatever it's called
-            fprintf(output, "    STACK_PUSH_XMM xmm0\n");
+            stack_push_xmm(output, "xmm0");
         }
         break;
         case INST_F2I: {
             fprintf(output, "    ;; f2i\n");
-            fprintf(output, "    STACK_POP_XMM xmm0\n");
+            stack_pop_xmm(output, "xmm0");
             fprintf(output, "    cvttsd2si rax, xmm0\n");
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
 
         case INST_U2F: {
             fprintf(output, "    ;; u2f\n");
-            fprintf(output, "    STACK_POP rdi\n");
+            stack_pop(output, "rdi");
             fprintf(output, "    test rdi, rdi\n");
             fprintf(output, "    js .u2f_%zu\n", jmp_count);
             fprintf(output, "    pxor xmm0, xmm0\n");
@@ -526,7 +535,7 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
             fprintf(output, "    cvtsi2sd xmm0, rax\n");
             fprintf(output, "    addsd xmm0, xmm0\n");
             fprintf(output, "    .u2f_end_%zu:\n", jmp_count);
-            fprintf(output, "    STACK_PUSH_XMM xmm0\n");
+            stack_push_xmm(output, "xmm0");
             jmp_count += 1;
         }
         break;
@@ -534,7 +543,7 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
         // TODO(#349): try to get rid of branching in f2u implementation of basm_save_to_file_as_nasm()
         case INST_F2U: {
             fprintf(output, "    ;; f2i\n");
-            fprintf(output, "    STACK_POP_XMM xmm0\n");
+            stack_pop_xmm(output, "xmm0");
             fprintf(output, "    movsd xmm1, [REL magic_number_for_f2u]\n");
             fprintf(output, "    comisd xmm0, xmm1\n");
             fprintf(output, "    jnb .f2u_%zu\n", jmp_count);
@@ -545,7 +554,7 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
             fprintf(output, "    cvttsd2si rax, xmm0\n");
             fprintf(output, "    btc rax, 63\n");
             fprintf(output, "    .f2u_end_%zu:\n", jmp_count);
-            fprintf(output, "    STACK_PUSH rax\n");
+            stack_push(output, "rax");
         }
         break;
         case NUMBER_OF_INSTS:
