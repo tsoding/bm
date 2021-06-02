@@ -45,15 +45,18 @@ int main(int argc, char *argv[])
         if (inst_def.has_operand) {
             // TODO(#412): debasm does not restore the original names of the native calls
             // Even tho it has all of the necessary information
-            if (inst_def.operand_type != TYPE_UNSIGNED_INT && inst_def.operand_type != TYPE_ANY) {
-                printf(" %s(%" PRIu64") ;; i64: %"PRIi64", f64: %lf, ptr: %p",
-                       type_name(inst_def.operand_type),
+            if (inst_def.operand_type == TYPE_UNSIGNED_INT || inst_def.operand_type == TYPE_ANY) {
+                printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
                        bm.program[i].operand.as_u64,
                        bm.program[i].operand.as_i64,
                        bm.program[i].operand.as_f64,
                        bm.program[i].operand.as_ptr);
+            } else if (inst_def.operand_type == TYPE_NATIVE_ID) {
+                assert(bm.program[i].operand.as_u64 < bm.externals_size);
+                printf(" %s", bm.externals[bm.program[i].operand.as_u64].name);
             } else {
-                printf(" %" PRIu64" ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                printf(" %s(%" PRIu64") ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                       type_name(inst_def.operand_type),
                        bm.program[i].operand.as_u64,
                        bm.program[i].operand.as_i64,
                        bm.program[i].operand.as_f64,
