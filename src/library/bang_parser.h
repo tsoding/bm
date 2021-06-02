@@ -132,6 +132,7 @@ struct Bang_Block {
 };
 
 struct Bang_Proc_Def {
+    Bang_Loc loc;
     String_View name;
     Bang_Block *body;
 };

@@ -110,6 +110,13 @@ int main(int argc, char **argv)
     basm_push_inst(&basm, INST_HALT, word_u64(0));
     basm_save_to_file_as_target(&basm, output_file_path, output_target);
 
+    if (!basm.has_entry) {
+        const Bang_Loc eof_loc = bang_lexer_loc(&lexer);
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: could not find an entry point of the module. Please define the `main` procedure.\n",
+                Bang_Loc_Arg(eof_loc));
+        exit(1);
+    }
+
     arena_free(&basm.arena);
 
     return 0;
