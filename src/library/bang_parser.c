@@ -3,6 +3,16 @@
 #include <ctype.h>
 #include "./bang_parser.h"
 
+static Bang_Token_Kind binary_op_tokens[COUNT_BANG_BINARY_OP_KINDS] = {
+    [BANG_BINARY_OP_KIND_PLUS] = BANG_TOKEN_KIND_PLUS,
+    [BANG_BINARY_OP_KIND_LESS] = BANG_TOKEN_KIND_LESS,
+};
+static_assert(
+    COUNT_BANG_BINARY_OP_KINDS == 2,
+    "The amount of binary operation kinds has changed. "
+    "Please update the binary_op_tokens table accordingly. "
+    "Thanks!");
+
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_LIT_STR);
@@ -93,7 +103,7 @@ Bang_Var_Read parse_var_read(Bang_Lexer *lexer)
     return var_read;
 }
 
-Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
+static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = {0};
 
@@ -105,7 +115,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     }
 
     static_assert(
-        COUNT_BANG_EXPR_KINDS == 5,
+        COUNT_BANG_EXPR_KINDS == 6,
         "The amount of the expression kinds have changed. "
         "Please update the parser to take that into account. "
         "Thanks!");
@@ -171,6 +181,8 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
         return expr;
     }
 
+    case BANG_TOKEN_KIND_PLUS:
+    case BANG_TOKEN_KIND_LESS:
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
@@ -178,7 +190,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQUALS:
     case BANG_TOKEN_KIND_SEMICOLON: {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: no expression starts with `%s`\n",
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: no primary expression starts with `%s`\n",
                 Bang_Loc_Arg(token.loc),
                 bang_token_kind_name(token.kind));
         exit(1);
@@ -187,10 +199,45 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
 
     case COUNT_BANG_TOKEN_KINDS:
     default: {
-        assert(false && "parse_bang_expr: unreachable");
+        assert(false && "parse_primary_expr: unreachable");
         exit(1);
     }
     }
+}
+
+Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Expr *lhs = arena_alloc(arena, sizeof(*lhs));
+    *lhs = parse_primary_expr(arena, lexer);
+
+    Bang_Token token = {0};
+    if (bang_lexer_peek(lexer, &token, 0)) {
+        for (Bang_Binary_Op_Kind kind = 0;
+                kind < COUNT_BANG_BINARY_OP_KINDS;
+                ++kind) {
+            if (binary_op_tokens[kind] == token.kind) {
+                bool ok = bang_lexer_next(lexer, &token);
+                assert(ok);
+
+                Bang_Binary_Op binary_op = {0};
+                {
+                    binary_op.loc = token.loc;
+                    binary_op.kind = kind;
+                    binary_op.lhs = lhs;
+
+                    binary_op.rhs = arena_alloc(arena, sizeof(*binary_op.rhs));
+                    *binary_op.rhs = parse_bang_expr(arena, lexer);
+                }
+
+                Bang_Expr expr = {0};
+                expr.kind = BANG_EXPR_KIND_BINARY_OP;
+                expr.as.binary_op = binary_op;
+                return expr;
+            }
+        }
+    }
+
+    return *lhs;
 }
 
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)
@@ -284,6 +331,8 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
     break;
 
+    case BANG_TOKEN_KIND_PLUS:
+    case BANG_TOKEN_KIND_LESS:
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:

@@ -21,6 +21,20 @@ typedef struct Bang_Module Bang_Module;
 typedef struct Bang_Var_Assign Bang_Var_Assign;
 typedef struct Bang_Var_Read Bang_Var_Read;
 typedef struct Bang_While Bang_While;
+typedef struct Bang_Binary_Op Bang_Binary_Op;
+
+typedef enum {
+    BANG_BINARY_OP_KIND_PLUS = 0,
+    BANG_BINARY_OP_KIND_LESS,
+    COUNT_BANG_BINARY_OP_KINDS,
+}  Bang_Binary_Op_Kind;
+
+struct Bang_Binary_Op {
+    Bang_Loc loc;
+    Bang_Binary_Op_Kind kind;
+    Bang_Expr *lhs;
+    Bang_Expr *rhs;
+};
 
 struct Bang_Funcall {
     Bang_Loc loc;
@@ -34,6 +48,7 @@ typedef enum {
     BANG_EXPR_KIND_LIT_INT,
     BANG_EXPR_KIND_FUNCALL,
     BANG_EXPR_KIND_VAR_READ,
+    BANG_EXPR_KIND_BINARY_OP,
     COUNT_BANG_EXPR_KINDS,
 } Bang_Expr_Kind;
 
@@ -48,9 +63,10 @@ union Bang_Expr_As {
     Bang_Funcall funcall;
     bool boolean;
     Bang_Var_Read var_read;
+    Bang_Binary_Op binary_op;
 };
 static_assert(
-    COUNT_BANG_EXPR_KINDS == 5,
+    COUNT_BANG_EXPR_KINDS == 6,
     "The amount of expression kinds has changed. "
     "Please update the union of those expressions accordingly. "
     "Thanks!");
