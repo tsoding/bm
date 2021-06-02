@@ -48,12 +48,13 @@ union Bang_Expr_As {
     Bang_Funcall funcall;
     bool boolean;
     Bang_Var_Read var_read;
-    static_assert(
-        COUNT_BANG_EXPR_KINDS == 5,
-        "The amount of expression kinds has changed. "
-        "Please update the union of those expressions accordingly. "
-        "Thanks!");
 };
+static_assert(
+    COUNT_BANG_EXPR_KINDS == 5,
+    "The amount of expression kinds has changed. "
+    "Please update the union of those expressions accordingly. "
+    "Thanks!");
+
 
 struct Bang_Expr {
     Bang_Expr_Kind kind;
@@ -97,12 +98,12 @@ union Bang_Stmt_As {
     Bang_If eef;
     Bang_Var_Assign var_assign;
     Bang_While hwile;
-    static_assert(
-        COUNT_BANG_STMT_KINDS == 4,
-        "The amount of statement kinds has changed. "
-        "Please update the union of those statements accordingly. "
-        "Thanks!");
 };
+static_assert(
+    COUNT_BANG_STMT_KINDS == 4,
+    "The amount of statement kinds has changed. "
+    "Please update the union of those statements accordingly. "
+    "Thanks!");
 
 struct Bang_Stmt {
     Bang_Stmt_Kind kind;
