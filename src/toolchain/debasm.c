@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
         }
     }
     printf("\"\n");
+    printf("%%assert MEMORY == 0\n");
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
         if (i == bm.ip) {
@@ -42,8 +43,11 @@ int main(int argc, char *argv[])
 
         printf("    %s", inst_def.name);
         if (inst_def.has_operand) {
-            if (inst_def.type == INST_NATIVE) {
-                printf(" Native_ID(%" PRIu64") ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+            // TODO(#412): debasm does not restore the original names of the native calls
+            // Even tho it has all of the necessary information
+            if (inst_def.operand_type != TYPE_UNSIGNED_INT && inst_def.operand_type != TYPE_ANY) {
+                printf(" %s(%" PRIu64") ;; i64: %"PRIi64", f64: %lf, ptr: %p",
+                       type_name(inst_def.operand_type),
                        bm.program[i].operand.as_u64,
                        bm.program[i].operand.as_i64,
                        bm.program[i].operand.as_f64,
