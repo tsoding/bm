@@ -23,7 +23,8 @@ void compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_o
         assert(binary_op.rhs != NULL);
         compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
         basm_push_inst(basm, INST_PLUSI, word_u64(0));
-    } break;
+    }
+    break;
 
     case BANG_BINARY_OP_KIND_LESS: {
         assert(binary_op.lhs != NULL);
@@ -31,7 +32,8 @@ void compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_o
         assert(binary_op.rhs != NULL);
         compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
         basm_push_inst(basm, INST_LTI, word_u64(0));
-    } break;
+    }
+    break;
 
     case COUNT_BANG_BINARY_OP_KINDS:
     default: {
