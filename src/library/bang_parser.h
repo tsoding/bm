@@ -29,6 +29,7 @@ struct Bang_Funcall {
 
 union Bang_Expr_As {
     String_View lit_str;
+    int64_t lit_int;
     Bang_Funcall funcall;
     bool boolean;
 };
@@ -36,7 +37,9 @@ union Bang_Expr_As {
 typedef enum {
     BANG_EXPR_KIND_LIT_STR,
     BANG_EXPR_KIND_LIT_BOOL,
+    BANG_EXPR_KIND_LIT_INT,
     BANG_EXPR_KIND_FUNCALL,
+    COUNT_BANG_EXPR_KINDS,
 } Bang_Expr_Kind;
 
 struct Bang_Expr {

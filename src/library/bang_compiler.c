@@ -35,6 +35,12 @@ Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
     }
     break;
 
+    case BANG_EXPR_KIND_LIT_INT: {
+        basm_push_inst(basm, INST_PUSH, word_i64(expr.as.lit_int));
+    }
+    break;
+
+    case COUNT_BANG_EXPR_KINDS:
     default:
         assert(false && "compile_bang_expr_into_basm: unreachable");
         exit(1);
