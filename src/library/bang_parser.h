@@ -138,8 +138,12 @@ struct Bang_Proc_Def {
 };
 
 typedef enum {
-    BANG_TYPE_I64
+    BANG_TYPE_I64 = 0,
+    BANG_TYPE_VOID,
+    COUNT_BANG_TYPES,
 } Bang_Type;
+
+const char *bang_type_name(Bang_Type type);
 
 struct Bang_Var_Def {
     Bang_Loc loc;
@@ -171,6 +175,7 @@ struct Bang_Module {
 
 void bang_module_push_top(Bang_Module *module, Bang_Top *top);
 
+Bang_Token_Kind bang_binary_op_token(Bang_Binary_Op_Kind kind);
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);

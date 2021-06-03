@@ -11,6 +11,7 @@ typedef struct {
     Bang_Loc loc;
     Memory_Addr addr;
     String_View name;
+    Bang_Type type;
 } Bang_Global_Var;
 
 typedef struct {
@@ -24,7 +25,14 @@ void compile_begin_begin(Bang *bang);
 
 Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
 
-Inst_Addr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
+typedef struct {
+    Inst_Addr addr;
+    Bang_Type type;
+} Compiled_Expr;
+
+Compiled_Expr compile_expr(Inst_Addr addr, Bang_Type type);
+
+Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
 Inst_Addr compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
@@ -33,8 +41,8 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
-void compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
-void compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
+Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
+Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity);
 

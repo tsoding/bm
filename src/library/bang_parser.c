@@ -13,6 +13,13 @@ static_assert(
     "Please update the binary_op_tokens table accordingly. "
     "Thanks!");
 
+Bang_Token_Kind bang_binary_op_token(Bang_Binary_Op_Kind kind)
+{
+    assert(0 <= kind);
+    assert(kind < COUNT_BANG_BINARY_OP_KINDS);
+    return binary_op_tokens[kind];
+}
+
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_LIT_STR);
@@ -248,11 +255,7 @@ Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)
     {
         Bang_Token token = bang_lexer_expect_keyword(lexer, SV("if"));
         eef.loc = token.loc;
-
-        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
         eef.condition = parse_bang_expr(arena, lexer);
-        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
-
         eef.then = parse_curly_bang_block(arena, lexer);
     }
 
@@ -342,12 +345,8 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_EQUALS:
     case BANG_TOKEN_KIND_NUMBER:
     case BANG_TOKEN_KIND_LIT_STR: {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: no statement starts with `%s`\n",
-                Bang_Loc_Arg(token.loc),
-                bang_token_kind_name(token.kind));
-        exit(1);
-    }
-    break;
+        // This is probably an expression, let's just fall through the entire switch construction and try to parse it as the expression
+    } break;
 
 
     case COUNT_BANG_TOKEN_KINDS:
@@ -408,8 +407,18 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 
 Bang_Type parse_bang_type(Bang_Lexer *lexer)
 {
-    bang_lexer_expect_keyword(lexer, SV("i64"));
-    return BANG_TYPE_I64;
+    Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+
+    for (Bang_Type type = 0; type < COUNT_BANG_TYPES; ++type) {
+        if (sv_eq(token.text, sv_from_cstr(bang_type_name(type)))) {
+            return type;
+        }
+    }
+
+    fprintf(stderr, Bang_Loc_Fmt": ERROR: invalid type `"SV_Fmt"`\n",
+            Bang_Loc_Arg(token.loc),
+            SV_Arg(token.text));
+    exit(1);
 }
 
 Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
