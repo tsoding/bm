@@ -753,6 +753,7 @@ void basm_translate_if_statement(Basm *basm, If_Statement eef, File_Location loc
 void basm_translate_root_source_file(Basm *basm, String_View input_file_path)
 {
     basm_push_new_scope(basm);
+    basm->global_scope = basm->scope;
     basm_translate_source_file(basm, input_file_path);
     basm_pop_scope(basm);
 
