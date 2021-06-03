@@ -117,7 +117,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
         } else {
             basm_push_inst(basm, INST_PUSH, word_u64(0));
         }
-        // TODO: booleans don't have a separate type in Bang
+        // TODO(#421): booleans don't have a separate type in Bang
         result.type = BANG_TYPE_I64;
     }
     break;
