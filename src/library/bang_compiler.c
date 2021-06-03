@@ -86,7 +86,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
         Word str_addr = basm_push_string_to_memory(basm, expr.as.lit_str);
         basm_push_inst(basm, INST_PUSH, str_addr);
         basm_push_inst(basm, INST_PUSH, word_u64(expr.as.lit_str.count));
-        // TODO: strings don't have a separate type in Bang
+        // TODO(#420): strings don't have a separate type in Bang
         result.type = BANG_TYPE_I64;
     }
     break;
