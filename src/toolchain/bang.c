@@ -107,15 +107,9 @@ int main(int argc, char **argv)
     Bang bang = {0};
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     compile_bang_module_into_basm(&bang, &basm, module);
-    basm_push_inst(&basm, INST_HALT, word_u64(0));
+    bang_generate_entry_point(&bang, &basm, SV("main"));
+    assert(basm.has_entry);
     basm_save_to_file_as_target(&basm, output_file_path, output_target);
-
-    if (!basm.has_entry) {
-        const Bang_Loc eof_loc = bang_lexer_loc(&lexer);
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: could not find an entry point of the module. Please define the `main` procedure.\n",
-                Bang_Loc_Arg(eof_loc));
-        exit(1);
-    }
 
     arena_free(&basm.arena);
 
