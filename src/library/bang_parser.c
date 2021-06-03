@@ -84,6 +84,12 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
     // TODO(#400): parse_bang_funcall_args only parses a single argument
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+    Bang_Token token = {0};
+    if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
+        bang_lexer_next(lexer, &token);
+        return NULL;
+    }
+
     result = arena_alloc(arena, sizeof(*result));
     result->value = parse_bang_expr(arena, lexer);
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);

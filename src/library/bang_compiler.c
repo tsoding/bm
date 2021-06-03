@@ -98,10 +98,15 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
             result.type = BANG_TYPE_VOID;
         } else {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
-                    Bang_Loc_Arg(expr.as.funcall.loc),
-                    SV_Arg(expr.as.funcall.name));
-            exit(1);
+            Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, expr.as.funcall.name);
+            if (proc == NULL) {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
+                        Bang_Loc_Arg(expr.as.funcall.loc),
+                        SV_Arg(expr.as.funcall.name));
+                exit(1);
+            }
+            basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
+            result.type = BANG_TYPE_VOID;
         }
     }
     break;
@@ -217,7 +222,8 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         if (expr.type != BANG_TYPE_VOID) {
             basm_push_inst(basm, INST_DROP, word_u64(0));
         }
-    } break;
+    }
+    break;
 
     case BANG_STMT_KIND_IF:
         compile_bang_if_into_basm(bang, basm, stmt.as.eef);
@@ -246,12 +252,37 @@ void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
     }
 }
 
-Inst_Addr compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
+Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
 {
-    assert(!basm->has_entry);
-    Inst_Addr addr = basm->program_size;
+    for (size_t i = 0; i < bang->procs_count; ++i) {
+        if (sv_eq(bang->procs[i].name, name)) {
+            return &bang->procs[i];
+        }
+    }
+    return NULL;
+}
+
+void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
+{
+    Compiled_Proc *existing_proc = bang_get_compiled_proc_by_name(bang, proc_def.name);
+    if (existing_proc) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: procedure `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(proc_def.loc),
+                SV_Arg(proc_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_proc->loc));
+        exit(1);
+    }
+
+    Compiled_Proc proc = {0};
+    proc.loc = proc_def.loc;
+    proc.name = proc_def.name;
+    proc.addr = basm->program_size;
+    assert(bang->procs_count < BANG_PROCS_CAPACITY);
+    bang->procs[bang->procs_count++] = proc;
+
     compile_block_into_basm(bang, basm, proc_def.body);
-    return addr;
+    basm_push_inst(basm, INST_RET, word_u64(0));
 }
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
@@ -325,30 +356,13 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
     for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
         switch (top->kind) {
         case BANG_TOP_KIND_PROC: {
-            if (sv_eq(top->as.proc.name, SV("main"))) {
-                if (!basm->has_entry) {
-                    const Inst_Addr proc_addr = compile_proc_def_into_basm(bang, basm, top->as.proc);
-                    basm->entry = proc_addr;
-                    basm->has_entry = true;
-                    bang->entry_loc = top->as.proc.loc;
-                } else {
-                    fprintf(stderr, Bang_Loc_Fmt": ERROR: redefinition of the entry point\n",
-                            Bang_Loc_Arg(top->as.proc.loc));
-                    fprintf(stderr, Bang_Loc_Fmt": NOTE: the entry point is already defined here\n",
-                            Bang_Loc_Arg(bang->entry_loc));
-                    exit(1);
-                }
-            } else {
-                // TODO(#415): Bang does not support additional procedures
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: Bang does not support additional procedures. Only `main`. We are working on adding more procedures. Stay tuned!\n",
-                        Bang_Loc_Arg(top->as.proc.loc));
-                exit(1);
-            }
+            compile_proc_def_into_basm(bang, basm, top->as.proc);
         }
         break;
-        case BANG_TOP_KIND_VAR:
+        case BANG_TOP_KIND_VAR: {
             compile_var_def_into_basm(bang, basm, top->as.var);
-            break;
+        }
+        break;
         case COUNT_BANG_TOP_KINDS:
         default:
             assert(false && "compile_bang_module_into_basm: unreachable");
@@ -357,10 +371,17 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
     }
 }
 
-Compiled_Expr compile_expr(Inst_Addr addr, Bang_Type type)
+void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_name)
 {
-    return (Compiled_Expr) {
-        .addr = addr,
-        .type = type,
-    };
+    Compiled_Proc *entry_proc = bang_get_compiled_proc_by_name(bang, entry_proc_name);
+    if (entry_proc == NULL) {
+        fprintf(stderr, "ERROR: could not find the entry point procedure `"SV_Fmt"`. Please make sure it is defined.\n", SV_Arg(entry_proc_name));
+        exit(1);
+    }
+
+    basm->entry = basm->program_size;
+    basm->has_entry = true;
+
+    basm_push_inst(basm, INST_CALL, word_u64(entry_proc->addr));
+    basm_push_inst(basm, INST_HALT, word_u64(0));
 }
