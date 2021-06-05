@@ -138,8 +138,8 @@ struct Bang_Proc_Def {
 };
 
 typedef enum {
-    BANG_TYPE_I64 = 0,
-    BANG_TYPE_VOID,
+    BANG_TYPE_VOID = 0,
+    BANG_TYPE_I64,
     COUNT_BANG_TYPES,
 } Bang_Type;
 
