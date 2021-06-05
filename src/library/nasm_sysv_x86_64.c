@@ -38,6 +38,19 @@ static inline void stack_pop_two_xmm(FILE* stream, const char* fst, const char* 
     fprintf(stream, "    sub r15, 2 * BM_WORD_SIZE\n");
 }
 
+static String_View *precompute_label_locations(Basm *basm)
+{
+    String_View *label_locations = arena_alloc(&basm->arena, basm->program_size * sizeof(String_View));
+    for (size_t i = 0; i < basm->global_scope->bindings_size; i++) {
+        Binding *binding = &basm->global_scope->bindings[i];
+
+        if (binding->type == TYPE_INST_ADDR) {
+            label_locations[binding->value.as_u64] = binding->name;
+        }
+    }
+
+    return label_locations;
+}
 
 
 
@@ -90,6 +103,10 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
     fprintf(output, "segment .text\n");
     fprintf(output, "global ENTRY_POINT\n\n");
 
+    // so that we don't have to do an O(n) search every time we generate
+    // an instruction, look for all the top-level labels in advance.
+    String_View *label_locations = precompute_label_locations(basm);
+
 
     /*
         "calling convention"
@@ -116,7 +133,14 @@ void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, cons
             fprintf(output, "\n");
         }
 
-        fprintf(output, "\ninst_%zu:  ;; "FL_Fmt"\n", i, FL_Arg(basm->program_locations[i]));
+
+        fprintf(output, "\n");
+        if (label_locations[i].data) {
+            fprintf(output, SV_Fmt":\n", SV_Arg(label_locations[i]));
+        }
+
+        fprintf(output, "inst_%zu:  ;; "FL_Fmt"\n\n", i, FL_Arg(basm->program_locations[i]));
+
         switch (inst.type) {
         case INST_NOP: {
             fprintf(output, "    ;; nop\n");
@@ -586,7 +610,12 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
     for (size_t row = 0; row < ROW_COUNT(basm->program_size); ++row) {
         fprintf(output, "  dq");
         for (size_t col = 0; col < ROW_SIZE && INDEX(row, col) < basm->program_size; ++col) {
-            fprintf(output, " inst_%zu,", INDEX(row, col));
+
+            if (label_locations[INDEX(row, col)].data) {
+                fprintf(output, " "SV_Fmt",", SV_Arg(label_locations[INDEX(row, col)]));
+            } else {
+                fprintf(output, " inst_%zu,", INDEX(row, col));
+            }
         }
         fprintf(output, "\n");
     }

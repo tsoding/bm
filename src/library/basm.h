@@ -103,6 +103,7 @@ typedef struct {
 
 typedef struct {
     Scope *scope;
+    Scope *global_scope;
 
     Inst program[BM_PROGRAM_CAPACITY];
     File_Location program_locations[BM_PROGRAM_CAPACITY];
