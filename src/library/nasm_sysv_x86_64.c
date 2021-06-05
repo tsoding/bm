@@ -610,7 +610,12 @@ fprintf(output, "    mov " size " [rbx + r14], " reg "\n"); \
     for (size_t row = 0; row < ROW_COUNT(basm->program_size); ++row) {
         fprintf(output, "  dq");
         for (size_t col = 0; col < ROW_SIZE && INDEX(row, col) < basm->program_size; ++col) {
-            fprintf(output, " inst_%zu,", INDEX(row, col));
+
+            if (label_locations[INDEX(row, col)].data) {
+                fprintf(output, " "SV_Fmt",", SV_Arg(label_locations[INDEX(row, col)]));
+            } else {
+                fprintf(output, " inst_%zu,", INDEX(row, col));
+            }
         }
         fprintf(output, "\n");
     }
