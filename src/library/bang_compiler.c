@@ -1,6 +1,6 @@
 #include "./bang_compiler.h"
 
-// TODO: bang does not support type casting
+// TODO(#426): bang does not support type casting
 
 static const char *const bang_type_names[COUNT_BANG_TYPES] = {
     [BANG_TYPE_VOID] = "void",
