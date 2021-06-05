@@ -289,7 +289,7 @@ stack_push_xmm(output, "xmm1");                         \
                 }
                 break;
                 case OS_TARGET_WINDOWS: {
-                    // TODO: can we replace `stdout_handler` with a register?
+                    // TODO(#427): can we replace `stdout_handler` with a register?
                     fprintf(output, "    sub rsp, 40\n");
                     fprintf(output, "    mov ecx, STD_OUTPUT_HANDLE\n");
                     fprintf(output, "    call GetStdHandle\n");

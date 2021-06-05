@@ -1,5 +1,5 @@
 proc main() {
-    if (true) {
+    if true {
         write("False\n");
     } else {
         write("True\n");

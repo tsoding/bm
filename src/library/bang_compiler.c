@@ -1,11 +1,14 @@
 #include "./bang_compiler.h"
 
+// TODO(#426): bang does not support type casting
+
 static const char *const bang_type_names[COUNT_BANG_TYPES] = {
-    [BANG_TYPE_I64] = "i64",
     [BANG_TYPE_VOID] = "void",
+    [BANG_TYPE_I64] = "i64",
+    [BANG_TYPE_BOOL] = "bool",
 };
 static_assert(
-    COUNT_BANG_TYPES == 2,
+    COUNT_BANG_TYPES == 3,
     "The amount of types have changed. "
     "Please update the type name table accordingly. "
     "Thanks!");
@@ -58,11 +61,13 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
     switch (binary_op.kind) {
     case BANG_BINARY_OP_KIND_PLUS: {
         basm_push_inst(basm, INST_PLUSI, word_u64(0));
+        return BANG_TYPE_I64;
     }
     break;
 
     case BANG_BINARY_OP_KIND_LESS: {
         basm_push_inst(basm, INST_LTI, word_u64(0));
+        return BANG_TYPE_BOOL;
     }
     break;
 
@@ -72,8 +77,6 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
         exit(1);
     }
     }
-
-    return BANG_TYPE_I64;
 }
 
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
@@ -117,8 +120,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
         } else {
             basm_push_inst(basm, INST_PUSH, word_u64(0));
         }
-        // TODO(#421): booleans don't have a separate type in Bang
-        result.type = BANG_TYPE_I64;
+        result.type = BANG_TYPE_BOOL;
     }
     break;
 
@@ -150,9 +152,10 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
 {
     const Compiled_Expr cond_expr = compile_bang_expr_into_basm(bang, basm, eef.condition);
-    if (cond_expr.type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: can't use `%s` expression as the condition of if-else\n",
+    if (cond_expr.type != BANG_TYPE_BOOL) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but got `%s`\n",
                 Bang_Loc_Arg(eef.loc),
+                bang_type_name(BANG_TYPE_BOOL),
                 bang_type_name(cond_expr.type));
         exit(1);
     }
@@ -198,9 +201,10 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 {
     const Compiled_Expr cond_expr = compile_bang_expr_into_basm(bang, basm, hwile.condition);
-    if (cond_expr.type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: can't use `%s` expression as the condition of the while-loop\n",
+    if (cond_expr.type != BANG_TYPE_BOOL) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but got `%s`\n",
                 Bang_Loc_Arg(hwile.loc),
+                bang_type_name(BANG_TYPE_BOOL),
                 bang_type_name(cond_expr.type));
         exit(1);
     }
@@ -311,6 +315,8 @@ static size_t bang_size_of_type(Bang_Type type)
 {
     switch (type) {
     case BANG_TYPE_I64:
+        return 8;
+    case BANG_TYPE_BOOL:
         return 8;
     case BANG_TYPE_VOID:
         assert(false && "bang_size_of_type: unreachable: type void does not have a size");
