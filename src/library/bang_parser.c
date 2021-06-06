@@ -97,7 +97,7 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
 
     Bang_Token token = {0};
-    
+
     // First arg
     if (bang_lexer_peek(lexer, &token, 0) && token.kind != BANG_TOKEN_KIND_CLOSE_PAREN) {
         Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
@@ -111,7 +111,7 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
 
         Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
         node->value = parse_bang_expr(arena, lexer);
-        APPEND_LINKED_LIST(begin, end, node);        
+        APPEND_LINKED_LIST(begin, end, node);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
