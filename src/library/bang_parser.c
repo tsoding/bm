@@ -3,6 +3,18 @@
 #include <ctype.h>
 #include "./bang_parser.h"
 
+#define APPEND_LINKED_LIST(begin, end, node) \
+    do {                                     \
+        if ((end) == NULL) {                 \
+            assert((begin) == NULL);         \
+            (begin) = (end) = (node);        \
+        } else {                             \
+            assert((begin) != NULL);         \
+            (end)->next = node;              \
+            (end) = node;                    \
+        }                                    \
+    } while (0)
+
 static Bang_Token_Kind binary_op_tokens[COUNT_BANG_BINARY_OP_KINDS] = {
     [BANG_BINARY_OP_KIND_PLUS] = BANG_TOKEN_KIND_PLUS,
     [BANG_BINARY_OP_KIND_LESS] = BANG_TOKEN_KIND_LESS,
@@ -79,22 +91,32 @@ String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
 
 Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
 {
-    Bang_Funcall_Arg *result = NULL;
-
-    // TODO(#400): parse_bang_funcall_args only parses a single argument
+    Bang_Funcall_Arg *begin = NULL;
+    Bang_Funcall_Arg *end = NULL;
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+
     Bang_Token token = {0};
-    if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
-        bang_lexer_next(lexer, &token);
-        return NULL;
+
+    // First arg
+    if (bang_lexer_peek(lexer, &token, 0) && token.kind != BANG_TOKEN_KIND_CLOSE_PAREN) {
+        Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
+        node->value = parse_bang_expr(arena, lexer);
+        APPEND_LINKED_LIST(begin, end, node);
     }
 
-    result = arena_alloc(arena, sizeof(*result));
-    result->value = parse_bang_expr(arena, lexer);
+    // Rest args
+    while (bang_lexer_peek(lexer, &token, 0) && token.kind != BANG_TOKEN_KIND_CLOSE_PAREN) {
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COMMA);
+
+        Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
+        node->value = parse_bang_expr(arena, lexer);
+        APPEND_LINKED_LIST(begin, end, node);
+    }
+
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
 
-    return result;
+    return begin;
 }
 
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer)
@@ -194,6 +216,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
         return expr;
     }
 
+    case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_LESS:
     case BANG_TOKEN_KIND_OPEN_PAREN:
@@ -340,6 +363,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
     break;
 
+    case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_LESS:
     case BANG_TOKEN_KIND_OPEN_PAREN:
