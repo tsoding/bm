@@ -15,12 +15,13 @@ static const Hardcoded_Token hardcoded_bang_tokens[] = {
     {.kind = BANG_TOKEN_KIND_CLOSE_CURLY, .text = SV_STATIC("}")},
     {.kind = BANG_TOKEN_KIND_SEMICOLON,   .text = SV_STATIC(";")},
     {.kind = BANG_TOKEN_KIND_COLON,       .text = SV_STATIC(":")},
+    {.kind = BANG_TOKEN_KIND_COMMA,       .text = SV_STATIC(",")},
     {.kind = BANG_TOKEN_KIND_EQUALS,      .text = SV_STATIC("=")},
     {.kind = BANG_TOKEN_KIND_PLUS,        .text = SV_STATIC("+")},
     {.kind = BANG_TOKEN_KIND_LESS,        .text = SV_STATIC("<")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
-static_assert(COUNT_BANG_TOKEN_KINDS == 12, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
+static_assert(COUNT_BANG_TOKEN_KINDS == 13, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
 
 static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_NAME] = "name",
@@ -31,12 +32,13 @@ static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_CLOSE_CURLY] = "}",
     [BANG_TOKEN_KIND_SEMICOLON] = ";",
     [BANG_TOKEN_KIND_COLON] = ":",
+    [BANG_TOKEN_KIND_COMMA] = ",",
     [BANG_TOKEN_KIND_EQUALS] = "=",
     [BANG_TOKEN_KIND_PLUS] = "+",
     [BANG_TOKEN_KIND_LESS] = "<",
     [BANG_TOKEN_KIND_LIT_STR] = "string literal",
 };
-static_assert(COUNT_BANG_TOKEN_KINDS == 12, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
+static_assert(COUNT_BANG_TOKEN_KINDS == 13, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
 
 const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
@@ -107,7 +109,7 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
     }
 
     static_assert(
-        COUNT_BANG_TOKEN_KINDS == 12,
+        COUNT_BANG_TOKEN_KINDS == 13,
         "The amount of token kinds have changed. "
         "Please update the lexer to take that into account. "
         "If you updated the hardcoded tokens nothing here needs to be changed. "
