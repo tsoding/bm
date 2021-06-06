@@ -1,7 +1,7 @@
 var i: i64;
 
 proc main() {
-  write("Begin\n", 1, 2, 3);
+  write("Begin\n");
   i = 0;
   while i < 10 {
     write("Hey!\n");
