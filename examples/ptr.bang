@@ -1,5 +1,6 @@
 var x: i64;
 var p: ptr;
+var heap_base: ptr;
 
 proc main() {
   x = 69;

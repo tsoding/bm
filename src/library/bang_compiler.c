@@ -538,3 +538,24 @@ void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_na
     basm_push_inst(basm, INST_CALL, word_u64(entry_proc->addr));
     basm_push_inst(basm, INST_HALT, word_u64(0));
 }
+
+void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_name)
+{
+    Compiled_Var *heap_base_var = bang_get_global_var_by_name(bang, heap_base_var_name);
+
+    if (heap_base_var != NULL) {
+        if (heap_base_var->def.type != BANG_TYPE_PTR) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`",
+                    Bang_Loc_Arg(heap_base_var->def.loc),
+                    SV_Arg(heap_base_var_name),
+                    bang_type_name(BANG_TYPE_PTR),
+                    bang_type_name(heap_base_var->def.type));
+            exit(1);
+        }
+
+        const Memory_Addr heap_base_addr = basm->memory_size;
+        memcpy(&basm->memory[heap_base_var->addr],
+               &heap_base_addr,
+               sizeof(heap_base_addr));
+    }
+}

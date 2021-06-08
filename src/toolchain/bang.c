@@ -108,6 +108,7 @@ int main(int argc, char **argv)
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     compile_bang_module_into_basm(&bang, &basm, module);
     bang_generate_entry_point(&bang, &basm, SV("main"));
+    bang_generate_heap_base(&bang, &basm, SV("heap_base"));
     assert(basm.has_entry);
     basm_save_to_file_as_target(&basm, output_file_path, output_target);
 

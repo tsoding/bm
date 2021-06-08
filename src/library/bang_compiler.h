@@ -53,7 +53,9 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
+
 void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_name);
+void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_name);
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity);
 
