@@ -9,12 +9,11 @@
 #define BANG_PROCS_CAPACITY 1024
 
 typedef struct {
-    Bang_Loc loc;
+    Bang_Var_Def def;
     Memory_Addr addr;
-    String_View name;
-    Bang_Type type;
-} Bang_Global_Var;
+} Compiled_Var;
 
+// TODO: Store Bang_Proc_Def in Compiled_Proc the same way we do it for Compiled_Var
 typedef struct {
     Bang_Loc loc;
     Inst_Addr addr;
@@ -24,7 +23,7 @@ typedef struct {
 typedef struct {
     Native_ID write_id;
 
-    Bang_Global_Var global_vars[BANG_GLOBAL_VARS_CAPACITY];
+    Compiled_Var global_vars[BANG_GLOBAL_VARS_CAPACITY];
     size_t global_vars_count;
 
     Compiled_Proc procs[BANG_PROCS_CAPACITY];
@@ -35,7 +34,7 @@ typedef struct {
 
 void compile_begin_begin(Bang *bang);
 
-Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
+Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
 
 typedef struct {
     Inst_Addr addr;

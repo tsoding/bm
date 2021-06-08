@@ -22,7 +22,7 @@ const char *bang_type_name(Bang_Type type)
 
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
 {
-    Bang_Global_Var *var = bang_get_global_var_by_name(bang, var_read.name);
+    Compiled_Var *var = bang_get_global_var_by_name(bang, var_read.name);
     if (var == NULL) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: could not read non-existing variable `"SV_Fmt"`\n",
                 Bang_Loc_Arg(var_read.loc),
@@ -33,7 +33,7 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
     basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
     basm_push_inst(basm, INST_READ64I, word_u64(0));
 
-    return var->type;
+    return var->def.type;
 }
 
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op)
@@ -173,10 +173,10 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
-Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
+Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
 {
     for (size_t i = 0; i < bang->global_vars_count; ++i) {
-        if (sv_eq(bang->global_vars[i].name, name)) {
+        if (sv_eq(bang->global_vars[i].def.name, name)) {
             return &bang->global_vars[i];
         }
     }
@@ -185,7 +185,7 @@ Bang_Global_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
 
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign)
 {
-    Bang_Global_Var *var =  bang_get_global_var_by_name(bang, var_assign.name);
+    Compiled_Var *var = bang_get_global_var_by_name(bang, var_assign.name);
     if (var == NULL) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign non-existing variable `"SV_Fmt"`\n",
                 Bang_Loc_Arg(var_assign.loc),
@@ -194,7 +194,16 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     }
 
     basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+
+    if (expr.type != var->def.type) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`",
+                Bang_Loc_Arg(var->def.loc),
+                bang_type_name(expr.type),
+                bang_type_name(var->def.type));
+        exit(1);
+    }
+
     basm_push_inst(basm, INST_WRITE64, word_u64(0));
 }
 
@@ -337,21 +346,19 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
         exit(1);
     }
 
-    Bang_Global_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
+    Compiled_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
     if (existing_var) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
                 Bang_Loc_Arg(var_def.loc),
                 SV_Arg(var_def.name));
         fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_var->loc));
+                Bang_Loc_Arg(existing_var->def.loc));
         exit(1);
     }
 
-    Bang_Global_Var new_var = {0};
-    new_var.loc = var_def.loc;
+    Compiled_Var new_var = {0};
+    new_var.def = var_def;
     new_var.addr = basm_push_byte_array_to_memory(basm, bang_size_of_type(var_def.type), 0).as_u64;
-    new_var.name = var_def.name;
-    new_var.type = var_def.type;
 
     assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
     bang->global_vars[bang->global_vars_count++] = new_var;
