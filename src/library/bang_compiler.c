@@ -268,7 +268,7 @@ void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
 {
     for (size_t i = 0; i < bang->procs_count; ++i) {
-        if (sv_eq(bang->procs[i].name, name)) {
+        if (sv_eq(bang->procs[i].def.name, name)) {
             return &bang->procs[i];
         }
     }
@@ -283,13 +283,12 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
                 Bang_Loc_Arg(proc_def.loc),
                 SV_Arg(proc_def.name));
         fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_proc->loc));
+                Bang_Loc_Arg(existing_proc->def.loc));
         exit(1);
     }
 
     Compiled_Proc proc = {0};
-    proc.loc = proc_def.loc;
-    proc.name = proc_def.name;
+    proc.def = proc_def;
     proc.addr = basm->program_size;
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;

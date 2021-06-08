@@ -13,11 +13,9 @@ typedef struct {
     Memory_Addr addr;
 } Compiled_Var;
 
-// TODO: Store Bang_Proc_Def in Compiled_Proc the same way we do it for Compiled_Var
 typedef struct {
-    Bang_Loc loc;
+    Bang_Proc_Def def;
     Inst_Addr addr;
-    String_View name;
 } Compiled_Proc;
 
 typedef struct {
