@@ -186,7 +186,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
             Compiled_Expr size = compile_bang_expr_into_basm(bang, basm, arg1);
             type_check_expr(size, BANG_TYPE_I64);
-            
+
             basm_push_inst(basm, INST_NATIVE, word_u64(0));
 
             result.type = BANG_TYPE_VOID;
@@ -211,7 +211,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                         bang_type_name(type));
                 exit(1);
             }
-            
+
             // TODO: there is no special syntax for dereferencing the pointer
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
