@@ -91,10 +91,41 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
     }
 }
 
+static Bang_Type reinterpret_expr_as_type(Bang_Expr type_arg)
+{
+    if (type_arg.kind != BANG_EXPR_KIND_VAR_READ) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type name\n",
+                Bang_Loc_Arg(type_arg.loc));
+        exit(1);
+    }
+
+    Bang_Type type = 0;
+    if (!bang_type_by_name(type_arg.as.var_read.name, &type)) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: `"SV_Fmt"` is not a valid type\n",
+                Bang_Loc_Arg(type_arg.loc),
+                SV_Arg(type_arg.as.var_read.name));
+        exit(1);
+    }
+
+    return type;
+}
+
+static void type_check_expr(Compiled_Expr expr, Bang_Type expected_type)
+{
+    if (expr.type != expected_type) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but `%s`\n",
+                Bang_Loc_Arg(expr.ast.loc),
+                bang_type_name(expected_type),
+                bang_type_name(expr.type));
+        exit(1);
+    }
+}
+
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     Compiled_Expr result = {0};
     result.addr = basm->program_size;
+    result.ast = expr;
 
     switch (expr.kind) {
     case BANG_EXPR_KIND_LIT_STR: {
@@ -107,29 +138,102 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
     break;
 
     case BANG_EXPR_KIND_FUNCALL: {
-        if (sv_eq(expr.as.funcall.name, SV("write"))) {
-            bang_funcall_expect_arity(expr.as.funcall, 1);
-            compile_bang_expr_into_basm(bang, basm, expr.as.funcall.args->value);
+        Bang_Funcall funcall = expr.as.funcall;
+
+        if (sv_eq(funcall.name, SV("write"))) {
+            bang_funcall_expect_arity(funcall, 1);
+            compile_bang_expr_into_basm(bang, basm, funcall.args->value);
             basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
             result.type = BANG_TYPE_VOID;
-        } else if (sv_eq(expr.as.funcall.name, SV("ptr"))) {
-            bang_funcall_expect_arity(expr.as.funcall, 1);
-            Bang_Expr arg = expr.as.funcall.args->value;
+        } else if (sv_eq(funcall.name, SV("ptr"))) {
+            bang_funcall_expect_arity(funcall, 1);
+            Bang_Expr arg = funcall.args->value;
             if (arg.kind != BANG_EXPR_KIND_VAR_READ) {
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: expected variable name as the argument of `ptr` function\n",
-                        Bang_Loc_Arg(expr.as.funcall.loc));
+                        Bang_Loc_Arg(funcall.loc));
                 exit(1);
             }
 
             Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
             basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
             result.type = BANG_TYPE_PTR;
+        } else if (sv_eq(funcall.name, SV("store_ptr"))) {
+            bang_funcall_expect_arity(funcall, 3);
+            Bang_Funcall_Arg *args = funcall.args;
+            Bang_Expr arg0 = args->value;
+            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg2 = args->next->next->value;
+
+            Bang_Type type = reinterpret_expr_as_type(arg0);
+
+            Compiled_Expr ptr = compile_bang_expr_into_basm(bang, basm, arg1);
+            type_check_expr(ptr, BANG_TYPE_PTR);
+
+            Compiled_Expr value = compile_bang_expr_into_basm(bang, basm, arg2);
+            type_check_expr(value, type);
+
+            switch (type) {
+            case BANG_TYPE_I64:
+            case BANG_TYPE_BOOL:
+            case BANG_TYPE_PTR:
+                basm_push_inst(basm, INST_WRITE64, word_u64(0));
+                break;
+
+            case BANG_TYPE_VOID: {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot store `%s` types\n",
+                        Bang_Loc_Arg(funcall.loc),
+                        bang_type_name(BANG_TYPE_VOID));
+                exit(1);
+            }
+            break;
+
+            case COUNT_BANG_TYPES:
+            default:
+                assert(false && "compile_bang_expr_into_basm: unreachable");
+                exit(1);
+            }
+
+            result.type = BANG_TYPE_VOID;
+        } else if (sv_eq(funcall.name, SV("load_ptr"))) {
+            bang_funcall_expect_arity(funcall, 2);
+            Bang_Funcall_Arg *args = funcall.args;
+            Bang_Expr arg0 = args->value;
+            Bang_Expr arg1 = args->next->value;
+
+            Bang_Type type = reinterpret_expr_as_type(arg0);
+            Compiled_Expr ptr = compile_bang_expr_into_basm(bang, basm, arg1);
+            type_check_expr(ptr, BANG_TYPE_PTR);
+
+            switch (type) {
+            case BANG_TYPE_I64:
+                basm_push_inst(basm, INST_READ64I, word_u64(0));
+                break;
+            case BANG_TYPE_BOOL:
+            case BANG_TYPE_PTR:
+                basm_push_inst(basm, INST_READ64U, word_u64(0));
+                break;
+
+            case BANG_TYPE_VOID: {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot load `%s` types\n",
+                        Bang_Loc_Arg(funcall.loc),
+                        bang_type_name(BANG_TYPE_VOID));
+                exit(1);
+            }
+            break;
+
+            case COUNT_BANG_TYPES:
+            default:
+                assert(false && "compile_bang_expr_into_basm: unreachable");
+                exit(1);
+            }
+
+            result.type = type;
         } else {
-            Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, expr.as.funcall.name);
+            Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
             if (proc == NULL) {
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
-                        Bang_Loc_Arg(expr.as.funcall.loc),
-                        SV_Arg(expr.as.funcall.name));
+                        Bang_Loc_Arg(funcall.loc),
+                        SV_Arg(funcall.name));
                 exit(1);
             }
             basm_push_inst(basm, INST_CALL, word_u64(proc->addr));

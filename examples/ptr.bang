@@ -1,0 +1,8 @@
+var x: i64;
+var p: ptr;
+
+proc main() {
+  x = 69;
+  p = ptr(x);
+  store_ptr(i64, p, load_ptr(i64, p));
+}

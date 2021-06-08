@@ -35,6 +35,7 @@ void compile_begin_begin(Bang *bang);
 Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
 
 typedef struct {
+    Bang_Expr ast;
     Inst_Addr addr;
     Bang_Type type;
 } Compiled_Expr;
