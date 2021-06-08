@@ -138,7 +138,7 @@ struct Bang_Proc_Def {
     Bang_Block *body;
 };
 
-// TODO: there is no generic ptr type
+// TODO(#433): there is no generic ptr type
 typedef enum {
     BANG_TYPE_VOID = 0,
     BANG_TYPE_I64,
