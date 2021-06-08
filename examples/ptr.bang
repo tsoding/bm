@@ -1,9 +1,19 @@
-var x: i64;
-var p: ptr;
+var i: i64;
+var count: i64;
 var heap_base: ptr;
 
 proc main() {
-  x = 69;
-  p = ptr(x);
-  store_ptr(i64, p, load_ptr(i64, p));
+  i = 0;
+  count = 26;
+  while i < count {
+    store_ptr(u8,
+      heap_base + cast(ptr, i),
+      cast(u8, i + 65));
+    i = i + 1;
+  }
+
+  # new line
+  store_ptr(u8, heap_base + cast(ptr, count), cast(u8, 10));
+
+  write_ptr(heap_base, count + 1);
 }

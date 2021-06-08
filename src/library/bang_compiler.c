@@ -5,11 +5,12 @@
 static const char *const bang_type_names[COUNT_BANG_TYPES] = {
     [BANG_TYPE_VOID] = "void",
     [BANG_TYPE_I64] = "i64",
+    [BANG_TYPE_U8] = "u8",
     [BANG_TYPE_BOOL] = "bool",
     [BANG_TYPE_PTR] = "ptr",
 };
 static_assert(
-    COUNT_BANG_TYPES == 4,
+    COUNT_BANG_TYPES == 5,
     "The amount of types have changed. "
     "Please update the type name table accordingly. "
     "Thanks!");
@@ -37,6 +38,11 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
     case BANG_TYPE_PTR:
         basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
         basm_push_inst(basm, INST_READ64I, word_u64(0));
+        break;
+
+    case BANG_TYPE_U8:
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        basm_push_inst(basm, INST_READ8U, word_u64(0));
         break;
 
     case BANG_TYPE_VOID:
@@ -169,6 +175,21 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
             basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
             result.type = BANG_TYPE_PTR;
+        } else if (sv_eq(funcall.name, SV("write_ptr"))) {
+            bang_funcall_expect_arity(funcall, 2);
+            Bang_Funcall_Arg *args = funcall.args;
+            Bang_Expr arg0 = args->value;
+            Bang_Expr arg1 = args->next->value;
+
+            Compiled_Expr buffer = compile_bang_expr_into_basm(bang, basm, arg0);
+            type_check_expr(buffer, BANG_TYPE_PTR);
+
+            Compiled_Expr size = compile_bang_expr_into_basm(bang, basm, arg1);
+            type_check_expr(size, BANG_TYPE_I64);
+            
+            basm_push_inst(basm, INST_NATIVE, word_u64(0));
+
+            result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("cast"))) {
             bang_funcall_expect_arity(funcall, 2);
             Bang_Funcall_Arg *args = funcall.args;
@@ -179,7 +200,11 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
             Compiled_Expr value = compile_bang_expr_into_basm(bang, basm, arg1);
 
-            if (value.type != BANG_TYPE_I64 || type != BANG_TYPE_PTR) {
+            if (value.type == BANG_TYPE_I64 && type == BANG_TYPE_PTR) {
+                result.type = type;
+            } else if (value.type == BANG_TYPE_I64 && type == BANG_TYPE_U8) {
+                result.type = type;
+            } else {
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: can't convert value of type `%s` to `%s`\n",
                         Bang_Loc_Arg(funcall.loc),
                         bang_type_name(value.type),
@@ -187,7 +212,6 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                 exit(1);
             }
 
-            result.type = type;
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
             Bang_Funcall_Arg *args = funcall.args;
@@ -208,6 +232,10 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             case BANG_TYPE_BOOL:
             case BANG_TYPE_PTR:
                 basm_push_inst(basm, INST_WRITE64, word_u64(0));
+                break;
+
+            case BANG_TYPE_U8:
+                basm_push_inst(basm, INST_WRITE8, word_u64(0));
                 break;
 
             case BANG_TYPE_VOID: {
@@ -239,9 +267,14 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             case BANG_TYPE_I64:
                 basm_push_inst(basm, INST_READ64I, word_u64(0));
                 break;
+
             case BANG_TYPE_BOOL:
             case BANG_TYPE_PTR:
                 basm_push_inst(basm, INST_READ64U, word_u64(0));
+                break;
+
+            case BANG_TYPE_U8:
+                basm_push_inst(basm, INST_READ8U, word_u64(0));
                 break;
 
             case BANG_TYPE_VOID: {
@@ -368,6 +401,10 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     case BANG_TYPE_BOOL:
     case BANG_TYPE_PTR:
         basm_push_inst(basm, INST_WRITE64, word_u64(0));
+        break;
+
+    case BANG_TYPE_U8:
+        basm_push_inst(basm, INST_WRITE8, word_u64(0));
         break;
 
     case BANG_TYPE_VOID:
@@ -498,6 +535,8 @@ static size_t bang_size_of_type(Bang_Type type)
     case BANG_TYPE_BOOL:
     case BANG_TYPE_PTR:
         return 8;
+    case BANG_TYPE_U8:
+        return 1;
     case BANG_TYPE_VOID:
         assert(false && "bang_size_of_type: unreachable: type void does not have a size");
         exit(1);
