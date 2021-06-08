@@ -6,9 +6,10 @@ static const char *const bang_type_names[COUNT_BANG_TYPES] = {
     [BANG_TYPE_VOID] = "void",
     [BANG_TYPE_I64] = "i64",
     [BANG_TYPE_BOOL] = "bool",
+    [BANG_TYPE_PTR] = "ptr",
 };
 static_assert(
-    COUNT_BANG_TYPES == 3,
+    COUNT_BANG_TYPES == 4,
     "The amount of types have changed. "
     "Please update the type name table accordingly. "
     "Thanks!");
@@ -30,8 +31,19 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
         exit(1);
     }
 
-    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    basm_push_inst(basm, INST_READ64I, word_u64(0));
+    switch (var->def.type) {
+    case BANG_TYPE_I64:
+    case BANG_TYPE_BOOL:
+    case BANG_TYPE_PTR:
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        basm_push_inst(basm, INST_READ64I, word_u64(0));
+        break;
+
+    case BANG_TYPE_VOID:
+    case COUNT_BANG_TYPES:
+    default:
+        assert(false && "compile_var_read_into_basm: unreachable");
+    }
 
     return var->def.type;
 }
@@ -100,6 +112,18 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             compile_bang_expr_into_basm(bang, basm, expr.as.funcall.args->value);
             basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
             result.type = BANG_TYPE_VOID;
+        } else if (sv_eq(expr.as.funcall.name, SV("ptr"))) {
+            bang_funcall_expect_arity(expr.as.funcall, 1);
+            Bang_Expr arg = expr.as.funcall.args->value;
+            if (arg.kind != BANG_EXPR_KIND_VAR_READ) {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: expected variable name as the argument of `ptr` function\n",
+                        Bang_Loc_Arg(expr.as.funcall.loc));
+                exit(1);
+            }
+
+            Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
+            basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+            result.type = BANG_TYPE_PTR;
         } else {
             Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, expr.as.funcall.name);
             if (proc == NULL) {
@@ -197,14 +221,27 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
 
     if (expr.type != var->def.type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`",
-                Bang_Loc_Arg(var->def.loc),
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                Bang_Loc_Arg(var_assign.loc),
                 bang_type_name(expr.type),
                 bang_type_name(var->def.type));
         exit(1);
     }
 
-    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+    switch (expr.type) {
+    case BANG_TYPE_I64:
+    case BANG_TYPE_BOOL:
+    case BANG_TYPE_PTR:
+        basm_push_inst(basm, INST_WRITE64, word_u64(0));
+        break;
+
+    case BANG_TYPE_VOID:
+    case COUNT_BANG_TYPES:
+    default: {
+        assert(false && "compile_bang_var_assign_into_basm: unreachable");
+        exit(1);
+    }
+    }
 }
 
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
@@ -323,8 +360,8 @@ static size_t bang_size_of_type(Bang_Type type)
 {
     switch (type) {
     case BANG_TYPE_I64:
-        return 8;
     case BANG_TYPE_BOOL:
+    case BANG_TYPE_PTR:
         return 8;
     case BANG_TYPE_VOID:
         assert(false && "bang_size_of_type: unreachable: type void does not have a size");
