@@ -73,6 +73,7 @@ static_assert(
 
 
 struct Bang_Expr {
+    Bang_Loc loc;
     Bang_Expr_Kind kind;
     Bang_Expr_As as;
 };
@@ -137,14 +138,18 @@ struct Bang_Proc_Def {
     Bang_Block *body;
 };
 
+// TODO: there is no generic ptr type
 typedef enum {
     BANG_TYPE_VOID = 0,
     BANG_TYPE_I64,
+    BANG_TYPE_U8,
     BANG_TYPE_BOOL,
+    BANG_TYPE_PTR,
     COUNT_BANG_TYPES,
 } Bang_Type;
 
 const char *bang_type_name(Bang_Type type);
+bool bang_type_by_name(String_View name, Bang_Type *out_type);
 
 struct Bang_Var_Def {
     Bang_Loc loc;
@@ -192,5 +197,6 @@ Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
 Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Read parse_var_read(Bang_Lexer *lexer);
+
 
 #endif // BANG_PARSER_H_

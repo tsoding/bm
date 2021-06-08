@@ -160,12 +160,14 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
         if (sv_eq(token.text, SV("true"))) {
             bang_lexer_next(lexer, &token);
             Bang_Expr expr = {0};
+            expr.loc = token.loc;
             expr.kind = BANG_EXPR_KIND_LIT_BOOL;
             expr.as.boolean = true;
             return expr;
         } else if (sv_eq(token.text, SV("false"))) {
             bang_lexer_next(lexer, &token);
             Bang_Expr expr = {0};
+            expr.loc = token.loc;
             expr.kind = BANG_EXPR_KIND_LIT_BOOL;
             expr.as.boolean = false;
             return expr;
@@ -173,11 +175,13 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
             Bang_Token next_token = {0};
             if (bang_lexer_peek(lexer, &next_token, 1) && next_token.kind == BANG_TOKEN_KIND_OPEN_PAREN) {
                 Bang_Expr expr = {0};
+                expr.loc = token.loc;
                 expr.kind = BANG_EXPR_KIND_FUNCALL;
                 expr.as.funcall = parse_bang_funcall(arena, lexer);
                 return expr;
             } else {
                 Bang_Expr expr = {0};
+                expr.loc = token.loc;
                 expr.kind = BANG_EXPR_KIND_VAR_READ;
                 expr.as.var_read = parse_var_read(lexer);
                 return expr;
@@ -203,6 +207,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
         }
 
         Bang_Expr expr = {0};
+        expr.loc = token.loc;
         expr.kind = BANG_EXPR_KIND_LIT_INT;
         expr.as.lit_int = result;
         return expr;
@@ -211,6 +216,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
 
     case BANG_TOKEN_KIND_LIT_STR: {
         Bang_Expr expr = {0};
+        expr.loc = token.loc;
         expr.kind = BANG_EXPR_KIND_LIT_STR;
         expr.as.lit_str = parse_bang_lit_str(arena, lexer);
         return expr;
@@ -266,6 +272,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
                 }
 
                 Bang_Expr expr = {0};
+                expr.loc = token.loc;
                 expr.kind = BANG_EXPR_KIND_BINARY_OP;
                 expr.as.binary_op = binary_op;
                 return expr;
@@ -435,14 +442,26 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
     return result;
 }
 
+bool bang_type_by_name(String_View name, Bang_Type *out_type)
+{
+    for (Bang_Type type = 0; type < COUNT_BANG_TYPES; ++type) {
+        if (sv_eq(name, sv_from_cstr(bang_type_name(type)))) {
+            if (out_type) {
+                *out_type = type;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 Bang_Type parse_bang_type(Bang_Lexer *lexer)
 {
     Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
 
-    for (Bang_Type type = 0; type < COUNT_BANG_TYPES; ++type) {
-        if (sv_eq(token.text, sv_from_cstr(bang_type_name(type)))) {
-            return type;
-        }
+    Bang_Type type = 0;
+    if (bang_type_by_name(token.text, &type)) {
+        return type;
     }
 
     fprintf(stderr, Bang_Loc_Fmt": ERROR: invalid type `"SV_Fmt"`\n",

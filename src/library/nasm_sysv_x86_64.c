@@ -41,11 +41,14 @@ static inline void stack_pop_two_xmm(FILE* stream, const char* fst, const char* 
 static String_View *precompute_label_locations(Basm *basm)
 {
     String_View *label_locations = arena_alloc(&basm->arena, basm->program_size * sizeof(String_View));
-    for (size_t i = 0; i < basm->global_scope->bindings_size; i++) {
-        Binding *binding = &basm->global_scope->bindings[i];
 
-        if (binding->type == TYPE_INST_ADDR) {
-            label_locations[binding->value.as_u64] = binding->name;
+    if (basm->global_scope) {
+        for (size_t i = 0; i < basm->global_scope->bindings_size; i++) {
+            Binding *binding = &basm->global_scope->bindings[i];
+
+            if (binding->type == TYPE_INST_ADDR) {
+                label_locations[binding->value.as_u64] = binding->name;
+            }
         }
     }
 
