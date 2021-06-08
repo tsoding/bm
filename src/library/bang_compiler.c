@@ -52,28 +52,40 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
 {
     assert(binary_op.lhs != NULL);
     const Compiled_Expr compiled_lhs = compile_bang_expr_into_basm(bang, basm, *binary_op.lhs);
-    if (compiled_lhs.type != BANG_TYPE_I64) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for type `%s`\n",
+    if (compiled_lhs.type != BANG_TYPE_I64 && compiled_lhs.type != BANG_TYPE_PTR) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for types `%s` and `%s`\n",
                 Bang_Loc_Arg(binary_op.loc),
                 bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
-                bang_type_name(BANG_TYPE_I64));
+                bang_type_name(BANG_TYPE_I64),
+                bang_type_name(BANG_TYPE_PTR));
         exit(1);
     }
 
     assert(binary_op.rhs != NULL);
     const Compiled_Expr compiled_rhs = compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
-    if (compiled_rhs.type != BANG_TYPE_I64) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for type `%s`\n",
+    if (compiled_rhs.type != BANG_TYPE_I64 && compiled_rhs.type != BANG_TYPE_PTR) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for types `%s` and `%s`\n",
                 Bang_Loc_Arg(binary_op.loc),
                 bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
-                bang_type_name(BANG_TYPE_I64));
+                bang_type_name(BANG_TYPE_I64),
+                bang_type_name(BANG_TYPE_PTR));
+        exit(1);
+    }
+
+    if (compiled_lhs.type != compiled_rhs.type) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: LHS of `%s` has type `%s` but RHS has type `%s`\n",
+                Bang_Loc_Arg(binary_op.loc),
+                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
+                bang_type_name(compiled_lhs.type),
+                bang_type_name(compiled_rhs.type));
         exit(1);
     }
 
     switch (binary_op.kind) {
     case BANG_BINARY_OP_KIND_PLUS: {
         basm_push_inst(basm, INST_PLUSI, word_u64(0));
-        return BANG_TYPE_I64;
+        assert(compiled_lhs.type == compiled_rhs.type);
+        return compiled_lhs.type;
     }
     break;
 
@@ -157,6 +169,25 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
             basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
             result.type = BANG_TYPE_PTR;
+        } else if (sv_eq(funcall.name, SV("cast"))) {
+            bang_funcall_expect_arity(funcall, 2);
+            Bang_Funcall_Arg *args = funcall.args;
+            Bang_Expr arg0 = args->value;
+            Bang_Expr arg1 = args->next->value;
+
+            Bang_Type type = reinterpret_expr_as_type(arg0);
+
+            Compiled_Expr value = compile_bang_expr_into_basm(bang, basm, arg1);
+
+            if (value.type != BANG_TYPE_I64 || type != BANG_TYPE_PTR) {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: can't convert value of type `%s` to `%s`\n",
+                        Bang_Loc_Arg(funcall.loc),
+                        bang_type_name(value.type),
+                        bang_type_name(type));
+                exit(1);
+            }
+
+            result.type = type;
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
             Bang_Funcall_Arg *args = funcall.args;
@@ -545,7 +576,7 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
 
     if (heap_base_var != NULL) {
         if (heap_base_var->def.type != BANG_TYPE_PTR) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`",
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`\n",
                     Bang_Loc_Arg(heap_base_var->def.loc),
                     SV_Arg(heap_base_var_name),
                     bang_type_name(BANG_TYPE_PTR),
