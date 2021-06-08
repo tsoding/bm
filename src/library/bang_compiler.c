@@ -212,7 +212,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                 exit(1);
             }
 
-            // TODO: there is no special syntax for dereferencing the pointer
+            // TODO(#432): there is no special syntax for dereferencing the pointer
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
             Bang_Funcall_Arg *args = funcall.args;
