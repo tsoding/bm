@@ -15,23 +15,39 @@
         }                                    \
     } while (0)
 
-static Bang_Token_Kind binary_op_tokens[COUNT_BANG_BINARY_OP_KINDS] = {
-    [BANG_BINARY_OP_KIND_PLUS]  = BANG_TOKEN_KIND_PLUS,
-    [BANG_BINARY_OP_KIND_MINUS] = BANG_TOKEN_KIND_MINUS,
-    [BANG_BINARY_OP_KIND_MULT]  = BANG_TOKEN_KIND_MULT,
-    [BANG_BINARY_OP_KIND_LESS]  = BANG_TOKEN_KIND_LESS,
+static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
+    [BANG_BINARY_OP_KIND_LESS] = {
+        .kind       = BANG_BINARY_OP_KIND_LESS,
+        .token_kind = BANG_TOKEN_KIND_LESS,
+        .prec       = BINARY_OP_PREC0,
+    },
+    [BANG_BINARY_OP_KIND_PLUS] = {
+        .kind       = BANG_BINARY_OP_KIND_PLUS,
+        .token_kind = BANG_TOKEN_KIND_PLUS,
+        .prec       = BINARY_OP_PREC1
+    },
+    [BANG_BINARY_OP_KIND_MINUS] = {
+        .kind       = BANG_BINARY_OP_KIND_MINUS,
+        .token_kind = BANG_TOKEN_KIND_MINUS,
+        .prec       = BINARY_OP_PREC1
+    },
+    [BANG_BINARY_OP_KIND_MULT] = {
+        .kind       = BANG_BINARY_OP_KIND_MULT,
+        .token_kind = BANG_TOKEN_KIND_MULT,
+        .prec       = BINARY_OP_PREC2
+    },
 };
 static_assert(
     COUNT_BANG_BINARY_OP_KINDS == 4,
     "The amount of binary operation kinds has changed. "
-    "Please update the binary_op_tokens table accordingly. "
+    "Please update the binary_op_defs table accordingly. "
     "Thanks!");
 
-Bang_Token_Kind bang_binary_op_token(Bang_Binary_Op_Kind kind)
+Bang_Binary_Op_Def bang_binary_op_def(Bang_Binary_Op_Kind kind)
 {
     assert(0 <= kind);
     assert(kind < COUNT_BANG_BINARY_OP_KINDS);
-    return binary_op_tokens[kind];
+    return binary_op_defs[kind];
 }
 
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
@@ -258,40 +274,62 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
-Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
+static bool bang_binary_op_def_by_token(Bang_Token_Kind token_kind, Bang_Binary_Op_Def *def)
 {
-    Bang_Expr *lhs = arena_alloc(arena, sizeof(*lhs));
-    *lhs = parse_primary_expr(arena, lexer);
-
-    Bang_Token token = {0};
-    if (bang_lexer_peek(lexer, &token, 0)) {
-        for (Bang_Binary_Op_Kind kind = 0;
-                kind < COUNT_BANG_BINARY_OP_KINDS;
-                ++kind) {
-            if (binary_op_tokens[kind] == token.kind) {
-                bool ok = bang_lexer_next(lexer, &token);
-                assert(ok);
-
-                Bang_Binary_Op binary_op = {0};
-                {
-                    binary_op.loc = token.loc;
-                    binary_op.kind = kind;
-                    binary_op.lhs = lhs;
-
-                    binary_op.rhs = arena_alloc(arena, sizeof(*binary_op.rhs));
-                    *binary_op.rhs = parse_bang_expr(arena, lexer);
-                }
-
-                Bang_Expr expr = {0};
-                expr.loc = token.loc;
-                expr.kind = BANG_EXPR_KIND_BINARY_OP;
-                expr.as.binary_op = binary_op;
-                return expr;
+    for (Bang_Binary_Op_Kind kind = 0;
+            kind < COUNT_BANG_BINARY_OP_KINDS;
+            ++kind) {
+        if (binary_op_defs[kind].token_kind == token_kind) {
+            if (def) {
+                *def = binary_op_defs[kind];
             }
+            return true;
         }
     }
 
+    return false;
+}
+
+static Bang_Expr parse_bang_expr_with_precedence(Arena *arena, Bang_Lexer *lexer, Binary_Op_Prec prec)
+{
+    if (prec >= COUNT_BINARY_OP_PRECS) {
+        return parse_primary_expr(arena, lexer);
+    }
+
+    Bang_Expr *lhs = arena_alloc(arena, sizeof(*lhs));
+    *lhs = parse_bang_expr_with_precedence(arena, lexer, prec + 1);
+
+    Bang_Token token = {0};
+    Bang_Binary_Op_Def def = {0};
+
+    while (bang_lexer_peek(lexer, &token, 0)
+            && bang_binary_op_def_by_token(token.kind, &def)
+            && def.prec == prec) {
+        bool ok = bang_lexer_next(lexer, &token);
+        assert(ok);
+
+        Bang_Expr *expr = arena_alloc(arena, sizeof(*expr));
+        expr->loc = token.loc;
+        expr->kind = BANG_EXPR_KIND_BINARY_OP;
+        Bang_Binary_Op binary_op = {0};
+        {
+            binary_op.loc = token.loc;
+            binary_op.kind = def.kind;
+            binary_op.lhs = lhs;
+            binary_op.rhs = arena_alloc(arena, sizeof(*binary_op.rhs));
+            *binary_op.rhs = parse_bang_expr_with_precedence(arena, lexer, prec + 1);
+        }
+        expr->as.binary_op = binary_op;
+
+        lhs = expr;
+    }
+
     return *lhs;
+}
+
+Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
+{
+    return parse_bang_expr_with_precedence(arena, lexer, 0);
 }
 
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer)

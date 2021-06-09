@@ -22,6 +22,7 @@ typedef struct Bang_Var_Assign Bang_Var_Assign;
 typedef struct Bang_Var_Read Bang_Var_Read;
 typedef struct Bang_While Bang_While;
 typedef struct Bang_Binary_Op Bang_Binary_Op;
+typedef struct Bang_Binary_Op_Def Bang_Binary_Op_Def;
 
 typedef enum {
     BANG_BINARY_OP_KIND_PLUS = 0,
@@ -30,6 +31,21 @@ typedef enum {
     BANG_BINARY_OP_KIND_LESS,
     COUNT_BANG_BINARY_OP_KINDS,
 }  Bang_Binary_Op_Kind;
+
+typedef enum {
+    BINARY_OP_PREC0 = 0,
+    BINARY_OP_PREC1 = 1,
+    BINARY_OP_PREC2 = 2,
+    COUNT_BINARY_OP_PRECS,
+} Binary_Op_Prec;
+
+struct Bang_Binary_Op_Def {
+    Bang_Binary_Op_Kind kind;
+    Bang_Token_Kind token_kind;
+    Binary_Op_Prec prec;
+};
+
+// TODO(#440): there are no unary operators in Bang
 
 struct Bang_Binary_Op {
     Bang_Loc loc;
@@ -170,7 +186,7 @@ struct Bang_Module {
 
 void bang_module_push_top(Bang_Module *module, Bang_Top *top);
 
-Bang_Token_Kind bang_binary_op_token(Bang_Binary_Op_Kind kind);
+Bang_Binary_Op_Def bang_binary_op_def(Bang_Binary_Op_Kind kind);
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);
