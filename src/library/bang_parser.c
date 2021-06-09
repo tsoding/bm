@@ -15,23 +15,24 @@
         }                                    \
     } while (0)
 
-static Bang_Token_Kind binary_op_tokens[COUNT_BANG_BINARY_OP_KINDS] = {
-    [BANG_BINARY_OP_KIND_PLUS]  = BANG_TOKEN_KIND_PLUS,
-    [BANG_BINARY_OP_KIND_MINUS] = BANG_TOKEN_KIND_MINUS,
-    [BANG_BINARY_OP_KIND_MULT]  = BANG_TOKEN_KIND_MULT,
-    [BANG_BINARY_OP_KIND_LESS]  = BANG_TOKEN_KIND_LESS,
+
+static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
+    [BANG_BINARY_OP_KIND_LESS]  = {.token_kind = BANG_TOKEN_KIND_LESS,  .precedence = 0},
+    [BANG_BINARY_OP_KIND_PLUS]  = {.token_kind = BANG_TOKEN_KIND_PLUS,  .precedence = 1},
+    [BANG_BINARY_OP_KIND_MINUS] = {.token_kind = BANG_TOKEN_KIND_MINUS, .precedence = 1},
+    [BANG_BINARY_OP_KIND_MULT]  = {.token_kind = BANG_TOKEN_KIND_MULT,  .precedence = 2},
 };
 static_assert(
     COUNT_BANG_BINARY_OP_KINDS == 4,
     "The amount of binary operation kinds has changed. "
-    "Please update the binary_op_tokens table accordingly. "
+    "Please update the binary_op_defs table accordingly. "
     "Thanks!");
 
-Bang_Token_Kind bang_binary_op_token(Bang_Binary_Op_Kind kind)
+Bang_Binary_Op_Def bang_binary_op_def(Bang_Binary_Op_Kind kind)
 {
     assert(0 <= kind);
     assert(kind < COUNT_BANG_BINARY_OP_KINDS);
-    return binary_op_tokens[kind];
+    return binary_op_defs[kind];
 }
 
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
@@ -268,7 +269,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer)
         for (Bang_Binary_Op_Kind kind = 0;
                 kind < COUNT_BANG_BINARY_OP_KINDS;
                 ++kind) {
-            if (binary_op_tokens[kind] == token.kind) {
+            if (bang_binary_op_def(kind).token_kind == token.kind) {
                 bool ok = bang_lexer_next(lexer, &token);
                 assert(ok);
 

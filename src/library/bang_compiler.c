@@ -129,7 +129,7 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
     if (compiled_lhs.type != compiled_rhs.type) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: LHS of `%s` has type `%s` but RHS has type `%s`\n",
                 Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
+                bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
                 bang_type_def(compiled_lhs.type).name,
                 bang_type_def(compiled_rhs.type).name);
         exit(1);
@@ -140,7 +140,7 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
     if (!boot.exists) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: binary operation `%s` does not exist for type `%s`\n",
                 Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
+                bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
                 bang_type_def(type).name);
         exit(1);
     }
