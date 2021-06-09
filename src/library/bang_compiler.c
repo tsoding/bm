@@ -507,7 +507,7 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 
     if (expected_arity != actual_arity) {
-        fprintf(stderr, Bang_Loc_Fmt"ERROR: function `"SV_Fmt"` expectes %zu amount of arguments but provided %zu\n",
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: function `"SV_Fmt"` expects %zu amount of arguments but provided %zu\n",
                 Bang_Loc_Arg(funcall.loc),
                 SV_Arg(funcall.name),
                 expected_arity,
