@@ -2,12 +2,60 @@
 
 // TODO(#426): bang does not support type casting
 
+typedef struct {
+    bool exists;
+    Inst_Type inst;
+    Bang_Type ret;
+} Binary_Op_Of_Type;
+
+static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_BANG_BINARY_OP_KINDS] = {
+    [BANG_TYPE_VOID] = {
+        [BANG_BINARY_OP_KIND_PLUS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_LESS] = {.exists = false},
+    },
+    [BANG_TYPE_I64] = {
+        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_I64},
+        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTI,   .ret = BANG_TYPE_BOOL},
+    },
+    [BANG_TYPE_U8] = {
+        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_U8},
+        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTU,   .ret = BANG_TYPE_BOOL},
+    },
+    [BANG_TYPE_BOOL] = {
+        [BANG_BINARY_OP_KIND_PLUS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_LESS] = {.exists = false},
+    },
+    [BANG_TYPE_PTR] = {
+        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_PTR},
+        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTU,   .ret = BANG_TYPE_BOOL},
+    },
+};
+static_assert(
+    COUNT_BANG_TYPES == 5,
+    "The amount of types have changed. "
+    "Please update the binary_op_of_type table accordingly. "
+    "Thanks!");
+static_assert(
+    COUNT_BANG_BINARY_OP_KINDS == 2,
+    "The amount of binary operations have changed. "
+    "Please update the binary_op_of_type table accordingly. "
+    "Thanks!");
+
+static Binary_Op_Of_Type binary_op_of_type(Bang_Type type, Bang_Binary_Op_Kind op_kind)
+{
+    assert(type >= 0);
+    assert(type < COUNT_BANG_TYPES);
+    assert(op_kind >= 0);
+    assert(op_kind < COUNT_BANG_BINARY_OP_KINDS);
+    return binary_op_of_type_table[type][op_kind];
+}
+
 static Bang_Type_Def const bang_type_defs[COUNT_BANG_TYPES] = {
-    [BANG_TYPE_VOID] = {.name = "void", .size = 0, .read = INST_NOP,     .write = INST_NOP},
-    [BANG_TYPE_I64]  = {.name = "i64",  .size = 8, .read = INST_READ64I, .write = INST_WRITE64},
-    [BANG_TYPE_U8]   = {.name = "u8",   .size = 1, .read = INST_READ8U,  .write = INST_WRITE8},
-    [BANG_TYPE_BOOL] = {.name = "bool", .size = 8, .read = INST_READ64U, .write = INST_WRITE64},
-    [BANG_TYPE_PTR]  = {.name = "ptr",  .size = 8, .read = INST_READ64U, .write = INST_WRITE64},
+    [BANG_TYPE_VOID] = {.name  = "void", .size  = 0, .read  = INST_NOP,     .write = INST_NOP,},
+    [BANG_TYPE_I64]  = {.name  = "i64",  .size  = 8, .read  = INST_READ64I, .write = INST_WRITE64,},
+    [BANG_TYPE_U8]   = {.name  = "u8",   .size  = 1, .read  = INST_READ8U,  .write = INST_WRITE8,},
+    [BANG_TYPE_BOOL] = {.name  = "bool", .size  = 8, .read  = INST_READ64U, .write = INST_WRITE64,},
+    [BANG_TYPE_PTR]  = {.name  = "ptr",  .size  = 8, .read  = INST_READ64U, .write = INST_WRITE64,},
 };
 static_assert(
     COUNT_BANG_TYPES == 5,
@@ -65,25 +113,8 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
 {
     assert(binary_op.lhs != NULL);
     const Compiled_Expr compiled_lhs = compile_bang_expr_into_basm(bang, basm, *binary_op.lhs);
-    if (compiled_lhs.type != BANG_TYPE_I64 && compiled_lhs.type != BANG_TYPE_PTR) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for types `%s` and `%s`\n",
-                Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
-                bang_type_def(BANG_TYPE_I64).name,
-                bang_type_def(BANG_TYPE_PTR).name);
-        exit(1);
-    }
-
     assert(binary_op.rhs != NULL);
     const Compiled_Expr compiled_rhs = compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
-    if (compiled_rhs.type != BANG_TYPE_I64 && compiled_rhs.type != BANG_TYPE_PTR) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: `%s` is only supported for types `%s` and `%s`\n",
-                Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
-                bang_type_def(BANG_TYPE_I64).name,
-                bang_type_def(BANG_TYPE_PTR).name);
-        exit(1);
-    }
 
     if (compiled_lhs.type != compiled_rhs.type) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: LHS of `%s` has type `%s` but RHS has type `%s`\n",
@@ -93,27 +124,20 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
                 bang_type_def(compiled_rhs.type).name);
         exit(1);
     }
+    const Bang_Type type = compiled_lhs.type;
 
-    switch (binary_op.kind) {
-    case BANG_BINARY_OP_KIND_PLUS: {
-        basm_push_inst(basm, INST_PLUSI, word_u64(0));
-        assert(compiled_lhs.type == compiled_rhs.type);
-        return compiled_lhs.type;
-    }
-    break;
-
-    case BANG_BINARY_OP_KIND_LESS: {
-        basm_push_inst(basm, INST_LTI, word_u64(0));
-        return BANG_TYPE_BOOL;
-    }
-    break;
-
-    case COUNT_BANG_BINARY_OP_KINDS:
-    default: {
-        assert(false && "compile_binary_op_into_basm: unreachable");
+    Binary_Op_Of_Type boot = binary_op_of_type(type, binary_op.kind);
+    if (!boot.exists) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: binary operation `%s` does not exist for type `%s`\n",
+                Bang_Loc_Arg(binary_op.loc),
+                bang_token_kind_name(bang_binary_op_token(binary_op.kind)),
+                bang_type_def(type).name);
         exit(1);
     }
-    }
+
+    basm_push_inst(basm, boot.inst, word_u64(0));
+
+    return boot.ret;
 }
 
 static Bang_Type reinterpret_expr_as_type(Bang_Expr type_arg)
