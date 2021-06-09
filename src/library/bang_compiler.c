@@ -37,47 +37,12 @@ bool bang_type_by_name(String_View name, Bang_Type *out_type)
 
 void compile_typed_read(Basm *basm, Bang_Type type)
 {
-    switch (type) {
-    case BANG_TYPE_I64:
-        basm_push_inst(basm, INST_READ64I, word_u64(0));
-        break;
-
-    case BANG_TYPE_BOOL:
-    case BANG_TYPE_PTR:
-        basm_push_inst(basm, INST_READ64U, word_u64(0));
-        break;
-
-    case BANG_TYPE_U8:
-        basm_push_inst(basm, INST_READ8U, word_u64(0));
-        break;
-
-    case BANG_TYPE_VOID:
-    case COUNT_BANG_TYPES:
-    default:
-        assert(false && "compile_var_read_into_basm: unreachable");
-        exit(1);
-    }
+    basm_push_inst(basm, bang_type_def(type).read, word_u64(0));
 }
 
 void compile_typed_write(Basm *basm, Bang_Type type)
 {
-    switch (type) {
-    case BANG_TYPE_I64:
-    case BANG_TYPE_BOOL:
-    case BANG_TYPE_PTR:
-        basm_push_inst(basm, INST_WRITE64, word_u64(0));
-        break;
-
-    case BANG_TYPE_U8:
-        basm_push_inst(basm, INST_WRITE8, word_u64(0));
-        break;
-
-    case BANG_TYPE_VOID:
-    case COUNT_BANG_TYPES:
-    default:
-        assert(false && "compile_bang_expr_into_basm: unreachable");
-        exit(1);
-    }
+    basm_push_inst(basm, bang_type_def(type).write, word_u64(0));
 }
 
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
