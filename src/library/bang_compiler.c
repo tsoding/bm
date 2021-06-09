@@ -10,24 +10,34 @@ typedef struct {
 
 static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_BANG_BINARY_OP_KINDS] = {
     [BANG_TYPE_VOID] = {
-        [BANG_BINARY_OP_KIND_PLUS] = {.exists = false},
-        [BANG_BINARY_OP_KIND_LESS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_PLUS]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_MINUS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_MULT]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_LESS]  = {.exists = false},
     },
     [BANG_TYPE_I64] = {
-        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_I64},
-        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTI,   .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_I64},
+        [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_I64},
+        [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTI,  .ret = BANG_TYPE_I64},
+        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTI,    .ret = BANG_TYPE_BOOL},
     },
     [BANG_TYPE_U8] = {
-        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_U8},
-        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTU,   .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_U8},
+        [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_U8},
+        [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTU,  .ret = BANG_TYPE_U8},
+        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
     },
     [BANG_TYPE_BOOL] = {
-        [BANG_BINARY_OP_KIND_PLUS] = {.exists = false},
-        [BANG_BINARY_OP_KIND_LESS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_PLUS]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_MINUS] = {.exists = false},
+        [BANG_BINARY_OP_KIND_MULT]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_LESS]  = {.exists = false},
     },
     [BANG_TYPE_PTR] = {
-        [BANG_BINARY_OP_KIND_PLUS] = {.exists = true, .inst = INST_PLUSI, .ret = BANG_TYPE_PTR},
-        [BANG_BINARY_OP_KIND_LESS] = {.exists = true, .inst = INST_LTU,   .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_PTR},
+        [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_PTR},
+        [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTU,  .ret = BANG_TYPE_PTR},
+        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
     },
 };
 static_assert(
@@ -36,7 +46,7 @@ static_assert(
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 2,
+    COUNT_BANG_BINARY_OP_KINDS == 4,
     "The amount of binary operations have changed. "
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");
@@ -235,6 +245,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                 result.type = type;
             } else if (value.type == BANG_TYPE_I64 && type == BANG_TYPE_U8) {
                 result.type = type;
+            } else if (value.type == BANG_TYPE_U8 && type == BANG_TYPE_PTR) {
+                result.type = type;
             } else {
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: can't convert value of type `%s` to `%s`\n",
                         Bang_Loc_Arg(funcall.loc),
@@ -288,6 +300,10 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             compile_typed_read(basm, type);
 
             result.type = type;
+        } else if (sv_eq(funcall.name, SV("halt"))) {
+            bang_funcall_expect_arity(funcall, 0);
+            basm_push_inst(basm, INST_HALT, word_u64(0));
+            result.type = BANG_TYPE_VOID;
         } else {
             Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
             if (proc == NULL) {
@@ -498,7 +514,7 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 
     if (expected_arity != actual_arity) {
-        fprintf(stderr, Bang_Loc_Fmt"ERROR: function `"SV_Fmt"` expectes %zu amount of arguments but provided %zu\n",
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: function `"SV_Fmt"` expects %zu amount of arguments but provided %zu\n",
                 Bang_Loc_Arg(funcall.loc),
                 SV_Arg(funcall.name),
                 expected_arity,

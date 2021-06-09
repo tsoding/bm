@@ -25,6 +25,8 @@ typedef struct Bang_Binary_Op Bang_Binary_Op;
 
 typedef enum {
     BANG_BINARY_OP_KIND_PLUS = 0,
+    BANG_BINARY_OP_KIND_MINUS,
+    BANG_BINARY_OP_KIND_MULT,
     BANG_BINARY_OP_KIND_LESS,
     COUNT_BANG_BINARY_OP_KINDS,
 }  Bang_Binary_Op_Kind;

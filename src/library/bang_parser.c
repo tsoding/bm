@@ -16,11 +16,13 @@
     } while (0)
 
 static Bang_Token_Kind binary_op_tokens[COUNT_BANG_BINARY_OP_KINDS] = {
-    [BANG_BINARY_OP_KIND_PLUS] = BANG_TOKEN_KIND_PLUS,
-    [BANG_BINARY_OP_KIND_LESS] = BANG_TOKEN_KIND_LESS,
+    [BANG_BINARY_OP_KIND_PLUS]  = BANG_TOKEN_KIND_PLUS,
+    [BANG_BINARY_OP_KIND_MINUS] = BANG_TOKEN_KIND_MINUS,
+    [BANG_BINARY_OP_KIND_MULT]  = BANG_TOKEN_KIND_MULT,
+    [BANG_BINARY_OP_KIND_LESS]  = BANG_TOKEN_KIND_LESS,
 };
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 2,
+    COUNT_BANG_BINARY_OP_KINDS == 4,
     "The amount of binary operation kinds has changed. "
     "Please update the binary_op_tokens table accordingly. "
     "Thanks!");
@@ -222,10 +224,19 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
         return expr;
     }
 
+    case BANG_TOKEN_KIND_OPEN_PAREN: {
+        bang_lexer_next(lexer, &token);
+        Bang_Expr expr = parse_bang_expr(arena, lexer);
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+        return expr;
+    }
+    break;
+
     case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
+    case BANG_TOKEN_KIND_MINUS:
+    case BANG_TOKEN_KIND_MULT:
     case BANG_TOKEN_KIND_LESS:
-    case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
     case BANG_TOKEN_KIND_CLOSE_CURLY:
@@ -372,6 +383,8 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
 
     case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
+    case BANG_TOKEN_KIND_MINUS:
+    case BANG_TOKEN_KIND_MULT:
     case BANG_TOKEN_KIND_LESS:
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
