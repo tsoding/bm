@@ -138,23 +138,10 @@ struct Bang_Proc_Def {
     Bang_Block *body;
 };
 
-// TODO(#433): there is no generic ptr type
-typedef enum {
-    BANG_TYPE_VOID = 0,
-    BANG_TYPE_I64,
-    BANG_TYPE_U8,
-    BANG_TYPE_BOOL,
-    BANG_TYPE_PTR,
-    COUNT_BANG_TYPES,
-} Bang_Type;
-
-const char *bang_type_name(Bang_Type type);
-bool bang_type_by_name(String_View name, Bang_Type *out_type);
-
 struct Bang_Var_Def {
     Bang_Loc loc;
     String_View name;
-    Bang_Type type;
+    String_View type_name;
 };
 
 typedef enum {
@@ -190,7 +177,6 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer);
-Bang_Type parse_bang_type(Bang_Lexer *lexer);
 Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);

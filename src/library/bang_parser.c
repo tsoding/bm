@@ -442,43 +442,14 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
     return result;
 }
 
-bool bang_type_by_name(String_View name, Bang_Type *out_type)
-{
-    for (Bang_Type type = 0; type < COUNT_BANG_TYPES; ++type) {
-        if (sv_eq(name, sv_from_cstr(bang_type_name(type)))) {
-            if (out_type) {
-                *out_type = type;
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
-Bang_Type parse_bang_type(Bang_Lexer *lexer)
-{
-    Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
-
-    Bang_Type type = 0;
-    if (bang_type_by_name(token.text, &type)) {
-        return type;
-    }
-
-    fprintf(stderr, Bang_Loc_Fmt": ERROR: invalid type `"SV_Fmt"`\n",
-            Bang_Loc_Arg(token.loc),
-            SV_Arg(token.text));
-    exit(1);
-}
-
 Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
 {
-    // var i: i64;
     Bang_Var_Def var_def = {0};
 
     var_def.loc = bang_lexer_expect_keyword(lexer, SV("var")).loc;
     var_def.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
-    var_def.type = parse_bang_type(lexer);
+    var_def.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
 
     return var_def;
