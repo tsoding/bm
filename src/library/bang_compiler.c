@@ -240,6 +240,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                 result.type = type;
             } else if (value.type == BANG_TYPE_I64 && type == BANG_TYPE_U8) {
                 result.type = type;
+            } else if (value.type == BANG_TYPE_U8 && type == BANG_TYPE_PTR) {
+                result.type = type;
             } else {
                 fprintf(stderr, Bang_Loc_Fmt": ERROR: can't convert value of type `%s` to `%s`\n",
                         Bang_Loc_Arg(funcall.loc),
