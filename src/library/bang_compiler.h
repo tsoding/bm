@@ -8,7 +8,7 @@
 #define BANG_GLOBAL_VARS_CAPACITY 1024
 #define BANG_PROCS_CAPACITY 1024
 
-// TODO: there is no generic ptr type
+// TODO(#433): there is no generic ptr type
 typedef enum {
     BANG_TYPE_VOID = 0,
     BANG_TYPE_I64,
