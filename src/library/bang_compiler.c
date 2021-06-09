@@ -121,10 +121,8 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
 
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op)
 {
-    assert(binary_op.lhs != NULL);
-    const Compiled_Expr compiled_lhs = compile_bang_expr_into_basm(bang, basm, *binary_op.lhs);
-    assert(binary_op.rhs != NULL);
-    const Compiled_Expr compiled_rhs = compile_bang_expr_into_basm(bang, basm, *binary_op.rhs);
+    const Compiled_Expr compiled_lhs = compile_bang_expr_into_basm(bang, basm, binary_op.lhs);
+    const Compiled_Expr compiled_rhs = compile_bang_expr_into_basm(bang, basm, binary_op.rhs);
 
     if (compiled_lhs.type != compiled_rhs.type) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: LHS of `%s` has type `%s` but RHS has type `%s`\n",
@@ -340,7 +338,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
     break;
 
     case BANG_EXPR_KIND_BINARY_OP: {
-        result.type = compile_binary_op_into_basm(bang, basm, expr.as.binary_op);
+        result.type = compile_binary_op_into_basm(bang, basm, *expr.as.binary_op);
     }
     break;
 
