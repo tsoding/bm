@@ -229,7 +229,8 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
         Bang_Expr expr = parse_bang_expr(arena, lexer);
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
         return expr;
-    } break;
+    }
+    break;
 
     case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
