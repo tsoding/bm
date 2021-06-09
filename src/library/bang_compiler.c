@@ -293,6 +293,10 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             compile_typed_read(basm, type);
 
             result.type = type;
+        } else if (sv_eq(funcall.name, SV("halt"))) {
+            bang_funcall_expect_arity(funcall, 0);
+            basm_push_inst(basm, INST_HALT, word_u64(0));
+            result.type = BANG_TYPE_VOID;
         } else {
             Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
             if (proc == NULL) {
