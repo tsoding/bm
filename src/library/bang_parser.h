@@ -47,13 +47,6 @@ struct Bang_Binary_Op_Def {
 
 // TODO(#440): there are no unary operators in Bang
 
-struct Bang_Binary_Op {
-    Bang_Loc loc;
-    Bang_Binary_Op_Kind kind;
-    Bang_Expr *lhs;
-    Bang_Expr *rhs;
-};
-
 struct Bang_Funcall {
     Bang_Loc loc;
     String_View name;
@@ -81,7 +74,7 @@ union Bang_Expr_As {
     Bang_Funcall funcall;
     bool boolean;
     Bang_Var_Read var_read;
-    Bang_Binary_Op binary_op;
+    Bang_Binary_Op *binary_op;
 };
 static_assert(
     COUNT_BANG_EXPR_KINDS == 6,
@@ -89,11 +82,17 @@ static_assert(
     "Please update the union of those expressions accordingly. "
     "Thanks!");
 
-
 struct Bang_Expr {
     Bang_Loc loc;
     Bang_Expr_Kind kind;
     Bang_Expr_As as;
+};
+
+struct Bang_Binary_Op {
+    Bang_Loc loc;
+    Bang_Binary_Op_Kind kind;
+    Bang_Expr lhs;
+    Bang_Expr rhs;
 };
 
 struct Bang_Funcall_Arg {
