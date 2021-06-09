@@ -32,10 +32,20 @@ typedef enum {
     COUNT_BANG_BINARY_OP_KINDS,
 }  Bang_Binary_Op_Kind;
 
+typedef enum {
+    BINARY_OP_PREC0 = 0,
+    BINARY_OP_PREC1 = 1,
+    BINARY_OP_PREC2 = 2,
+    COUNT_BINARY_OP_PRECS,
+} Binary_Op_Prec;
+
 struct Bang_Binary_Op_Def {
+    Bang_Binary_Op_Kind kind;
     Bang_Token_Kind token_kind;
-    size_t precedence;
+    Binary_Op_Prec prec;
 };
+
+// TODO: there are no unary operators in Bang
 
 struct Bang_Binary_Op {
     Bang_Loc loc;
