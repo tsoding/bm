@@ -138,6 +138,18 @@ struct Bang_Proc_Def {
     Bang_Block *body;
 };
 
+// TODO(#433): there is no generic ptr type
+typedef enum {
+    BANG_TYPE_VOID = 0,
+    BANG_TYPE_I64,
+    BANG_TYPE_U8,
+    BANG_TYPE_BOOL,
+    BANG_TYPE_PTR,
+    COUNT_BANG_TYPES,
+} Bang_Type;
+
+const char *bang_type_name(Bang_Type type);
+bool bang_type_by_name(String_View name, Bang_Type *out_type);
 
 struct Bang_Var_Def {
     Bang_Loc loc;
