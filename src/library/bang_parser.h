@@ -45,7 +45,7 @@ struct Bang_Binary_Op_Def {
     Binary_Op_Prec prec;
 };
 
-// TODO: there are no unary operators in Bang
+// TODO(#440): there are no unary operators in Bang
 
 struct Bang_Binary_Op {
     Bang_Loc loc;
