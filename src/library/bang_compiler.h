@@ -8,8 +8,30 @@
 #define BANG_GLOBAL_VARS_CAPACITY 1024
 #define BANG_PROCS_CAPACITY 1024
 
+// TODO: there is no generic ptr type
+typedef enum {
+    BANG_TYPE_VOID = 0,
+    BANG_TYPE_I64,
+    BANG_TYPE_U8,
+    BANG_TYPE_BOOL,
+    BANG_TYPE_PTR,
+    COUNT_BANG_TYPES,
+} Bang_Type;
+
+bool bang_type_by_name(String_View name, Bang_Type *out_type);
+
+typedef struct {
+    const char *name;
+    size_t size;
+    Inst_Type read;
+    Inst_Type write;
+} Bang_Type_Def;
+
+Bang_Type_Def bang_type_def(Bang_Type type);
+
 typedef struct {
     Bang_Var_Def def;
+    Bang_Type type;
     Memory_Addr addr;
 } Compiled_Var;
 
@@ -42,6 +64,8 @@ typedef struct {
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name);
 
+void compile_typed_read(Basm *basm, Bang_Type type);
+void compile_typed_write(Basm *basm, Bang_Type type);
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
