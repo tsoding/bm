@@ -13,31 +13,56 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = false},
         [BANG_BINARY_OP_KIND_MINUS] = {.exists = false},
         [BANG_BINARY_OP_KIND_MULT]  = {.exists = false},
-        [BANG_BINARY_OP_KIND_LESS]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_LT]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_GE]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_NE]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
+        [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_EQ]    = {.exists = false},
     },
     [BANG_TYPE_I64] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_I64},
         [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_I64},
         [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTI,  .ret = BANG_TYPE_I64},
-        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTI,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_LT]    = {.exists = true, .inst = INST_LTI,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_GE]    = {.exists = true, .inst = INST_GEI,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_NE]    = {.exists = true, .inst = INST_NEI,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
+        [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQI,    .ret = BANG_TYPE_BOOL},
     },
     [BANG_TYPE_U8] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_U8},
         [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_U8},
         [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTU,  .ret = BANG_TYPE_U8},
-        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_LT]    = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_GE]    = {.exists = true, .inst = INST_GEU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_NE]    = {.exists = true, .inst = INST_NEU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
+        [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQU,    .ret = BANG_TYPE_BOOL},
     },
     [BANG_TYPE_BOOL] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = false},
         [BANG_BINARY_OP_KIND_MINUS] = {.exists = false},
         [BANG_BINARY_OP_KIND_MULT]  = {.exists = false},
-        [BANG_BINARY_OP_KIND_LESS]  = {.exists = false},
+        [BANG_BINARY_OP_KIND_LT]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_GE]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_NE]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_AND]   = {.exists = true, .inst = INST_ANDB, .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_OR]    = {.exists = true, .inst = INST_ORB,  .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_EQ]    = {.exists = false},
     },
     [BANG_TYPE_PTR] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_PTR},
         [BANG_BINARY_OP_KIND_MINUS] = {.exists = true, .inst = INST_MINUSI, .ret = BANG_TYPE_PTR},
         [BANG_BINARY_OP_KIND_MULT]  = {.exists = true, .inst = INST_MULTU,  .ret = BANG_TYPE_PTR},
-        [BANG_BINARY_OP_KIND_LESS]  = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_LT]    = {.exists = true, .inst = INST_LTU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_GE]    = {.exists = true, .inst = INST_GEU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_NE]    = {.exists = true, .inst = INST_NEU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
+        [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQU,    .ret = BANG_TYPE_BOOL},
     },
 };
 static_assert(
@@ -46,7 +71,7 @@ static_assert(
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 4,
+    COUNT_BANG_BINARY_OP_KINDS == 9,
     "The amount of binary operations have changed. "
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");

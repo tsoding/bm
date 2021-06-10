@@ -16,29 +16,56 @@
     } while (0)
 
 static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
-    [BANG_BINARY_OP_KIND_LESS] = {
-        .kind       = BANG_BINARY_OP_KIND_LESS,
-        .token_kind = BANG_TOKEN_KIND_LESS,
+    [BANG_BINARY_OP_KIND_AND] = {
+        .kind       = BANG_BINARY_OP_KIND_AND,
+        .token_kind = BANG_TOKEN_KIND_AND,
         .prec       = BINARY_OP_PREC0,
+    },
+    [BANG_BINARY_OP_KIND_OR] = {
+        .kind       = BANG_BINARY_OP_KIND_OR,
+        .token_kind = BANG_TOKEN_KIND_OR,
+        .prec       = BINARY_OP_PREC0,
+    },
+    [BANG_BINARY_OP_KIND_LT] = {
+        .kind       = BANG_BINARY_OP_KIND_LT,
+        .token_kind = BANG_TOKEN_KIND_LT,
+        .prec       = BINARY_OP_PREC1,
+    },
+    [BANG_BINARY_OP_KIND_GE] = {
+        .kind       = BANG_BINARY_OP_KIND_GE,
+        .token_kind = BANG_TOKEN_KIND_GE,
+        .prec       = BINARY_OP_PREC1,
+    },
+    [BANG_BINARY_OP_KIND_NE] = {
+        .kind       = BANG_BINARY_OP_KIND_NE,
+        .token_kind = BANG_TOKEN_KIND_NE,
+        .prec       = BINARY_OP_PREC1,
+    },
+    [BANG_BINARY_OP_KIND_EQ] = {
+        .kind       = BANG_BINARY_OP_KIND_EQ,
+        // TODO: introduce a separate token for equality
+        // Using the same tokens for assignment and equality is very confusing
+        .token_kind = BANG_TOKEN_KIND_EQ,
+        .prec       = BINARY_OP_PREC1,
     },
     [BANG_BINARY_OP_KIND_PLUS] = {
         .kind       = BANG_BINARY_OP_KIND_PLUS,
         .token_kind = BANG_TOKEN_KIND_PLUS,
-        .prec       = BINARY_OP_PREC1
+        .prec       = BINARY_OP_PREC2
     },
     [BANG_BINARY_OP_KIND_MINUS] = {
         .kind       = BANG_BINARY_OP_KIND_MINUS,
         .token_kind = BANG_TOKEN_KIND_MINUS,
-        .prec       = BINARY_OP_PREC1
+        .prec       = BINARY_OP_PREC2
     },
     [BANG_BINARY_OP_KIND_MULT] = {
         .kind       = BANG_BINARY_OP_KIND_MULT,
         .token_kind = BANG_TOKEN_KIND_MULT,
-        .prec       = BINARY_OP_PREC2
+        .prec       = BINARY_OP_PREC3
     },
 };
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 4,
+    COUNT_BANG_BINARY_OP_KINDS == 9,
     "The amount of binary operation kinds has changed. "
     "Please update the binary_op_defs table accordingly. "
     "Thanks!");
@@ -252,12 +279,16 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
     case BANG_TOKEN_KIND_MULT:
-    case BANG_TOKEN_KIND_LESS:
+    case BANG_TOKEN_KIND_LT:
+    case BANG_TOKEN_KIND_GE:
+    case BANG_TOKEN_KIND_NE:
+    case BANG_TOKEN_KIND_AND:
+    case BANG_TOKEN_KIND_OR:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
     case BANG_TOKEN_KIND_CLOSE_CURLY:
     case BANG_TOKEN_KIND_COLON:
-    case BANG_TOKEN_KIND_EQUALS:
+    case BANG_TOKEN_KIND_EQ:
     case BANG_TOKEN_KIND_SEMICOLON: {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: no primary expression starts with `%s`\n",
                 Bang_Loc_Arg(token.loc),
@@ -365,7 +396,7 @@ Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer)
         var_assign.loc = token.loc;
         var_assign.name = token.text;
     }
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_EQUALS);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_EQ);
     var_assign.value = parse_bang_expr(arena, lexer);
 
     return var_assign;
@@ -406,7 +437,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
             return stmt;
         } else {
             Bang_Token next_token = {0};
-            if (bang_lexer_peek(lexer, &next_token, 1) && next_token.kind == BANG_TOKEN_KIND_EQUALS) {
+            if (bang_lexer_peek(lexer, &next_token, 1) && next_token.kind == BANG_TOKEN_KIND_EQ) {
                 Bang_Stmt stmt = {0};
                 stmt.kind = BANG_STMT_KIND_VAR_ASSIGN;
                 stmt.as.var_assign = parse_bang_var_assign(arena, lexer);
@@ -421,14 +452,18 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
     case BANG_TOKEN_KIND_MULT:
-    case BANG_TOKEN_KIND_LESS:
+    case BANG_TOKEN_KIND_LT:
+    case BANG_TOKEN_KIND_GE:
+    case BANG_TOKEN_KIND_NE:
+    case BANG_TOKEN_KIND_AND:
+    case BANG_TOKEN_KIND_OR:
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
     case BANG_TOKEN_KIND_CLOSE_CURLY:
     case BANG_TOKEN_KIND_SEMICOLON:
     case BANG_TOKEN_KIND_COLON:
-    case BANG_TOKEN_KIND_EQUALS:
+    case BANG_TOKEN_KIND_EQ:
     case BANG_TOKEN_KIND_NUMBER:
     case BANG_TOKEN_KIND_LIT_STR: {
         // This is probably an expression, let's just fall through the entire switch construction and try to parse it as the expression
