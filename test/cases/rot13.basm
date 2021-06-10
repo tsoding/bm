@@ -3,12 +3,6 @@
 ; only this string needs to be changed
 %const secret = "Uryyb, jbeyq! Sebz EBG13."
 
-; TODO(#81): remove string length hack from rot13 example
-; After #77 is implemented
-; ---
-; this small hack will take care of length of strign
-%const secret_end = ""
-
 %const ROT13 = 13
 %const MOD   = 26
 
@@ -86,22 +80,20 @@ loop:
         plusi
 
         dup 0
-        push secret_end
+        push secret
+        push len(secret)
+        plusi
         eqi
         not
         jmp_if loop
 
 print:
-    push secret_end
+    push len(secret)
     push 10
     write8
 
     push secret
-    push 1
-    push secret_end
-    plusi
-    push secret
-    minusi
+    push len(secret)
     native write
 
     halt
