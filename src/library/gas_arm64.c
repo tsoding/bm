@@ -245,8 +245,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
         }
         break;
         case INST_NATIVE: {
-            if (inst.operand.as_u64 == 0) {
-                fprintf(output, "    // native write\n");
+            assert(inst.operand.as_u64 < basm->external_natives_size);
+            const char *const name = basm->external_natives[inst.operand.as_u64].name;
+
+            fprintf(output, "    // native %s\n", name);
+            if (strcmp(name, "write") == 0) {
                 fprintf(output, "    ldr x2, [x0, #-BM_WORD_SIZE]!\n");
                 fprintf(output, "    ldr x1, [x0, #-BM_WORD_SIZE]!\n");
                 fprintf(output, "    ldr x4, =memory\n");
@@ -256,6 +259,11 @@ void basm_save_to_file_as_gas_arm64(Basm *basm, OS_Target os_target, const char 
                 fprintf(output, "    mov x0, STDOUT\n");
                 fprintf(output, "    svc #0\n");
                 LOAD_SP;
+            } else {
+                fprintf(stderr, FL_Fmt": ERROR: unsupported native function `%s`\n",
+                        FL_Arg(basm->program_locations[i]),
+                        name);
+                exit(1);
             }
         }
         break;
