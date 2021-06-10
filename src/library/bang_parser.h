@@ -31,6 +31,9 @@ typedef enum {
     BANG_BINARY_OP_KIND_LT,
     BANG_BINARY_OP_KIND_GE,
     BANG_BINARY_OP_KIND_NE,
+    BANG_BINARY_OP_KIND_AND,
+    BANG_BINARY_OP_KIND_OR,
+    BANG_BINARY_OP_KIND_EQ,
     COUNT_BANG_BINARY_OP_KINDS,
 }  Bang_Binary_Op_Kind;
 
@@ -38,6 +41,7 @@ typedef enum {
     BINARY_OP_PREC0 = 0,
     BINARY_OP_PREC1 = 1,
     BINARY_OP_PREC2 = 2,
+    BINARY_OP_PREC3 = 3,
     COUNT_BINARY_OP_PRECS,
 } Binary_Op_Prec;
 
