@@ -43,7 +43,7 @@ static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
     },
     [BANG_BINARY_OP_KIND_EQ] = {
         .kind       = BANG_BINARY_OP_KIND_EQ,
-        // TODO: introduce a separate token for equality
+        // TODO(#445): introduce a separate token for equality
         // Using the same tokens for assignment and equality is very confusing
         .token_kind = BANG_TOKEN_KIND_EQ,
         .prec       = BINARY_OP_PREC1,
