@@ -25,6 +25,7 @@ typedef enum {
     BANG_TOKEN_KIND_NE,
     BANG_TOKEN_KIND_AND,
     BANG_TOKEN_KIND_OR,
+    BANG_TOKEN_KIND_EQ_EQ,
     COUNT_BANG_TOKEN_KINDS,
 } Bang_Token_Kind;
 

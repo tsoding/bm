@@ -98,14 +98,14 @@ proc next_board() {
 
       cell_ptr = boards_base + cast(ptr, board_size * board_next + row * board_cols + col);
 
-      if cell = cast(u8, 0) {
-        if nbors = 3 {
+      if cell == cast(u8, 0) {
+        if nbors == 3 {
           store_ptr(u8, cell_ptr, cast(u8, 1));
         } else {
           store_ptr(u8, cell_ptr, cast(u8, 0));
         }
       } else {
-        if nbors = 2 || nbors = 3 {
+        if nbors == 2 || nbors == 3 {
           store_ptr(u8, cell_ptr, cast(u8, 1));
         } else {
           store_ptr(u8, cell_ptr, cast(u8, 0));
