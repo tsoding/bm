@@ -277,8 +277,11 @@ stack_push_xmm(output, "xmm1");                         \
         }
         break;
         case INST_NATIVE: {
-            if (inst.operand.as_u64 == 0) {
-                fprintf(output, "    ;; native write\n");
+            assert(inst.operand.as_u64 < basm->external_natives_size);
+            const char *const name = basm->external_natives[inst.operand.as_u64].name;
+
+            fprintf(output, "    ;; native %s\n", name);
+            if (strcmp(name, "write") == 0) {
                 switch (os_target) {
                 case OS_TARGET_LINUX:
                 case OS_TARGET_MACOS:
@@ -308,7 +311,10 @@ stack_push_xmm(output, "xmm1");                         \
                 break;
                 }
             } else {
-                assert(false && "unsupported native function");
+                fprintf(stderr, FL_Fmt": ERROR: unsupported native function `%s`\n",
+                        FL_Arg(basm->program_locations[i]),
+                        name);
+                exit(1);
             }
         }
         break;
