@@ -1,0 +1,100 @@
+var heap_base: ptr;
+
+var table_base: ptr;
+var table_size: i64;
+var table_index: u8;
+
+var states_base: ptr;
+var state_size: i64;
+var state_current: i64;
+var state_next: i64;
+
+var display_base: ptr;
+
+var i: i64;
+var j: i64;
+var cell_ptr: ptr;
+var cell: u8;
+
+proc init() {
+  # Init lookup table
+  table_base = heap_base;
+  table_size = 8;
+  store_ptr(u8, table_base + cast(ptr, 0), cast(u8, 0));
+  store_ptr(u8, table_base + cast(ptr, 1), cast(u8, 1));
+  store_ptr(u8, table_base + cast(ptr, 2), cast(u8, 1));
+  store_ptr(u8, table_base + cast(ptr, 3), cast(u8, 1));
+  store_ptr(u8, table_base + cast(ptr, 4), cast(u8, 0));
+  store_ptr(u8, table_base + cast(ptr, 5), cast(u8, 1));
+  store_ptr(u8, table_base + cast(ptr, 6), cast(u8, 1));
+  store_ptr(u8, table_base + cast(ptr, 7), cast(u8, 0));
+
+  # Init 2 state buffers
+  state_size = 30;
+  state_current = 0;
+  states_base = table_base + cast(ptr, table_size);
+  store_ptr(u8, states_base + cast(ptr, state_size - 2), cast(u8, 1));
+
+  # Display buffer
+  display_base = states_base + cast(ptr, state_size * 2);
+}
+
+proc print_state_current() {
+  i = 0;
+  while i < state_size {
+    cell_ptr = states_base + cast(ptr, state_current * state_size + i);
+    cell = load_ptr(u8, cell_ptr);
+
+    cell_ptr = display_base + cast(ptr, i);
+    if cell < cast(u8, 1) {
+      store_ptr(u8, cell_ptr, cast(u8, 32));
+    } else {
+      store_ptr(u8, cell_ptr, cast(u8, 42));
+    }
+
+    i = i + 1;
+  }
+
+  cell_ptr = display_base + cast(ptr, state_size);
+  store_ptr(u8, cell_ptr, cast(u8, 10));
+  write_ptr(display_base, state_size + 1);
+}
+
+proc next_state() {
+  state_next = 1 - state_current;
+  i = 1;
+  while i < state_size - 1 {
+    table_index = cast(u8, 0);
+
+    cell_ptr = states_base + cast(ptr, state_current * state_size + i - 1);
+    cell = load_ptr(u8, cell_ptr);
+    table_index = table_index * cast(u8, 2) + cell;
+
+    cell_ptr = states_base + cast(ptr, state_current * state_size + i);
+    cell = load_ptr(u8, cell_ptr);
+    table_index = table_index * cast(u8, 2) + cell;
+
+    cell_ptr = states_base + cast(ptr, state_current * state_size + i + 1);
+    cell = load_ptr(u8, cell_ptr);
+    table_index = table_index * cast(u8, 2) + cell;
+
+    cell_ptr = table_base + cast(ptr, table_index);
+    cell = load_ptr(u8, cell_ptr);
+
+    cell_ptr = states_base + cast(ptr, state_next * state_size + i);
+    store_ptr(u8, cell_ptr, cell);
+
+    i = i + 1;
+  }
+  state_current = state_next;
+}
+
+proc main() {
+  init();
+  j = 0;
+  while j < state_size - 2 {
+    print_state_current();
+    next_state();
+    j = j + 1;
+  }
+}
