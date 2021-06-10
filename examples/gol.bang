@@ -1,0 +1,132 @@
+var heap_base: ptr;
+
+var boards_base: ptr;
+var board_rows: i64;
+var board_cols: i64;
+var board_size: i64;
+var board_current: i64;
+var board_next: i64;
+
+var display_base: ptr;
+
+var cell_ptr: ptr;
+var cell: u8;
+
+var row: i64;
+var col: i64;
+var drow: i64;
+var dcol: i64;
+
+var nbors: i64;
+
+var i: i64;
+
+proc init() {
+  boards_base = heap_base;
+  board_rows = 10;
+  board_cols = 10;
+  board_size = board_rows * board_cols;
+  board_current = 0;
+
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 0 + 1), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 1 + 2), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 2), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 1), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 0), cast(u8, 1));
+
+  display_base = boards_base + cast(ptr, board_size * 2);
+}
+
+proc print_board_current() {
+  row = 0;
+  while row < board_rows {
+    col = 0;
+    while col < board_cols {
+      cell_ptr = boards_base + cast(ptr, board_size * board_current + row * board_cols + col);
+      cell = load_ptr(u8, cell_ptr);
+
+      cell_ptr = display_base + cast(ptr, col);
+      if cell < cast(u8, 1) {
+        store_ptr(u8, cell_ptr, cast(u8, 32));
+      } else {
+        store_ptr(u8, cell_ptr, cast(u8, 42));
+      }
+
+      col = col + 1;
+    }
+
+    cell_ptr = display_base + cast(ptr, board_cols);
+    store_ptr(u8, cell_ptr, cast(u8, 10));
+    write_ptr(display_base, board_cols + 1);
+
+    row = row + 1;
+  }
+}
+
+proc next_board() {
+  board_next = 1 - board_current;
+
+  row = 0;
+  while row < board_rows {
+    col = 0;
+    while col < board_cols {
+      # Nbors begin
+      nbors = 0;
+      drow = row - 1;
+      while drow < row + 2 {
+        dcol = col - 1;
+        while dcol < col + 2 {
+          if drow >= 0 && drow < board_rows {
+            if dcol >= 0 && dcol < board_cols {
+              if drow != row || dcol != col {
+                cell_ptr = boards_base + cast(ptr, board_size * board_current + drow * board_cols + dcol);
+                cell = load_ptr(u8, cell_ptr);
+                if cell >= cast(u8, 1) {
+                  nbors = nbors + 1;
+                }
+              }
+            }
+          }
+          dcol = dcol + 1;
+        }
+        drow = drow + 1;
+      }
+      # Nbors end
+
+      cell_ptr = boards_base + cast(ptr, board_size * board_current + row * board_cols + col);
+      cell = load_ptr(u8, cell_ptr);
+
+      cell_ptr = boards_base + cast(ptr, board_size * board_next + row * board_cols + col);
+
+      if cell = cast(u8, 0) {
+        if nbors = 3 {
+          store_ptr(u8, cell_ptr, cast(u8, 1));
+        } else {
+          store_ptr(u8, cell_ptr, cast(u8, 0));
+        }
+      } else {
+        if nbors = 2 || nbors = 3 {
+          store_ptr(u8, cell_ptr, cast(u8, 1));
+        } else {
+          store_ptr(u8, cell_ptr, cast(u8, 0));
+        }
+      }
+
+      col = col + 1;
+    }
+    row = row + 1;
+  }
+
+  board_current = board_next;
+}
+
+proc main() {
+  init();
+  i = 0;
+  while i < 10 {
+    print_board_current();
+    next_board();
+    write("------------------------------\n");
+    i = i + 1;
+  }
+}
