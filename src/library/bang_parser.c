@@ -45,7 +45,7 @@ static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
         .kind       = BANG_BINARY_OP_KIND_EQ,
         // TODO(#445): introduce a separate token for equality
         // Using the same tokens for assignment and equality is very confusing
-        .token_kind = BANG_TOKEN_KIND_EQ,
+        .token_kind = BANG_TOKEN_KIND_EQ_EQ,
         .prec       = BINARY_OP_PREC1,
     },
     [BANG_BINARY_OP_KIND_PLUS] = {
@@ -289,6 +289,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_CLOSE_CURLY:
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQ:
+    case BANG_TOKEN_KIND_EQ_EQ:
     case BANG_TOKEN_KIND_SEMICOLON: {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: no primary expression starts with `%s`\n",
                 Bang_Loc_Arg(token.loc),
@@ -464,6 +465,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_SEMICOLON:
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQ:
+    case BANG_TOKEN_KIND_EQ_EQ:
     case BANG_TOKEN_KIND_NUMBER:
     case BANG_TOKEN_KIND_LIT_STR: {
         // This is probably an expression, let's just fall through the entire switch construction and try to parse it as the expression
