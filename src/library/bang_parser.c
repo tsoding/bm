@@ -16,9 +16,19 @@
     } while (0)
 
 static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
-    [BANG_BINARY_OP_KIND_LESS] = {
-        .kind       = BANG_BINARY_OP_KIND_LESS,
-        .token_kind = BANG_TOKEN_KIND_LESS,
+    [BANG_BINARY_OP_KIND_LT] = {
+        .kind       = BANG_BINARY_OP_KIND_LT,
+        .token_kind = BANG_TOKEN_KIND_LT,
+        .prec       = BINARY_OP_PREC0,
+    },
+    [BANG_BINARY_OP_KIND_GE] = {
+        .kind       = BANG_BINARY_OP_KIND_GE,
+        .token_kind = BANG_TOKEN_KIND_GE,
+        .prec       = BINARY_OP_PREC0,
+    },
+    [BANG_BINARY_OP_KIND_NE] = {
+        .kind       = BANG_BINARY_OP_KIND_NE,
+        .token_kind = BANG_TOKEN_KIND_NE,
         .prec       = BINARY_OP_PREC0,
     },
     [BANG_BINARY_OP_KIND_PLUS] = {
@@ -38,7 +48,7 @@ static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
     },
 };
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 4,
+    COUNT_BANG_BINARY_OP_KINDS == 6,
     "The amount of binary operation kinds has changed. "
     "Please update the binary_op_defs table accordingly. "
     "Thanks!");
@@ -252,7 +262,9 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
     case BANG_TOKEN_KIND_MULT:
-    case BANG_TOKEN_KIND_LESS:
+    case BANG_TOKEN_KIND_LT:
+    case BANG_TOKEN_KIND_GE:
+    case BANG_TOKEN_KIND_NE:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
     case BANG_TOKEN_KIND_CLOSE_CURLY:
@@ -421,7 +433,9 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
     case BANG_TOKEN_KIND_MULT:
-    case BANG_TOKEN_KIND_LESS:
+    case BANG_TOKEN_KIND_LT:
+    case BANG_TOKEN_KIND_GE:
+    case BANG_TOKEN_KIND_NE:
     case BANG_TOKEN_KIND_OPEN_PAREN:
     case BANG_TOKEN_KIND_CLOSE_PAREN:
     case BANG_TOKEN_KIND_OPEN_CURLY:
