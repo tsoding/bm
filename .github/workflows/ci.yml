@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -qq nasm
-      - name: build all and examples
+      - name: build bm
         run: |
           cd bm
           $CC -o nobuild nobuild.c
@@ -42,13 +42,29 @@ jobs:
         env:
           CC: clang
           CXX: clang++
+      - name: build debasm
+        run: |
+          cd debasm
+          $CC -o nobuild nobuild.c
+          ./nobuild
+        env:
+          CC: gcc
+          CXX: g++
   build-macos:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v1
-      - name: build all and examples
+      - name: build bm
         run: |
           cd bm
+          $CC -o nobuild nobuild.c
+          ./nobuild test
+        env:
+          CC: clang
+          CXX: clang++
+      - name: build debasm
+        run: |
+          cd debasm
           $CC -o nobuild nobuild.c
           ./nobuild test
         env:
@@ -64,11 +80,18 @@ jobs:
       - uses: actions/checkout@v1
         # this runs vcvarsall for us, so we get the MSVC toolchain in PATH.
       - uses: seanmiddleditch/gha-setup-vsdevenv@master
-      - name: build all and examples
+      - name: build bm
         shell: cmd
         # this replaces default PowerShell, which can't fail the build
         run: |
           cd .\bm
           cl.exe nobuild.c
-          .\nobuild.exe test
+          .\nobuild.exe
+      - name: build debasm
+        shell: cmd
+        # this replaces default PowerShell, which can't fail the build
+        run: |
+          cd .\debasm
+          cl.exe nobuild.c
+          .\nobuild.exe
 # TODO(#21): there is no CI build for FreeBSD
