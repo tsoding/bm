@@ -31,14 +31,4 @@
     } while(0)
 #endif // _WIN32
 
-inline static void astyle_format_folder(const char *folder_path) {
-    FOREACH_FILE_IN_DIR(file, folder_path, {
-        if (ENDS_WITH(file, ".c") || ENDS_WITH(file, ".h"))
-        {
-            const char *file_path = PATH(folder_path, file);
-            CMD("astyle", "--style=kr", file_path);
-        }
-    });
-}
-
 #endif // NOBUILD_GLOBAL_H_

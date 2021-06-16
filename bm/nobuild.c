@@ -17,15 +17,11 @@
 #define LIBS         "-ldl", "-lm"
 #endif // _WIN32
 
-int main(int argc, char **argv)
+int main(void)
 {
-    if (argc >= 2 && strcmp(argv[1], "fmt") == 0) {
-        astyle_format_folder("src");
-    } else {
-        MKDIRS("bin");
-        CC("bin", "bme", PATH("src", "bme.c"));
-        CC("bin", "bmr", PATH("src", "bmr.c"));
-    }
+    MKDIRS("bin");
+    CC("bin", "bme", PATH("src", "bme.c"));
+    CC("bin", "bmr", PATH("src", "bmr.c"));
 
     return 0;
 }
