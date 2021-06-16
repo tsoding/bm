@@ -15,7 +15,8 @@
         CMD("cl.exe", CFLAGS, \
             CONCAT("/Fe.\\", out_dir), \
             INCLUDES, \
-            UNITS); \
+            UNITS, \
+            entry_unit); \
     } while(0)
 #else
 #define INCLUDE_FLAG(path) CONCAT("-I", (path))
