@@ -10,9 +10,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -qq nasm
-      - name: build all and examples
+      - name: build bm
         run: |
           cd bm
+          $CC -o nobuild nobuild.c
+          ./nobuild
+        env:
+          CC: gcc
+          CXX: g++
+      - name: build debasm
+        run: |
+          cd debasm
           $CC -o nobuild nobuild.c
           ./nobuild
         env:
