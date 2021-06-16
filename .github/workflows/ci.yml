@@ -74,6 +74,14 @@ jobs:
         env:
           CC: clang
           CXX: clang++
+      - name: build basm
+        run: |
+          cd basm
+          $CC -o nobuild nobuild.c
+          ./nobuild
+        env:
+          CC: clang
+          CXX: clang++
   build-macos:
     runs-on: macOS-latest
     steps:
