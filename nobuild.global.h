@@ -16,7 +16,7 @@
             CONCAT("/Fe", out_dir), \
             CONCAT("/Fo", out_dir), \
             INCLUDES, \
-            UNITS) \
+            UNITS); \
     } while(0)
 #else
 #define INCLUDE_FLAG(path) CONCAT("-I", (path))
