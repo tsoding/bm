@@ -10,10 +10,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install astyle
-      - name: bootstrap building tool
+      - name: verify formatting
         run: |
-          cc -o nobuild nobuild.c
-      - name: validate formatting
-        run: |
-          ./nobuild fmt
+          find -type f -name \*.[ch] -exec astyle --style=kr {} \;
           git diff --exit-code

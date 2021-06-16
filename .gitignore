@@ -1,17 +1,2 @@
-*.bm
-*.bm.sym
-*.asm
-*.o
-*.exe
-*.ilk
-*.obj
-*.pdb
-bme
-basm
-debasm
-bdb
-build/
-vendor/
 nobuild
-
 *.orig
