@@ -14,7 +14,7 @@
     do { \
         CMD("cl.exe", CFLAGS, \
             CONCAT("/Fe.\\", out_dir), \
-            CONCAT("/Fo.\\", out_dir), \
+            // CONCAT("/Fo.\\", out_dir), \
             INCLUDES, \
             UNITS); \
     } while(0)
