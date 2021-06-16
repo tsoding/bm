@@ -18,11 +18,15 @@
 #define LIBS         "-ldl", "-lm"
 #endif // _WIN32
 
-int main()
+int main(int argc, char **argv)
 {
-    MKDIRS("bin");
-    CC("bin", "bme", "./src/bme.c");
-    CC("bin", "bmr", "./src/bmr.c");
+    if (argc >= 2 && strcmp(argv[1], "fmt") == 0) {
+        astyle_format_folder("src");
+    } else {
+        MKDIRS("bin");
+        CC("bin", "bme", "./src/bme.c");
+        CC("bin", "bmr", "./src/bmr.c");
+    }
 
     return 0;
 }
