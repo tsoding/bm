@@ -4,11 +4,12 @@
 
 #define CFLAGS COMMON_FLAGS
 
-#define INCLUDES "-I../common/", \
-                 "-I../bm/src/"
-#define COMMON_UNITS "../common/sv.c", \
-                     "../common/arena.c"
-#define BM_UNITS "../bm/src/bm.c", "../bm/src/types.c"
+#define INCLUDES INCLUDE_FLAG(PATH("..", "common")), \
+                 INCLUDE_FLAG(PATH("..", "bm", "src"))
+#define COMMON_UNITS PATH("..", "common", "sv.c"), \
+                     PATH("..", "common", "arena.c")
+#define BM_UNITS PATH("..", "bm", "src", "bm.c"), \
+                 PATH("..", "bm", "src", "types.c")
 #define UNITS COMMON_UNITS, BM_UNITS
 #define LIBS "-lm"
 
@@ -16,7 +17,7 @@ int main()
 {
     // TODO: bdb subproject build is not crossplatform
     MKDIRS("bin");
-    CMD("cc", CFLAGS, INCLUDES, "-o", "./bin/bdb", "./src/bdb.c", UNITS, LIBS);
+    CC("bin", "bdb", PATH("src", "bdb.c"));
 
     return 0;
 }
