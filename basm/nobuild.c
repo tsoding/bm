@@ -36,7 +36,7 @@ int main()
     CC("bin", "basm2dot", PATH("src", "basm2dot.c"));
     CC("bin", "expr2dot", PATH("src", "expr2dot.c"));
 
-    // TODO: test is not implemented
+    // TODO: basm tests are not implemented
 
     return 0;
 }

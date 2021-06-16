@@ -15,7 +15,6 @@
 
 int main()
 {
-    // TODO: bdb subproject build is not crossplatform
     MKDIRS("bin");
     CC("bin", "bdb", PATH("src", "bdb.c"));
 

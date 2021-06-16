@@ -7,6 +7,8 @@ static const char *const subdirs[] = {
 };
 static const size_t subdirs_count = sizeof(subdirs) / sizeof(subdirs[0]);
 
+// TODO: the root nobuild does not have the fmt subcommand
+
 int main()
 {
     for (size_t i = 0; i < subdirs_count; ++i) {
