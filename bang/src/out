@@ -1,4 +1,0 @@
-"bang.c", \
-"bang_compiler.c", \
-"bang_lexer.c", \
-"bang_parser.c"
