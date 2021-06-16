@@ -64,5 +64,4 @@ jobs:
           cl.exe nobuild.c
           .\nobuild.exe test
           dir /s /b
-          tree
 # TODO(#21): there is no CI build for FreeBSD

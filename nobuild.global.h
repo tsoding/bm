@@ -13,7 +13,8 @@
 #define CC(out_dir, out_name, entry_unit) \
     do { \
         CMD("cl.exe", CFLAGS, \
-            CONCAT("/Fe.\\", out_dir), \
+            CONCAT("/Fe.\\", out_dir, "\\"), \
+            CONCAT("/Fo.\\", out_dir, "\\"), \
             INCLUDES, \
             UNITS, \
             entry_unit); \
