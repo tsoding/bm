@@ -12,7 +12,5 @@ jobs:
           sudo apt-get install astyle
       - name: verify formatting
         run: |
-          cd bm
-          cc -o nobuild nobuild.c
-          ./nobuild fmt
+          find -type f -name \*.[ch] -exec astyle --style=kr {} \;
           git diff --exit-code
