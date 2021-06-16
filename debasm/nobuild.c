@@ -10,7 +10,12 @@
 #define BM_UNITS "../bm/src/bm.c", \
                  "../bm/src/types.c"
 #define UNITS COMMON_UNITS, BM_UNITS
+
+#ifdef _WIN32
+#define LIBS ""
+#else
 #define LIBS "-lm"
+#endif
 
 int main()
 {
