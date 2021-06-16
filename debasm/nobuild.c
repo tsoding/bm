@@ -20,7 +20,7 @@
 int main()
 {
     MKDIRS("bin");
-    CMD("cc", CFLAGS, INCLUDES, "-o", PATH("bin", "debasm"), UNITS, PATH("src", "debasm.c"), LIBS);
+    CC("bin", "debasm", PATH("src", "debasm.c"));
 
     return 0;
 }
