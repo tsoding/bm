@@ -42,6 +42,14 @@ jobs:
         env:
           CC: gcc
           CXX: g++
+      - name: build bang
+        run: |
+          cd bang
+          $CC -o nobuild nobuild.c
+          ./nobuild
+        env:
+          CC: gcc
+          CXX: g++
   build-linux-clang:
     runs-on: ubuntu-18.04
     steps:
@@ -77,6 +85,14 @@ jobs:
       - name: build basm
         run: |
           cd basm
+          $CC -o nobuild nobuild.c
+          ./nobuild
+        env:
+          CC: clang
+          CXX: clang++
+      - name: build bang
+        run: |
+          cd bang
           $CC -o nobuild nobuild.c
           ./nobuild
         env:
@@ -118,6 +134,14 @@ jobs:
         env:
           CC: clang
           CXX: clang++
+      - name: build bang
+        run: |
+          cd bang
+          $CC -o nobuild nobuild.c
+          ./nobuild test
+        env:
+          CC: clang
+          CXX: clang++
   build-windows-msvc:
     runs-on: windows-2019
     steps:
@@ -154,6 +178,13 @@ jobs:
         # this replaces default PowerShell, which can't fail the build
         run: |
           cd .\basm
+          cl.exe nobuild.c
+          .\nobuild.exe
+      - name: build bang
+        shell: cmd
+        # this replaces default PowerShell, which can't fail the build
+        run: |
+          cd .\bang
           cl.exe nobuild.c
           .\nobuild.exe
 # TODO(#21): there is no CI build for FreeBSD
