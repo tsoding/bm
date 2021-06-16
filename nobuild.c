@@ -7,7 +7,7 @@ static const char *const subdirs[] = {
 };
 static const size_t subdirs_count = sizeof(subdirs) / sizeof(subdirs[0]);
 
-// TODO: the root nobuild does not have the fmt subcommand
+// TODO(#452): the root nobuild does not have the fmt subcommand
 
 int main()
 {
