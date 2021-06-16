@@ -9,6 +9,12 @@
 #endif
 
 #define CC(out_path, entry_unit) \
-    CMD("cc", CFLAGS, INCLUDES, "-o", out_path, UNITS, entry_unit, LIBS)
+    do { \
+        const char *cc = getenv("CC"); \
+        if (cc == NULL) { \
+            cc = "cc"; \
+        } \
+        CMD(cc, CFLAGS, INCLUDES, "-o", out_path, UNITS, entry_unit, LIBS); \
+    } while(0)
 
 #endif // NOBUILD_GLOBAL_H_
