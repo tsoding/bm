@@ -2,6 +2,8 @@
 #include "../nobuild.h"
 #include "../nobuild.global.h"
 
+#define CFLAGS COMMON_FLAGS
+
 #define INCLUDES "-I../common/", \
                  "-I../bm/src/"
 #define COMMON_UNITS "../common/sv.c", \
