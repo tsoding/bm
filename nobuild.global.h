@@ -8,13 +8,34 @@
 #define COMMON_FLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-Wmissing-prototypes", "-Wconversion", "-Wno-missing-braces", "-pedantic", "-fno-strict-aliasing", "-ggdb", "-std=c11"
 #endif
 
-#define CC(out_path, entry_unit) \
+#ifdef _WIN32
+#define INCLUDE_FLAG(path) "/I", (path)
+#define CC(out_dir, out_name, entry_unit) \
+    do { \
+        CMD("cl.exe", CFLAGS, \
+            CONCAT("/Fe", out_dir), \
+            CONCAT("/Fo", out_dir), \
+            INCLUDES, \
+            UNITS) \
+    } while(0)
+#else
+#define INCLUDE_FLAG(path) CONCAT("-I", (path))
+#define CC(out_dir, out_name, entry_unit) \
     do { \
         const char *cc = getenv("CC"); \
         if (cc == NULL) { \
             cc = "cc"; \
         } \
-        CMD(cc, CFLAGS, INCLUDES, "-o", out_path, UNITS, entry_unit, LIBS); \
+        CMD(cc, CFLAGS, INCLUDES, "-o", PATH(out_dir, out_name), UNITS, entry_unit, LIBS); \
     } while(0)
+#endif // _WIN32
+
+// CMD(cc(), CFLAGS,
+//     "/Fe.\\build\\toolchain\\",
+//     "/Fo.\\build\\toolchain\\",
+//     "/I", PATH("src", "library"),
+//     PATH("src", "toolchain", CONCAT(name, ".c")),
+//     "bm.lib",
+//     "/link", CONCAT("/LIBPATH:", PATH("build", "library")));
 
 #endif // NOBUILD_GLOBAL_H_
