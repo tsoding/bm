@@ -94,7 +94,6 @@ typedef struct {
 
 typedef union {
     Emit_Inst_Statement as_emit_inst;
-    // TODO(#327): Remove redundant prefix `bind` from *_Statement types
     Label_Statement as_label;
     Const_Statement as_const;
     Native_Statement as_native;
