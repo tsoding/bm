@@ -31,12 +31,4 @@
     } while(0)
 #endif // _WIN32
 
-// CMD(cc(), CFLAGS,
-//     "/Fe.\\build\\toolchain\\",
-//     "/Fo.\\build\\toolchain\\",
-//     "/I", PATH("src", "library"),
-//     PATH("src", "toolchain", CONCAT(name, ".c")),
-//     "bm.lib",
-//     "/link", CONCAT("/LIBPATH:", PATH("build", "library")));
-
 #endif // NOBUILD_GLOBAL_H_
