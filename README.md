@@ -1,16 +1,16 @@
 # bm
 
-Simple compiler ecosystem. Includes the backend and frontend for a couple of simple languages.
+Simple compiler ecosystem. Includes the backend and frontend for a couple of languages.
 
 ![logo](./logo/birch-296x328.png)
 
 ## Subprojects
 
-- [bm](./bm) -- VM Bytecode Definitions and Emulators.
-- [basm](./basm) -- Assembler for the VM Bytecode.
-- [debasm](./debasm) -- Disassembler for the VM Bytecode.
-- [bdb](./bdb) -- Debugger for the VM Bytecode.
-- [bang](./bang) -- Procedural Programming Language that Compiles to the VM Bytecode.
+- [bm](./bm) — VM Bytecode Definitions and Emulators.
+- [basm](./basm) — Assembler for the VM Bytecode.
+- [debasm](./debasm) — Disassembler for the VM Bytecode.
+- [bdb](./bdb) — Debugger for the VM Bytecode.
+- [bang](./bang) — Procedural Programming Language that Compiles to the VM Bytecode.
 
 ## Quick Start
 
