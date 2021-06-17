@@ -487,7 +487,7 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     break;
 
     case BANG_VAR_STACK_STORAGE: {
-        assert(false && "TODO: assigning to stack variable is not implemented");
+        assert(false && "TODO(#456): assigning to stack variable is not implemented");
     }
     break;
     }
