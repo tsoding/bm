@@ -420,7 +420,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
         exit(1);
     }
 
-    static_assert(COUNT_BANG_STMT_KINDS == 4, "The amount of statements have changed. Please update the parse_bang_stmt function to take that into account");
+    static_assert(COUNT_BANG_STMT_KINDS == 5, "The amount of statements have changed. Please update the parse_bang_stmt function to take that into account");
 
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
@@ -433,6 +433,11 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
             Bang_Stmt stmt = {0};
             stmt.kind = BANG_STMT_KIND_WHILE;
             stmt.as.hwile = parse_bang_while(arena, lexer);
+            return stmt;
+        } else if (sv_eq(token.text, SV("var"))) {
+            Bang_Stmt stmt = {0};
+            stmt.kind = BANG_STMT_KIND_VAR_DEF;
+            stmt.as.var_def = parse_bang_var_def(lexer);
             return stmt;
         } else {
             Bang_Token next_token = {0};

@@ -2,6 +2,13 @@
 
 // TODO(#426): bang does not support type casting
 
+#define UNIMPLEMENTED \
+    do { \
+        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
+                __FILE__, __LINE__, __func__); \
+        abort(); \
+    } while(0)
+
 typedef struct {
     bool exists;
     Inst_Type inst;
@@ -130,7 +137,7 @@ void compile_typed_write(Basm *basm, Bang_Type type)
 
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
 {
-    Compiled_Var *var = bang_get_global_var_by_name(bang, var_read.name);
+    Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_read.name);
     if (var == NULL) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: could not read non-existing variable `"SV_Fmt"`\n",
                 Bang_Loc_Arg(var_read.loc),
@@ -138,8 +145,18 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
         exit(1);
     }
 
-    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    compile_typed_read(basm, var->type);
+    switch (var->storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        compile_typed_read(basm, var->type);
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        assert(false && "TODO(#454): reading stack variables is not implemented");
+    }
+    break;
+    }
 
     return var->type;
 }
@@ -236,9 +253,19 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                 exit(1);
             }
 
-            Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
-            basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-            result.type = BANG_TYPE_PTR;
+            Compiled_Var *var = bang_get_compiled_var_by_name(bang, arg.as.var_read.name);
+            switch (var->storage) {
+            case BANG_VAR_STATIC_STORAGE: {
+                basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+                result.type = BANG_TYPE_PTR;
+            }
+            break;
+
+            case BANG_VAR_STACK_STORAGE: {
+                assert(false && "TODO(#455): Taking a pointer to stack variable is not implemented");
+            }
+            break;
+            }
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
             Bang_Funcall_Arg *args = funcall.args;
@@ -400,11 +427,34 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm->program[else_jmp_addr].operand = word_u64(end_addr);
 }
 
-Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
+void bang_scope_push_var(Bang_Scope *scope, Compiled_Var var)
 {
-    for (size_t i = 0; i < bang->global_vars_count; ++i) {
-        if (sv_eq(bang->global_vars[i].def.name, name)) {
-            return &bang->global_vars[i];
+    assert(scope);
+    assert(scope->vars_count < BANG_SCOPE_VARS_CAPACITY);
+    scope->vars[scope->vars_count++] = var;
+}
+
+Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View name)
+{
+    assert(scope);
+
+    for (size_t i = 0; i < scope->vars_count; ++i) {
+        if (sv_eq(scope->vars[i].def.name, name)) {
+            return &scope->vars[i];
+        }
+    }
+
+    return NULL;
+}
+
+Compiled_Var *bang_get_compiled_var_by_name(Bang *bang, String_View name)
+{
+    for (Bang_Scope *scope = bang->scope;
+            scope != NULL;
+            scope = scope->parent) {
+        Compiled_Var *var = bang_scope_get_compiled_var_by_name(scope, name);
+        if (var != NULL) {
+            return var;
         }
     }
     return NULL;
@@ -412,7 +462,7 @@ Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name)
 
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign)
 {
-    Compiled_Var *var = bang_get_global_var_by_name(bang, var_assign.name);
+    Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_assign.name);
     if (var == NULL) {
         fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign non-existing variable `"SV_Fmt"`\n",
                 Bang_Loc_Arg(var_assign.loc),
@@ -420,18 +470,28 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
         exit(1);
     }
 
-    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    switch (var->storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+        if (expr.type != var->type) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                    Bang_Loc_Arg(var_assign.loc),
+                    bang_type_def(expr.type).name,
+                    bang_type_def(var->type).name);
+            exit(1);
+        }
 
-    if (expr.type != var->type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                Bang_Loc_Arg(var_assign.loc),
-                bang_type_def(expr.type).name,
-                bang_type_def(var->type).name);
-        exit(1);
+        compile_typed_write(basm, expr.type);
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        assert(false && "TODO(#456): assigning to stack variable is not implemented");
+    }
+    break;
     }
 
-    compile_typed_write(basm, expr.type);
 }
 
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
@@ -453,6 +513,7 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
     const Inst_Addr body_end_addr = basm->program_size;
     basm->program[fallthrough_addr].operand = word_u64(body_end_addr);
 }
+
 
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
@@ -477,6 +538,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         compile_bang_while_into_basm(bang, basm, stmt.as.hwile);
         break;
 
+    case BANG_STMT_KIND_VAR_DEF:
+        compile_stack_var_def_into_basm(bang, basm, stmt.as.var_def);
+        break;
+
     case COUNT_BANG_STMT_KINDS:
     default:
         assert(false && "compile_stmt_into_basm: unreachable");
@@ -486,10 +551,12 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
+    bang_push_new_scope(bang);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
+    bang_pop_scope(bang);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
@@ -521,6 +588,7 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
     bang->procs[bang->procs_count++] = proc;
 
     compile_block_into_basm(bang, basm, proc_def.body);
+
     basm_push_inst(basm, INST_RET, word_u64(0));
 }
 
@@ -546,42 +614,6 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 }
 
-void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
-{
-    Bang_Type type = 0;
-    if (!bang_type_by_name(var_def.type_name, &type)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.type_name));
-        exit(1);
-    }
-
-    if (type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
-                Bang_Loc_Arg(var_def.loc),
-                bang_type_def(type).name);
-        exit(1);
-    }
-
-    Compiled_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
-    if (existing_var) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.name));
-        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_var->def.loc));
-        exit(1);
-    }
-
-    Compiled_Var new_var = {0};
-    new_var.def = var_def;
-    new_var.addr = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
-    new_var.type = type;
-
-    assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
-    bang->global_vars[bang->global_vars_count++] = new_var;
-}
-
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
 {
     for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
@@ -591,7 +623,7 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
         }
         break;
         case BANG_TOP_KIND_VAR: {
-            compile_var_def_into_basm(bang, basm, top->as.var);
+            compile_static_var_def_into_basm(bang, basm, top->as.var);
         }
         break;
         case COUNT_BANG_TOP_KINDS:
@@ -619,9 +651,11 @@ void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_na
 
 void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_name)
 {
-    Compiled_Var *heap_base_var = bang_get_global_var_by_name(bang, heap_base_var_name);
+    assert(bang->scope != NULL);
+    Compiled_Var *heap_base_var = bang_get_compiled_var_by_name(bang, heap_base_var_name);
 
     if (heap_base_var != NULL) {
+        assert(heap_base_var->storage == BANG_VAR_STATIC_STORAGE);
         if (heap_base_var->type != BANG_TYPE_PTR) {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`\n",
                     Bang_Loc_Arg(heap_base_var->def.loc),
@@ -636,4 +670,99 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
                &heap_base_addr,
                sizeof(heap_base_addr));
     }
+}
+
+void bang_prepare_var_stack(Bang *bang, Basm *basm)
+{
+    basm_push_byte_array_to_memory(basm, BANG_STACK_CAPACITY, 0);
+    const Memory_Addr stack_start_addr = BANG_STACK_CAPACITY;
+
+    bang->stack_top_var_addr =
+        basm_push_buffer_to_memory(
+            basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
+    bang->stack_frame_var_addr =
+        basm_push_buffer_to_memory(
+            basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
+}
+
+void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    Bang_Type type = 0;
+    if (!bang_type_by_name(var_def.type_name, &type)) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.type_name));
+        exit(1);
+    }
+
+    if (type == BANG_TYPE_VOID) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
+                Bang_Loc_Arg(var_def.loc),
+                bang_type_def(type).name);
+        exit(1);
+    }
+
+    Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
+    if (existing_var) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_var->def.loc));
+        exit(1);
+    }
+
+    Compiled_Var new_var = {0};
+    new_var.def = var_def;
+    new_var.storage = BANG_VAR_STATIC_STORAGE;
+    new_var.addr = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
+    new_var.type = type;
+
+    bang_scope_push_var(bang->scope, new_var);
+}
+
+void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    Bang_Type type = 0;
+    if (!bang_type_by_name(var_def.type_name, &type)) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.type_name));
+        exit(1);
+    }
+
+    if (type == BANG_TYPE_VOID) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
+                Bang_Loc_Arg(var_def.loc),
+                bang_type_def(type).name);
+        exit(1);
+    }
+
+    // TODO(#457): bang compile does not warn about shadowing of the variable
+
+    Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
+    if (existing_var) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_var->def.loc));
+        exit(1);
+    }
+
+    (void) basm;
+    assert(false && "TODO(#458): compiling the stack variable is not implemented");
+}
+
+void bang_push_new_scope(Bang *bang)
+{
+    Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
+    scope->parent = bang->scope;
+    bang->scope = scope;
+}
+
+void bang_pop_scope(Bang *bang)
+{
+    assert(bang->scope != NULL);
+    bang->scope = bang->scope->parent;
 }

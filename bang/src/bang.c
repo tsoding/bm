@@ -103,15 +103,23 @@ int main(int argc, char **argv)
     Bang_Lexer lexer = bang_lexer_from_sv(content, input_file_path);
     Bang_Module module = parse_bang_module(&basm.arena, &lexer);
 
-    Bang bang = {0};
+    static Bang bang = {0};
     bang.write_id = basm_push_external_native(&basm, SV("write"));
-    compile_bang_module_into_basm(&bang, &basm, module);
-    bang_generate_entry_point(&bang, &basm, SV("main"));
-    bang_generate_heap_base(&bang, &basm, SV("heap_base"));
-    assert(basm.has_entry);
-    basm_save_to_file_as_target(&basm, output_file_path, output_target);
+    bang_prepare_var_stack(&bang, &basm);
+
+    bang_push_new_scope(&bang);
+    {
+        compile_bang_module_into_basm(&bang, &basm, module);
+
+        bang_generate_entry_point(&bang, &basm, SV("main"));
+        bang_generate_heap_base(&bang, &basm, SV("heap_base"));
+        assert(basm.has_entry);
+        basm_save_to_file_as_target(&basm, output_file_path, output_target);
+    }
+    bang_pop_scope(&bang);
 
     arena_free(&basm.arena);
+    arena_free(&bang.arena);
 
     return 0;
 }
