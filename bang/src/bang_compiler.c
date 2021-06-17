@@ -2,6 +2,13 @@
 
 // TODO(#426): bang does not support type casting
 
+#define UNIMPLEMENTED \
+    do { \
+        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
+                __FILE__, __LINE__, __func__); \
+        abort(); \
+    } while(0)
+
 typedef struct {
     bool exists;
     Inst_Type inst;
@@ -138,8 +145,18 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
         exit(1);
     }
 
-    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    compile_typed_read(basm, var->type);
+    switch (var->storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+        compile_typed_read(basm, var->type);
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        UNIMPLEMENTED;
+    }
+    break;
+    }
 
     return var->type;
 }
@@ -237,8 +254,18 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             }
 
             Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
-            basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-            result.type = BANG_TYPE_PTR;
+            switch (var->storage) {
+            case BANG_VAR_STATIC_STORAGE: {
+                basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+                result.type = BANG_TYPE_PTR;
+            }
+            break;
+
+            case BANG_VAR_STACK_STORAGE: {
+                UNIMPLEMENTED;
+            }
+            break;
+            }
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
             Bang_Funcall_Arg *args = funcall.args;
@@ -420,18 +447,27 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
         exit(1);
     }
 
-    basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    switch (var->storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+        Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+        if (expr.type != var->type) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                    Bang_Loc_Arg(var_assign.loc),
+                    bang_type_def(expr.type).name,
+                    bang_type_def(var->type).name);
+            exit(1);
+        }
 
-    if (expr.type != var->type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                Bang_Loc_Arg(var_assign.loc),
-                bang_type_def(expr.type).name,
-                bang_type_def(var->type).name);
-        exit(1);
+        compile_typed_write(basm, expr.type);
+    }
+    break;
+    case BANG_VAR_STACK_STORAGE: {
+        UNIMPLEMENTED;
+    }
+    break;
     }
 
-    compile_typed_write(basm, expr.type);
 }
 
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
@@ -454,12 +490,6 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
     basm->program[fallthrough_addr].operand = word_u64(body_end_addr);
 }
 
-#define UNIMPLEMENTED \
-    do { \
-        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
-                __FILE__, __LINE__, __func__); \
-        abort(); \
-    } while(0)
 
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
@@ -485,7 +515,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         break;
 
     case BANG_STMT_KIND_VAR_DEF:
-        UNIMPLEMENTED;
+        compile_stack_var_def_into_basm(bang, basm, stmt.as.var_def);
         break;
 
     case COUNT_BANG_STMT_KINDS:
@@ -557,42 +587,6 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 }
 
-void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
-{
-    Bang_Type type = 0;
-    if (!bang_type_by_name(var_def.type_name, &type)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.type_name));
-        exit(1);
-    }
-
-    if (type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
-                Bang_Loc_Arg(var_def.loc),
-                bang_type_def(type).name);
-        exit(1);
-    }
-
-    Compiled_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
-    if (existing_var) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.name));
-        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_var->def.loc));
-        exit(1);
-    }
-
-    Compiled_Var new_var = {0};
-    new_var.def = var_def;
-    new_var.addr = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
-    new_var.type = type;
-
-    assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
-    bang->global_vars[bang->global_vars_count++] = new_var;
-}
-
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
 {
     for (Bang_Top *top = module.tops_begin; top != NULL; top = top->next) {
@@ -602,7 +596,7 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
         }
         break;
         case BANG_TOP_KIND_VAR: {
-            compile_var_def_into_basm(bang, basm, top->as.var);
+            compile_static_var_def_into_basm(bang, basm, top->as.var);
         }
         break;
         case COUNT_BANG_TOP_KINDS:
@@ -631,6 +625,7 @@ void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_na
 void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_name)
 {
     Compiled_Var *heap_base_var = bang_get_global_var_by_name(bang, heap_base_var_name);
+    assert(heap_base_var->storage == BANG_VAR_STATIC_STORAGE);
 
     if (heap_base_var != NULL) {
         if (heap_base_var->type != BANG_TYPE_PTR) {
@@ -643,8 +638,60 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
         }
 
         const Memory_Addr heap_base_addr = basm->memory_size;
-        memcpy(&basm->memory[heap_base_var->addr],
+        memcpy(&basm->memory[heap_base_var->addr_],
                &heap_base_addr,
                sizeof(heap_base_addr));
     }
+}
+
+void bang_prepare_var_stack(Bang *bang, Basm *basm)
+{
+    basm_push_byte_array_to_memory(basm, BANG_STACK_CAPACITY, 0);
+    bang->stack_base_var_addr =
+        basm_push_byte_array_to_memory(basm, bang_type_def(BANG_TYPE_I64).size, 0).as_u64;
+}
+
+void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    Bang_Type type = 0;
+    if (!bang_type_by_name(var_def.type_name, &type)) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.type_name));
+        exit(1);
+    }
+
+    if (type == BANG_TYPE_VOID) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
+                Bang_Loc_Arg(var_def.loc),
+                bang_type_def(type).name);
+        exit(1);
+    }
+
+    Compiled_Var *existing_var = bang_get_global_var_by_name(bang, var_def.name);
+    if (existing_var) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                Bang_Loc_Arg(var_def.loc),
+                SV_Arg(var_def.name));
+        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                Bang_Loc_Arg(existing_var->def.loc));
+        exit(1);
+    }
+
+    Compiled_Var new_var = {0};
+    new_var.def = var_def;
+    new_var.storage = BANG_VAR_STATIC_STORAGE;
+    new_var.addr_ = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
+    new_var.type = type;
+
+    assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);
+    bang->global_vars[bang->global_vars_count++] = new_var;
+}
+
+void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+{
+    (void) bang;
+    (void) basm;
+    (void) var_def;
+    UNIMPLEMENTED;
 }

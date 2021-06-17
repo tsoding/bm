@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 
     Bang bang = {0};
     bang.write_id = basm_push_external_native(&basm, SV("write"));
+    bang_prepare_var_stack(&bang, &basm);
     compile_bang_module_into_basm(&bang, &basm, module);
     bang_generate_entry_point(&bang, &basm, SV("main"));
     bang_generate_heap_base(&bang, &basm, SV("heap_base"));

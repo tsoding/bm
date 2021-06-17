@@ -9,6 +9,11 @@
 #define BANG_GLOBAL_VARS_CAPACITY 1024
 #define BANG_PROCS_CAPACITY 1024
 
+typedef enum {
+    BANG_VAR_STATIC_STORAGE = 0,
+    BANG_VAR_STACK_STORAGE,
+} Bang_Var_Storage;
+
 // TODO(#433): there is no generic ptr type
 typedef enum {
     BANG_TYPE_VOID = 0,
@@ -33,7 +38,12 @@ Bang_Type_Def bang_type_def(Bang_Type type);
 typedef struct {
     Bang_Var_Def def;
     Bang_Type type;
-    Memory_Addr addr;
+    Bang_Var_Storage storage;
+    // when storage == BANG_VAR_STATIC_STORAGE:
+    //   addr is absolute address of the variable in memory
+    // when storage == BANG_VAR_STACK_STORAGE:
+    //   addr is an offset from the top of the stack
+    Memory_Addr addr_;
 } Compiled_Var;
 
 typedef struct {
@@ -41,8 +51,12 @@ typedef struct {
     Inst_Addr addr;
 } Compiled_Proc;
 
+#define BANG_STACK_CAPACITY 4096
+
 typedef struct {
     Native_ID write_id;
+
+    Memory_Addr stack_base_var_addr;
 
     Compiled_Var global_vars[BANG_GLOBAL_VARS_CAPACITY];
     size_t global_vars_count;
@@ -52,8 +66,6 @@ typedef struct {
 
     Bang_Loc entry_loc;
 } Bang;
-
-void compile_begin_begin(Bang *bang);
 
 Compiled_Var *bang_get_global_var_by_name(Bang *bang, String_View name);
 
@@ -75,7 +87,8 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
-void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
+void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
+void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def);
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
 
@@ -83,5 +96,7 @@ void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_na
 void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_name);
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity);
+
+void bang_prepare_var_stack(Bang *bang, Basm *basm);
 
 #endif // BANG_COMPILER_H_
