@@ -396,7 +396,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
     case COUNT_BANG_EXPR_KINDS:
     default:
-        assert(false && "TODO: compile_bang_expr_into_basm: unreachable");
+        assert(false && "compile_bang_expr_into_basm: unreachable");
         exit(1);
     }
 
