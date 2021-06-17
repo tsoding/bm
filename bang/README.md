@@ -6,6 +6,6 @@
 
 ```nim
 proc main() {
-    write("Hello, World");
+    write("Hello, World\n");
 }
 ```
