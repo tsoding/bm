@@ -77,7 +77,7 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[1], "record") == 0) {
             basm_test(true);
         } else if (strcmp(argv[1], "help") == 0) {
-            PANIC("TODO: help subcommand for basm subproject is not implemented");
+            PANIC("TODO(#461): help subcommand for basm subproject is not implemented");
         } else {
             PANIC("unknown subcommand `%s`", argv[1]);
         }
