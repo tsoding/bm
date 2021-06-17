@@ -1,3 +1,3 @@
 # Bang Programming Language
 
-![logo](./logo/logo.png)
+![logo](./logo/logo-256.png)
