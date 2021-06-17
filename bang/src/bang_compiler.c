@@ -153,7 +153,7 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
     break;
 
     case BANG_VAR_STACK_STORAGE: {
-        assert(false && "TODO: reading stack variables is not implemented");
+        assert(false && "TODO(#454): reading stack variables is not implemented");
     }
     break;
     }
