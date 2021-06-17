@@ -4,6 +4,14 @@ Simple compiler ecosystem. Includes the backend and frontend for a couple of sim
 
 ![logo](./logo/birch-296x328.png)
 
+## Subprojects
+
+- [bm](./bm) -- VM Bytecode Definitions and Emulators.
+- [basm](./basm) -- Assembler for the VM Bytecode.
+- [debasm](./debasm) -- Disassembler for the VM Bytecode.
+- [bdb](./bdb) -- Debugger for the VM Bytecode.
+- [bang](./bang) -- Procedural Programming Language that Compiles to the VM Bytecode.
+
 ## Quick Start
 
 To build the entire project bootstrap the root [nobuild](https://github.com/tsoding/nobuild) and run it:
