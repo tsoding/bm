@@ -110,6 +110,7 @@ typedef enum {
     BANG_STMT_KIND_EXPR = 0,
     BANG_STMT_KIND_IF,
     BANG_STMT_KIND_VAR_ASSIGN,
+    BANG_STMT_KIND_VAR_DEF,
     BANG_STMT_KIND_WHILE,
     COUNT_BANG_STMT_KINDS,
 } Bang_Stmt_Kind;
@@ -133,14 +134,21 @@ struct Bang_Var_Assign {
     Bang_Expr value;
 };
 
+struct Bang_Var_Def {
+    Bang_Loc loc;
+    String_View name;
+    String_View type_name;
+};
+
 union Bang_Stmt_As {
     Bang_Expr expr;
     Bang_If eef;
     Bang_Var_Assign var_assign;
     Bang_While hwile;
+    Bang_Var_Def var_def;
 };
 static_assert(
-    COUNT_BANG_STMT_KINDS == 4,
+    COUNT_BANG_STMT_KINDS == 5,
     "The amount of statement kinds has changed. "
     "Please update the union of those statements accordingly. "
     "Thanks!");
@@ -159,12 +167,6 @@ struct Bang_Proc_Def {
     Bang_Loc loc;
     String_View name;
     Bang_Block *body;
-};
-
-struct Bang_Var_Def {
-    Bang_Loc loc;
-    String_View name;
-    String_View type_name;
 };
 
 typedef enum {

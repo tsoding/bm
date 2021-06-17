@@ -454,6 +454,13 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
     basm->program[fallthrough_addr].operand = word_u64(body_end_addr);
 }
 
+#define UNIMPLEMENTED \
+    do { \
+        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
+                __FILE__, __LINE__, __func__); \
+        abort(); \
+    } while(0)
+
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
     switch (stmt.kind) {
@@ -475,6 +482,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
     case BANG_STMT_KIND_WHILE:
         compile_bang_while_into_basm(bang, basm, stmt.as.hwile);
+        break;
+
+    case BANG_STMT_KIND_VAR_DEF:
+        UNIMPLEMENTED;
         break;
 
     case COUNT_BANG_STMT_KINDS:
