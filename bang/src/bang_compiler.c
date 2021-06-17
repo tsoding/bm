@@ -738,7 +738,7 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
         exit(1);
     }
 
-    // TODO: bang compile does not warn about shadowing of the variable
+    // TODO(#457): bang compile does not warn about shadowing of the variable
 
     Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
     if (existing_var) {
