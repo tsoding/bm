@@ -31,10 +31,17 @@
 
 #define LIBS "-lm"
 
-void basm_test(bool record)
+void build_all_bins(void)
 {
     MKDIRS("bin");
     CC("bin", "basm", PATH("src", "basm.c"));
+    CC("bin", "basm2dot", PATH("src", "basm2dot.c"));
+    CC("bin", "expr2dot", PATH("src", "expr2dot.c"));
+}
+
+void basm_test(bool record)
+{
+    build_all_bins();
 
     const char *bmr_path = PATH("..", "bm", "bin", "bmr");
 
@@ -73,10 +80,7 @@ int main(int argc, char **argv)
             PANIC("unknown subcommand `%s`", argv[1]);
         }
     } else {
-        MKDIRS("bin");
-        CC("bin", "basm", PATH("src", "basm.c"));
-        CC("bin", "basm2dot", PATH("src", "basm2dot.c"));
-        CC("bin", "expr2dot", PATH("src", "expr2dot.c"));
+        build_all_bins();
     }
 
     return 0;
