@@ -43,7 +43,11 @@ void basm_test(bool record)
 {
     build_all_bins();
 
+#ifdef _WIN32
+    const char *bmr_path = PATH("..", "bm", "bin", "bmr.exe");
+#else
     const char *bmr_path = PATH("..", "bm", "bin", "bmr");
+#endif
 
     if (!PATH_EXISTS(bmr_path)) {
         PANIC("Could not find `%s` please go to the bm subproject and build it",
