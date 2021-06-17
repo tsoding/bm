@@ -30,6 +30,7 @@
 
 int main()
 {
+    // TODO: there is no testing in Bang subproject
     MKDIRS("bin");
     CC("bin", "bang", PATH("src", "bang.c"));
     return 0;
