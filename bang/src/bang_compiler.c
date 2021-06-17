@@ -262,7 +262,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             break;
 
             case BANG_VAR_STACK_STORAGE: {
-                assert(false && "TODO: Taking a pointer to stack variable is not implemented");
+                assert(false && "TODO(#455): Taking a pointer to stack variable is not implemented");
             }
             break;
             }
