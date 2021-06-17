@@ -2,8 +2,6 @@
 
 Simple compiler ecosystem. Includes the backend and frontend for a couple of languages.
 
-![logo](./logo/birch-296x328.png)
-
 ## Subprojects
 
 - [bm](./bm) — VM Bytecode Definitions and Emulators.
