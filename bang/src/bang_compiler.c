@@ -147,7 +147,7 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
 
     switch (var->storage) {
     case BANG_VAR_STATIC_STORAGE: {
-        basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
         compile_typed_read(basm, var->type);
     }
     break;
@@ -256,7 +256,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             Compiled_Var *var = bang_get_global_var_by_name(bang, arg.as.var_read.name);
             switch (var->storage) {
             case BANG_VAR_STATIC_STORAGE: {
-                basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+                basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
                 result.type = BANG_TYPE_PTR;
             }
             break;
@@ -449,7 +449,7 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
 
     switch (var->storage) {
     case BANG_VAR_STATIC_STORAGE: {
-        basm_push_inst(basm, INST_PUSH, word_u64(var->addr_));
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
         Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
         if (expr.type != var->type) {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
@@ -638,7 +638,7 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
         }
 
         const Memory_Addr heap_base_addr = basm->memory_size;
-        memcpy(&basm->memory[heap_base_var->addr_],
+        memcpy(&basm->memory[heap_base_var->addr],
                &heap_base_addr,
                sizeof(heap_base_addr));
     }
@@ -681,7 +681,7 @@ void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_d
     Compiled_Var new_var = {0};
     new_var.def = var_def;
     new_var.storage = BANG_VAR_STATIC_STORAGE;
-    new_var.addr_ = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
+    new_var.addr = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
     new_var.type = type;
 
     assert(bang->global_vars_count < BANG_GLOBAL_VARS_CAPACITY);

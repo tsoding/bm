@@ -43,7 +43,7 @@ typedef struct {
     //   addr is absolute address of the variable in memory
     // when storage == BANG_VAR_STACK_STORAGE:
     //   addr is an offset from the top of the stack
-    Memory_Addr addr_;
+    Memory_Addr addr;
 } Compiled_Var;
 
 typedef struct {
