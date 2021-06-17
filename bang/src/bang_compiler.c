@@ -750,6 +750,7 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
         exit(1);
     }
 
+    (void) basm;
     assert(false && "TODO(#458): compiling the stack variable is not implemented");
 }
 
