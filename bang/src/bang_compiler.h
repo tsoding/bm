@@ -59,8 +59,7 @@ struct Bang_Scope {
     size_t vars_count;
 };
 
-Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View
- name);
+Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View name);
 void bang_scope_push_var(Bang_Scope *scope, Compiled_Var var);
 
 #define BANG_STACK_CAPACITY 32
