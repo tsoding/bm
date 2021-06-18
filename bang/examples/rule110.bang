@@ -11,6 +11,12 @@ var state_next: i64;
 
 var display_base: ptr;
 
+var i: i64;
+var j: i64;
+
+var cell_ptr: ptr;
+var cell: u8;
+
 proc init() {
   # Init lookup table
   table_base = heap_base;
@@ -35,7 +41,7 @@ proc init() {
 }
 
 proc print_state_current() {
-  var i: u64;
+
   i = 0;
   while i < state_size {
     cell_ptr = states_base + cast(ptr, state_current * state_size + i);
