@@ -278,6 +278,22 @@ void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Targe
     }
 }
 
+void basm_save_to_bm(const Basm *basm, Bm *bm)
+{
+    memset(bm, 0, sizeof(*bm));
+
+    memcpy(bm->program, basm->program, basm->program_size * sizeof(basm->program[0]));
+    bm->program_size = basm->program_size;
+    assert(basm->has_entry);
+    bm->ip = basm->entry;
+
+    memcpy(bm->externals, basm->external_natives, basm->external_natives_size * sizeof(basm->external_natives[0]));
+    bm->externals_size = basm->external_natives_size;
+
+    memcpy(bm->memory, basm->memory, basm->memory_size * sizeof(basm->memory[0]));
+    bm->expected_memory_size = basm->memory_size;
+}
+
 void basm_save_to_file_as_bm(Basm *basm, const char *file_path)
 {
     FILE *f = fopen(file_path, "wb");

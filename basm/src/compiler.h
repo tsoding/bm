@@ -161,6 +161,7 @@ void basm_defer_binding(Basm *basm, String_View name, Type type, File_Location l
 void basm_bind_expr(Basm *basm, String_View name, Expr expr, File_Location location);
 void basm_bind_value(Basm *basm, String_View name, Word value, Type type, File_Location location);
 void basm_push_deferred_operand(Basm *basm, Inst_Addr addr, Expr expr, File_Location location);
+void basm_save_to_bm(const Basm *basm, Bm *bm);
 void basm_save_to_file_as_target(Basm *basm, const char *output_file_path, Target target);
 void basm_save_to_file_as_bm(Basm *basm, const char *output_file_path);
 void basm_save_to_file_as_nasm_sysv_x86_64(Basm *basm, OS_Target os_target, const char *output_file_path);

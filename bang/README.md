@@ -2,10 +2,17 @@
 
 ![logo](./logo/logo-256.png)
 
-## Hello, World
+## Quick Start
 
 ```nim
+$ cc -o nobuild nobuild.c
+$ ./nobuild
+$ cat <<EOF >hello.bang
 proc main() {
     write("Hello, World\n");
 }
+EOF
+$ ./bin/bang run hello.bang
 ```
+
+For more information do `./bin/bang help`
