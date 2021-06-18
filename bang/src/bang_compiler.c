@@ -26,6 +26,7 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
         [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
         [BANG_BINARY_OP_KIND_EQ]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_MOD]   = {.exists = false},
     },
     [BANG_TYPE_I64] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_I64},
@@ -37,6 +38,7 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
         [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
         [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQI,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_MOD]   = {.exists = true, .inst = INST_MODI,   .ret = BANG_TYPE_I64},
     },
     [BANG_TYPE_U8] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_U8},
@@ -48,6 +50,7 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
         [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
         [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_MOD]   = {.exists = true, .inst = INST_MODU,   .ret = BANG_TYPE_U8},
     },
     [BANG_TYPE_BOOL] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = false},
@@ -59,6 +62,7 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_AND]   = {.exists = true, .inst = INST_ANDB, .ret = BANG_TYPE_BOOL},
         [BANG_BINARY_OP_KIND_OR]    = {.exists = true, .inst = INST_ORB,  .ret = BANG_TYPE_BOOL},
         [BANG_BINARY_OP_KIND_EQ]    = {.exists = false},
+        [BANG_BINARY_OP_KIND_MOD]   = {.exists = false},
     },
     [BANG_TYPE_PTR] = {
         [BANG_BINARY_OP_KIND_PLUS]  = {.exists = true, .inst = INST_PLUSI,  .ret = BANG_TYPE_PTR},
@@ -70,6 +74,7 @@ static const Binary_Op_Of_Type binary_op_of_type_table[COUNT_BANG_TYPES][COUNT_B
         [BANG_BINARY_OP_KIND_AND]   = {.exists = false},
         [BANG_BINARY_OP_KIND_OR]    = {.exists = false},
         [BANG_BINARY_OP_KIND_EQ]    = {.exists = true, .inst = INST_EQU,    .ret = BANG_TYPE_BOOL},
+        [BANG_BINARY_OP_KIND_MOD]   = {.exists = false},
     },
 };
 static_assert(
@@ -78,7 +83,7 @@ static_assert(
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 9,
+    COUNT_BANG_BINARY_OP_KINDS == 10,
     "The amount of binary operations have changed. "
     "Please update the binary_op_of_type table accordingly. "
     "Thanks!");

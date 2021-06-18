@@ -27,9 +27,10 @@ static const Hardcoded_Token hardcoded_bang_tokens[] = {
     {.kind = BANG_TOKEN_KIND_MINUS,       .text = SV_STATIC("-")},
     {.kind = BANG_TOKEN_KIND_MULT,        .text = SV_STATIC("*")},
     {.kind = BANG_TOKEN_KIND_LT,          .text = SV_STATIC("<")},
+    {.kind = BANG_TOKEN_KIND_PERCENT,     .text = SV_STATIC("%")},
 };
 static const size_t hardcoded_bang_tokens_count = sizeof(hardcoded_bang_tokens) / sizeof(hardcoded_bang_tokens[0]);
-static_assert(COUNT_BANG_TOKEN_KINDS == 20, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
+static_assert(COUNT_BANG_TOKEN_KINDS == 21, "The amount of token kinds have changed. Make sure you don't need to add anything new to the list of the hardcoded tokens");
 
 static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_NAME]        = "name",
@@ -51,9 +52,10 @@ static const char *const token_kind_names[COUNT_BANG_TOKEN_KINDS] = {
     [BANG_TOKEN_KIND_NE]          = "!=",
     [BANG_TOKEN_KIND_AND]         = "&&",
     [BANG_TOKEN_KIND_OR]          = "||",
+    [BANG_TOKEN_KIND_PERCENT]     = "%",
     [BANG_TOKEN_KIND_LIT_STR]     = "string literal",
 };
-static_assert(COUNT_BANG_TOKEN_KINDS == 20, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
+static_assert(COUNT_BANG_TOKEN_KINDS == 21, "The amount of token kinds have changed. Please update the table of token kind names. Thanks!");
 
 const char *bang_token_kind_name(Bang_Token_Kind kind)
 {
@@ -124,7 +126,7 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
     }
 
     static_assert(
-        COUNT_BANG_TOKEN_KINDS == 20,
+        COUNT_BANG_TOKEN_KINDS == 21,
         "The amount of token kinds have changed. "
         "Please update the lexer to take that into account. "
         "If you updated the hardcoded tokens nothing here needs to be changed. "

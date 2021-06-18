@@ -16,6 +16,8 @@ var row: i64;
 var col: i64;
 var drow: i64;
 var dcol: i64;
+var drow0: i64;
+var dcol0: i64;
 
 var nbors: i64;
 
@@ -76,15 +78,13 @@ proc next_board() {
       while drow < row + 2 {
         dcol = col - 1;
         while dcol < col + 2 {
-          if drow >= 0 && drow < board_rows {
-            if dcol >= 0 && dcol < board_cols {
-              if drow != row || dcol != col {
-                cell_ptr = boards_base + cast(ptr, board_size * board_current + drow * board_cols + dcol);
-                cell = load_ptr(u8, cell_ptr);
-                if cell >= cast(u8, 1) {
-                  nbors = nbors + 1;
-                }
-              }
+          drow0 = (drow % board_rows + board_rows) % board_rows;
+          dcol0 = (dcol % board_cols + board_cols) % board_cols;
+          if drow0 != row || dcol0 != col {
+            cell_ptr = boards_base + cast(ptr, board_size * board_current + drow0 * board_cols + dcol0);
+            cell = load_ptr(u8, cell_ptr);
+            if cell >= cast(u8, 1) {
+              nbors = nbors + 1;
             }
           }
           dcol = dcol + 1;
@@ -122,11 +122,8 @@ proc next_board() {
 
 proc main() {
   init();
-  i = 0;
-  while i < 10 {
+  while true {
     print_board_current();
     next_board();
-    write("------------------------------\n");
-    i = i + 1;
   }
 }

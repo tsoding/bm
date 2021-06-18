@@ -59,11 +59,16 @@ static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
     [BANG_BINARY_OP_KIND_MULT] = {
         .kind       = BANG_BINARY_OP_KIND_MULT,
         .token_kind = BANG_TOKEN_KIND_MULT,
-        .prec       = BINARY_OP_PREC3
+        .prec       = BINARY_OP_PREC3,
     },
+    [BANG_BINARY_OP_KIND_MOD] = {
+        .kind       = BANG_BINARY_OP_KIND_MOD,
+        .token_kind = BANG_TOKEN_KIND_PERCENT,
+        .prec       = BINARY_OP_PREC3,
+    }
 };
 static_assert(
-    COUNT_BANG_BINARY_OP_KINDS == 9,
+    COUNT_BANG_BINARY_OP_KINDS == 10,
     "The amount of binary operation kinds has changed. "
     "Please update the binary_op_defs table accordingly. "
     "Thanks!");
@@ -274,6 +279,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     break;
 
     case BANG_TOKEN_KIND_COMMA:
+    case BANG_TOKEN_KIND_PERCENT:
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
     case BANG_TOKEN_KIND_MULT:
@@ -452,6 +458,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
     break;
 
+    case BANG_TOKEN_KIND_PERCENT:
     case BANG_TOKEN_KIND_COMMA:
     case BANG_TOKEN_KIND_PLUS:
     case BANG_TOKEN_KIND_MINUS:
