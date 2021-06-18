@@ -44,6 +44,67 @@ static void help_subcommand(int argc, char **argv)
     exit(0);
 }
 
+static void run_usage(FILE *stream)
+{
+    fprintf(stream, "Usage: bang run <input.bang>\n");
+}
+
+static void run_subcommand(int argc, char **argv)
+{
+    static Bm   bm   = {0};
+    static Basm basm = {0};
+    static Bang bang = {0};
+
+    if (argc == 0) {
+        run_usage(stderr);
+        fprintf(stderr, "ERROR: no input file is provided\n");
+        exit(1);
+    }
+
+    const char *input_file_path = shift(&argc, &argv);
+
+    String_View content = {0};
+    if (arena_slurp_file(&bang.arena, sv_from_cstr(input_file_path), &content) < 0) {
+        fprintf(stderr, "ERROR: could not read file `%s`: %s",
+                input_file_path, strerror(errno));
+        exit(1);
+    }
+
+    Bang_Lexer lexer = bang_lexer_from_sv(content, input_file_path);
+    Bang_Module module = parse_bang_module(&basm.arena, &lexer);
+
+    bang.write_id = basm_push_external_native(&basm, SV("write"));
+    bang_prepare_var_stack(&bang, &basm);
+
+    bang_push_new_scope(&bang);
+    {
+        compile_bang_module_into_basm(&bang, &basm, module);
+
+        bang_generate_entry_point(&bang, &basm, SV("main"));
+        bang_generate_heap_base(&bang, &basm, SV("heap_base"));
+        assert(basm.has_entry);
+    }
+    bang_pop_scope(&bang);
+
+    basm_save_to_bm(&basm, &bm);
+
+    for (size_t i = 0; i < bm.externals_size; ++i) {
+        if (strcmp(bm.externals[i].name, "write") == 0) {
+            bm.natives[i] = native_write;
+        } else {
+            fprintf(stderr, "WARNING: unknown native `%s`\n", bm.externals[i].name);
+        }
+    }
+
+    const int limit = -1;
+    Err err = bm_execute_program(&bm, limit);
+
+    if (err != ERR_OK) {
+        fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
+        exit(1);
+    }
+}
+
 static void build_subcommand(int argc, char **argv)
 {
     static Basm basm = {0};
@@ -154,7 +215,7 @@ int main(int argc, char **argv)
     } else if (strcmp(subcommand, "help") == 0) {
         help_subcommand(argc, argv);
     } else if (strcmp(subcommand, "run") == 0) {
-        assert(false && "TODO: run subcommand is not implemented yet");
+        run_subcommand(argc, argv);
     } else {
         usage(stderr);
         fprintf(stderr, "ERROR: unknown subcommand `%s`\n", subcommand);
