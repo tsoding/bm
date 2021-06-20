@@ -38,39 +38,6 @@ Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name)
     return NULL;
 }
 
-Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
-{
-    assert(state);
-
-    String_View symtab_file =
-        sv_from_cstr(CSTR_CONCAT(&state->sym_arena, program_file_path, ".sym"));
-
-    String_View symtab = {0};
-    if (arena_slurp_file(&state->sym_arena, symtab_file, &symtab) < 0) {
-        fprintf(stderr, "ERROR: could not read file "SV_Fmt": %s\n",
-                SV_Arg(symtab_file), strerror(errno));
-        exit(1);
-    }
-
-    while (symtab.count > 0) {
-        symtab                    = sv_trim_left(symtab);
-        String_View  raw_addr     = sv_chop_by_delim(&symtab, '\t');
-        symtab                    = sv_trim_left(symtab);
-        String_View  raw_sym_type = sv_chop_by_delim(&symtab, '\t');
-        symtab                    = sv_trim_left(symtab);
-        String_View  name         = sv_chop_by_delim(&symtab, '\n');
-        Word         value        = word_u64(sv_to_u64(raw_addr));
-        Type type                 = (Type)sv_to_u64(raw_sym_type);
-
-        state->bindings[state->bindings_size].name = name;
-        state->bindings[state->bindings_size].value = value;
-        state->bindings[state->bindings_size].type = type;
-        state->bindings_size += 1;
-    }
-
-    return BDB_OK;
-}
-
 // TODO(#187): bdb_print_instr should take information from the actual source code
 void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
