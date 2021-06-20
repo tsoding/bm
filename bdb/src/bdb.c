@@ -298,7 +298,6 @@ void bdb_print_location(Bdb_State *state)
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
-    // TODO(#276): bdb does not support native function loading
     bm_load_program_from_file(&state->bm, state->program_file_path);
     state->bm.halt = 1;
 
@@ -307,10 +306,7 @@ Bdb_Err bdb_reset(Bdb_State *state)
     state->is_in_step_over_mode = 0;
     state->step_over_mode_call_depth = 0;
 
-    fprintf(stdout, "INFO : Loading debug symbols...\n");
-    if (bdb_load_symtab(state, state->program_file_path) == BDB_FAIL) {
-        return BDB_FAIL;
-    }
+    fprintf(stdout, "TODO: BDB does not load symbols from a symbol table\n");
 
     // Update addresses of breakpoints on labels
     for (size_t i = 0; i < state->breakpoints_size; ++i) {
@@ -325,6 +321,16 @@ Bdb_Err bdb_reset(Bdb_State *state)
                         SV_Arg(state->breakpoints[i].label));
                 state->breakpoints[i].label = SV_NULL;
             }
+        }
+    }
+
+    for (size_t i = 0; i < state->bm.externals_size; ++i) {
+        if (strcmp(state->bm.externals[i].name, "write") == 0) {
+            bm_push_native(&state->bm, native_write);
+        } else if (strcmp(state->bm.externals[i].name, "external") == 0) {
+            bm_push_native(&state->bm, native_external);
+        } else {
+            fprintf(stderr, "TODO(#276): bdb does not support native function loading\n");
         }
     }
 
@@ -432,6 +438,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             if (bdb_parse_word(state, addr, &value) == BDB_FAIL) {
                 fprintf(stderr, "ERR : `"SV_Fmt"` is not a number\n",
                         SV_Arg(addr));
+                break;
             }
 
             bdb_add_breakpoint(state, value.as_u64, SV_NULL);
