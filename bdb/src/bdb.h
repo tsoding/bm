@@ -63,7 +63,6 @@ typedef struct Bdb_State {
 } Bdb_State;
 
 Bdb_Err bdb_state_init(Bdb_State *, const char *program_file_path);
-Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path);
 Bdb_Err bdb_step_instr(Bdb_State *);
 Bdb_Err bdb_step_over_instr(Bdb_State *state);
 Bdb_Err bdb_continue(Bdb_State *);

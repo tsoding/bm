@@ -38,39 +38,6 @@ Bdb_Binding *bdb_resolve_binding(Bdb_State *bdb, String_View name)
     return NULL;
 }
 
-Bdb_Err bdb_load_symtab(Bdb_State *state, const char *program_file_path)
-{
-    assert(state);
-
-    String_View symtab_file =
-        sv_from_cstr(CSTR_CONCAT(&state->sym_arena, program_file_path, ".sym"));
-
-    String_View symtab = {0};
-    if (arena_slurp_file(&state->sym_arena, symtab_file, &symtab) < 0) {
-        fprintf(stderr, "ERROR: could not read file "SV_Fmt": %s\n",
-                SV_Arg(symtab_file), strerror(errno));
-        exit(1);
-    }
-
-    while (symtab.count > 0) {
-        symtab                    = sv_trim_left(symtab);
-        String_View  raw_addr     = sv_chop_by_delim(&symtab, '\t');
-        symtab                    = sv_trim_left(symtab);
-        String_View  raw_sym_type = sv_chop_by_delim(&symtab, '\t');
-        symtab                    = sv_trim_left(symtab);
-        String_View  name         = sv_chop_by_delim(&symtab, '\n');
-        Word         value        = word_u64(sv_to_u64(raw_addr));
-        Type type                 = (Type)sv_to_u64(raw_sym_type);
-
-        state->bindings[state->bindings_size].name = name;
-        state->bindings[state->bindings_size].value = value;
-        state->bindings[state->bindings_size].type = type;
-        state->bindings_size += 1;
-    }
-
-    return BDB_OK;
-}
-
 // TODO(#187): bdb_print_instr should take information from the actual source code
 void bdb_print_instr(Bdb_State *state, FILE *f, Inst *i)
 {
@@ -298,7 +265,6 @@ void bdb_print_location(Bdb_State *state)
 
 Bdb_Err bdb_reset(Bdb_State *state)
 {
-    // TODO(#276): bdb does not support native function loading
     bm_load_program_from_file(&state->bm, state->program_file_path);
     state->bm.halt = 1;
 
@@ -307,10 +273,7 @@ Bdb_Err bdb_reset(Bdb_State *state)
     state->is_in_step_over_mode = 0;
     state->step_over_mode_call_depth = 0;
 
-    fprintf(stdout, "INFO : Loading debug symbols...\n");
-    if (bdb_load_symtab(state, state->program_file_path) == BDB_FAIL) {
-        return BDB_FAIL;
-    }
+    fprintf(stdout, "TODO(#467): BDB does not load symbols from a symbol table\n");
 
     // Update addresses of breakpoints on labels
     for (size_t i = 0; i < state->breakpoints_size; ++i) {
@@ -325,6 +288,16 @@ Bdb_Err bdb_reset(Bdb_State *state)
                         SV_Arg(state->breakpoints[i].label));
                 state->breakpoints[i].label = SV_NULL;
             }
+        }
+    }
+
+    for (size_t i = 0; i < state->bm.externals_size; ++i) {
+        if (strcmp(state->bm.externals[i].name, "write") == 0) {
+            bm_push_native(&state->bm, native_write);
+        } else if (strcmp(state->bm.externals[i].name, "external") == 0) {
+            bm_push_native(&state->bm, native_external);
+        } else {
+            fprintf(stderr, "TODO(#276): bdb does not support native function loading\n");
         }
     }
 
@@ -432,6 +405,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             if (bdb_parse_word(state, addr, &value) == BDB_FAIL) {
                 fprintf(stderr, "ERR : `"SV_Fmt"` is not a number\n",
                         SV_Arg(addr));
+                break;
             }
 
             bdb_add_breakpoint(state, value.as_u64, SV_NULL);
