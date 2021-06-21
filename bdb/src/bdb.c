@@ -273,7 +273,7 @@ Bdb_Err bdb_reset(Bdb_State *state)
     state->is_in_step_over_mode = 0;
     state->step_over_mode_call_depth = 0;
 
-    fprintf(stdout, "TODO: BDB does not load symbols from a symbol table\n");
+    fprintf(stdout, "TODO(#467): BDB does not load symbols from a symbol table\n");
 
     // Update addresses of breakpoints on labels
     for (size_t i = 0; i < state->breakpoints_size; ++i) {
