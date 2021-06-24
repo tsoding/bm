@@ -539,7 +539,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         break;
 
     case BANG_STMT_KIND_VAR_DEF:
-        compile_stack_var_def_into_basm(bang, basm, stmt.as.var_def);
+        compile_stack_var_def_into_basm(bang, stmt.as.var_def);
         break;
 
     case COUNT_BANG_STMT_KINDS:
@@ -718,7 +718,7 @@ void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_d
     bang_scope_push_var(bang->scope, new_var);
 }
 
-void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
 {
     Bang_Type type = 0;
     if (!bang_type_by_name(var_def.type_name, &type)) {
@@ -747,8 +747,17 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
         exit(1);
     }
 
-    (void) basm;
-    assert(false && "TODO(#458): compiling the stack variable is not implemented");
+    Bang_Type_Def type_def = bang_type_def(type);
+
+    Compiled_Var new_var = {0};
+    new_var.def = var_def;
+    new_var.type = type;
+    new_var.storage = BANG_VAR_STACK_STORAGE;
+    assert(type_def.size > 0);
+    bang->scope->frame_top_offset += type_def.size;
+    new_var.addr = bang->scope->frame_top_offset;
+
+    bang_scope_push_var(bang->scope, new_var);
 }
 
 static void compile_read_frame_addr(Bang *bang, Basm *basm)
