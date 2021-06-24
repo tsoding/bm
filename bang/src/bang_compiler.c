@@ -784,7 +784,7 @@ static void compile_push_new_frame(Bang *bang, Basm *basm)
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
 
     // 3. allocate memory to store the prev frame addr
-    // TODO: get the actual size of the pointer from the definition of the ptr type
+    // TODO(#470): get the actual size of the pointer from the definition of the ptr type
     basm_push_inst(basm, INST_PUSH, word_u64(8));
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
     basm_push_inst(basm, INST_DUP, word_u64(0));
