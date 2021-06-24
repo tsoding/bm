@@ -751,9 +751,59 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
     assert(false && "TODO(#458): compiling the stack variable is not implemented");
 }
 
+static void compile_read_frame_addr(Bang *bang, Basm *basm)
+{
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_READ64U, word_u64(0));
+}
+
+static void compile_write_frame_addr(Bang *bang, Basm *basm)
+{
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_SWAP, word_u64(1));
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+}
+
+static void compile_push_new_frame(Bang *bang, Basm *basm)
+{
+    // 1. read frame addr
+    compile_read_frame_addr(bang, basm);
+
+    // 2. offset the frame addr to find the top of the stack
+    assert(bang->scope != NULL);
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->scope->frame_top_offset));
+    basm_push_inst(basm, INST_MINUSI, word_u64(0));
+
+    // 3. allocate memory to store the prev frame addr
+    // TODO: get the actual size of the pointer from the definition of the ptr type
+    basm_push_inst(basm, INST_PUSH, word_u64(8));
+    basm_push_inst(basm, INST_MINUSI, word_u64(0));
+    basm_push_inst(basm, INST_DUP, word_u64(0));
+    compile_read_frame_addr(bang, basm);
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+
+    // 4. redirect the current frame
+    compile_write_frame_addr(bang, basm);
+}
+
+static void compile_pop_frame(Bang *bang, Basm *basm)
+{
+    // 1. read frame addr
+    compile_read_frame_addr(bang, basm);
+
+    // 2. read prev frame addr
+    basm_push_inst(basm, INST_READ64U, word_u64(0));
+
+    // 3. write the prev frame back to the current frame
+    compile_write_frame_addr(bang, basm);
+}
+
 void bang_push_new_scope(Bang *bang, Basm *basm)
 {
-    (void) basm;
+    if (bang->scope) {
+        compile_push_new_frame(bang, basm);
+    }
+
     Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
     scope->parent = bang->scope;
     bang->scope = scope;
@@ -761,7 +811,7 @@ void bang_push_new_scope(Bang *bang, Basm *basm)
 
 void bang_pop_scope(Bang *bang, Basm *basm)
 {
-    (void) basm;
+    compile_pop_frame(bang, basm);
     assert(bang->scope != NULL);
     bang->scope = bang->scope->parent;
 }
