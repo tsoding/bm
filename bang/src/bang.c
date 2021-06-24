@@ -146,7 +146,7 @@ static void run_subcommand(int argc, char **argv)
         }
         Err err = bm_execute_inst(&bm);
         if (trace) {
-            // TODO: `bang run` needs a way to customize trace mode parameters
+            // TODO(#469): `bang run` needs a way to customize trace mode parameters
 #define BANG_TRACE_MEMORY_START 0
 #define BANG_TRACE_CELL_COUNT 5
 #define BANG_TRACE_CELL_SIZE 8
