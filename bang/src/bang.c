@@ -9,6 +9,8 @@
 // #include "./basm.h"
 #include "./bang_compiler.h"
 
+#define BANG_DEFAULT_STACK_SIZE 4096
+
 static void build_usage(FILE *stream)
 {
     fprintf(stream, "Usage: bang build [OPTIONS] <input.bang>\n");
@@ -16,6 +18,7 @@ static void build_usage(FILE *stream)
     fprintf(stream, "    -o <output>    Provide output path\n");
     fprintf(stream, "    -t <target>    Output target. Default is `bm`.\n");
     fprintf(stream, "                   Provide `list` to get the list of all available targets.\n");
+    fprintf(stream, "    -s <bytes>     Local variables stack size in bytes. (default %zu)\n", (size_t) BANG_DEFAULT_STACK_SIZE);
     fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
@@ -74,9 +77,10 @@ static void run_subcommand(int argc, char **argv)
     Bang_Module module = parse_bang_module(&basm.arena, &lexer);
 
     bang.write_id = basm_push_external_native(&basm, SV("write"));
-    bang_prepare_var_stack(&bang, &basm);
+    // TODO: there is no way to customize the stack size for `bang run` command
+    bang_prepare_var_stack(&bang, &basm, BANG_DEFAULT_STACK_SIZE);
 
-    bang_push_new_scope(&bang);
+    bang_push_new_scope(&bang, &basm);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -84,7 +88,7 @@ static void run_subcommand(int argc, char **argv)
         bang_generate_heap_base(&bang, &basm, SV("heap_base"));
         assert(basm.has_entry);
     }
-    bang_pop_scope(&bang);
+    bang_pop_scope(&bang, &basm);
 
     basm_save_to_bm(&basm, &bm);
 
@@ -112,6 +116,7 @@ static void build_subcommand(int argc, char **argv)
 
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
+    size_t stack_size = BANG_DEFAULT_STACK_SIZE;
     Target output_target = TARGET_BM;
 
     while (argc > 0) {
@@ -144,6 +149,23 @@ static void build_subcommand(int argc, char **argv)
             if (!target_by_name(name, &output_target)) {
                 build_usage(stderr);
                 fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
+                exit(1);
+            }
+        } else if (strcmp(flag, "-s") == 0) {
+            if (argc <= 0) {
+                build_usage(stderr);
+                fprintf(stderr, "ERROR: no value is provided for flag `%s`\n", flag);
+                exit(1);
+            }
+            const char *stack_size_cstr = shift(&argc, &argv);
+            char *endptr = NULL;
+
+            stack_size = strtoumax(stack_size_cstr, &endptr, 10);
+
+            if (stack_size_cstr == endptr || *endptr != '\0') {
+                build_usage(stderr);
+                fprintf(stderr, "ERROR: `%s` is not a valid size of the stack\n",
+                        stack_size_cstr);
                 exit(1);
             }
         } else if (strcmp(flag, "-h") == 0) {
@@ -181,9 +203,9 @@ static void build_subcommand(int argc, char **argv)
     Bang_Module module = parse_bang_module(&basm.arena, &lexer);
 
     bang.write_id = basm_push_external_native(&basm, SV("write"));
-    bang_prepare_var_stack(&bang, &basm);
+    bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang);
+    bang_push_new_scope(&bang, &basm);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -192,7 +214,7 @@ static void build_subcommand(int argc, char **argv)
         assert(basm.has_entry);
         basm_save_to_file_as_target(&basm, output_file_path, output_target);
     }
-    bang_pop_scope(&bang);
+    bang_pop_scope(&bang, &basm);
 
     arena_free(&basm.arena);
     arena_free(&bang.arena);

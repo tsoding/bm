@@ -551,12 +551,12 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang);
+    bang_push_new_scope(bang, basm);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
-    bang_pop_scope(bang);
+    bang_pop_scope(bang, basm);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
@@ -672,14 +672,11 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
     }
 }
 
-void bang_prepare_var_stack(Bang *bang, Basm *basm)
+void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
 {
-    basm_push_byte_array_to_memory(basm, BANG_STACK_CAPACITY, 0);
-    const Memory_Addr stack_start_addr = BANG_STACK_CAPACITY;
+    basm_push_byte_array_to_memory(basm, stack_size, 0);
+    const Memory_Addr stack_start_addr = stack_size;
 
-    bang->stack_top_var_addr =
-        basm_push_buffer_to_memory(
-            basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
     bang->stack_frame_var_addr =
         basm_push_buffer_to_memory(
             basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
@@ -754,15 +751,17 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
     assert(false && "TODO(#458): compiling the stack variable is not implemented");
 }
 
-void bang_push_new_scope(Bang *bang)
+void bang_push_new_scope(Bang *bang, Basm *basm)
 {
+    (void) basm;
     Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
     scope->parent = bang->scope;
     bang->scope = scope;
 }
 
-void bang_pop_scope(Bang *bang)
+void bang_pop_scope(Bang *bang, Basm *basm)
 {
+    (void) basm;
     assert(bang->scope != NULL);
     bang->scope = bang->scope->parent;
 }
