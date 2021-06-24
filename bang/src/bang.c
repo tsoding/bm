@@ -152,7 +152,7 @@ static void run_subcommand(int argc, char **argv)
 #define BANG_TRACE_CELL_SIZE 8
             for (size_t cell = 0; cell < BANG_TRACE_CELL_COUNT; ++cell) {
                 const Memory_Addr start = BANG_TRACE_MEMORY_START + cell * BANG_TRACE_CELL_SIZE;
-                fprintf(stderr, "  %04lX:", start);
+                fprintf(stderr, "  %04"PRIX64":", start);
                 for (size_t byte = 0; byte < BANG_TRACE_CELL_SIZE; ++byte) {
                     const Memory_Addr addr = start + byte;
                     fprintf(stderr, " %02X", bm.memory[addr]);
