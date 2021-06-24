@@ -9,6 +9,8 @@
 // #include "./basm.h"
 #include "./bang_compiler.h"
 
+#define BANG_DEFAULT_STACK_SIZE 4096
+
 static void build_usage(FILE *stream)
 {
     fprintf(stream, "Usage: bang build [OPTIONS] <input.bang>\n");
@@ -16,6 +18,7 @@ static void build_usage(FILE *stream)
     fprintf(stream, "    -o <output>    Provide output path\n");
     fprintf(stream, "    -t <target>    Output target. Default is `bm`.\n");
     fprintf(stream, "                   Provide `list` to get the list of all available targets.\n");
+    fprintf(stream, "    -s <bytes>     Local variables stack size in bytes. (default %zu)\n", (size_t) BANG_DEFAULT_STACK_SIZE);
     fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
@@ -46,7 +49,11 @@ static void help_subcommand(int argc, char **argv)
 
 static void run_usage(FILE *stream)
 {
-    fprintf(stream, "Usage: bang run <input.bang>\n");
+    fprintf(stream, "Usage: bang run [OPTIONS] <input.bang>\n");
+    fprintf(stream, "OPTIONS:\n");
+    fprintf(stream, "    -t             Enable trace mode\n");
+    fprintf(stream, "    -s <bytes>     Local variables stack size in bytes. (default %zu)\n", (size_t) BANG_DEFAULT_STACK_SIZE);
+    fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
 static void run_subcommand(int argc, char **argv)
@@ -55,13 +62,44 @@ static void run_subcommand(int argc, char **argv)
     static Basm basm = {0};
     static Bang bang = {0};
 
-    if (argc == 0) {
+    bool trace = false;
+    const char *input_file_path = NULL;
+    size_t stack_size = BANG_DEFAULT_STACK_SIZE;
+
+    while (argc > 0) {
+        const char *flag = shift(&argc, &argv);
+        if (strcmp(flag, "-t") == 0) {
+            trace = true;
+        } else if (strcmp(flag, "-h") == 0) {
+            run_usage(stdout);
+            exit(0);
+        } else if (strcmp(flag, "-s") == 0) {
+            if (argc <= 0) {
+                run_usage(stderr);
+                fprintf(stderr, "ERROR: no value is provided for flag `%s`\n", flag);
+                exit(1);
+            }
+            const char *stack_size_cstr = shift(&argc, &argv);
+            char *endptr = NULL;
+
+            stack_size = strtoumax(stack_size_cstr, &endptr, 10);
+
+            if (stack_size_cstr == endptr || *endptr != '\0') {
+                run_usage(stderr);
+                fprintf(stderr, "ERROR: `%s` is not a valid size of the stack\n",
+                        stack_size_cstr);
+                exit(1);
+            }
+        } else {
+            input_file_path = flag;
+        }
+    }
+
+    if (input_file_path == NULL) {
         run_usage(stderr);
         fprintf(stderr, "ERROR: no input file is provided\n");
         exit(1);
     }
-
-    const char *input_file_path = shift(&argc, &argv);
 
     String_View content = {0};
     if (arena_slurp_file(&bang.arena, sv_from_cstr(input_file_path), &content) < 0) {
@@ -74,9 +112,9 @@ static void run_subcommand(int argc, char **argv)
     Bang_Module module = parse_bang_module(&basm.arena, &lexer);
 
     bang.write_id = basm_push_external_native(&basm, SV("write"));
-    bang_prepare_var_stack(&bang, &basm);
+    bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang);
+    bang_push_new_scope(&bang, &basm);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -84,7 +122,7 @@ static void run_subcommand(int argc, char **argv)
         bang_generate_heap_base(&bang, &basm, SV("heap_base"));
         assert(basm.has_entry);
     }
-    bang_pop_scope(&bang);
+    bang_pop_scope(&bang, &basm);
 
     basm_save_to_bm(&basm, &bm);
 
@@ -96,12 +134,37 @@ static void run_subcommand(int argc, char **argv)
         }
     }
 
-    const int limit = -1;
-    Err err = bm_execute_program(&bm, limit);
+    while (!bm.halt) {
+        if (trace) {
+            const Inst inst = bm.program[bm.ip];
+            const Inst_Def def = get_inst_def(inst.type);
+            fprintf(stderr, "%s", def.name);
+            if (def.has_operand) {
+                fprintf(stderr, " %"PRIu64, inst.operand.as_u64);
+            }
+            fprintf(stderr, "\n");
+        }
+        Err err = bm_execute_inst(&bm);
+        if (trace) {
+            // TODO(#469): `bang run` needs a way to customize trace mode parameters
+#define BANG_TRACE_MEMORY_START 0
+#define BANG_TRACE_CELL_COUNT 5
+#define BANG_TRACE_CELL_SIZE 8
+            for (size_t cell = 0; cell < BANG_TRACE_CELL_COUNT; ++cell) {
+                const Memory_Addr start = BANG_TRACE_MEMORY_START + cell * BANG_TRACE_CELL_SIZE;
+                fprintf(stderr, "  %04"PRIX64":", start);
+                for (size_t byte = 0; byte < BANG_TRACE_CELL_SIZE; ++byte) {
+                    const Memory_Addr addr = start + byte;
+                    fprintf(stderr, " %02X", bm.memory[addr]);
+                }
+                fprintf(stderr, "\n");
+            }
+        }
 
-    if (err != ERR_OK) {
-        fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
-        exit(1);
+        if (err != ERR_OK) {
+            fprintf(stderr, "ERROR: %s\n", err_as_cstr(err));
+            exit(1);
+        }
     }
 }
 
@@ -112,6 +175,7 @@ static void build_subcommand(int argc, char **argv)
 
     const char *input_file_path = NULL;
     const char *output_file_path = NULL;
+    size_t stack_size = BANG_DEFAULT_STACK_SIZE;
     Target output_target = TARGET_BM;
 
     while (argc > 0) {
@@ -144,6 +208,23 @@ static void build_subcommand(int argc, char **argv)
             if (!target_by_name(name, &output_target)) {
                 build_usage(stderr);
                 fprintf(stderr, "ERROR: unknown target: `%s`\n", name);
+                exit(1);
+            }
+        } else if (strcmp(flag, "-s") == 0) {
+            if (argc <= 0) {
+                build_usage(stderr);
+                fprintf(stderr, "ERROR: no value is provided for flag `%s`\n", flag);
+                exit(1);
+            }
+            const char *stack_size_cstr = shift(&argc, &argv);
+            char *endptr = NULL;
+
+            stack_size = strtoumax(stack_size_cstr, &endptr, 10);
+
+            if (stack_size_cstr == endptr || *endptr != '\0') {
+                build_usage(stderr);
+                fprintf(stderr, "ERROR: `%s` is not a valid size of the stack\n",
+                        stack_size_cstr);
                 exit(1);
             }
         } else if (strcmp(flag, "-h") == 0) {
@@ -181,9 +262,9 @@ static void build_subcommand(int argc, char **argv)
     Bang_Module module = parse_bang_module(&basm.arena, &lexer);
 
     bang.write_id = basm_push_external_native(&basm, SV("write"));
-    bang_prepare_var_stack(&bang, &basm);
+    bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang);
+    bang_push_new_scope(&bang, &basm);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -192,7 +273,7 @@ static void build_subcommand(int argc, char **argv)
         assert(basm.has_entry);
         basm_save_to_file_as_target(&basm, output_file_path, output_target);
     }
-    bang_pop_scope(&bang);
+    bang_pop_scope(&bang, &basm);
 
     arena_free(&basm.arena);
     arena_free(&bang.arena);

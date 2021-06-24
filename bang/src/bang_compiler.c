@@ -539,7 +539,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         break;
 
     case BANG_STMT_KIND_VAR_DEF:
-        compile_stack_var_def_into_basm(bang, basm, stmt.as.var_def);
+        compile_stack_var_def_into_basm(bang, stmt.as.var_def);
         break;
 
     case COUNT_BANG_STMT_KINDS:
@@ -551,12 +551,12 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang);
+    bang_push_new_scope(bang, basm);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
-    bang_pop_scope(bang);
+    bang_pop_scope(bang, basm);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
@@ -672,14 +672,11 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
     }
 }
 
-void bang_prepare_var_stack(Bang *bang, Basm *basm)
+void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
 {
-    basm_push_byte_array_to_memory(basm, BANG_STACK_CAPACITY, 0);
-    const Memory_Addr stack_start_addr = BANG_STACK_CAPACITY;
+    basm_push_byte_array_to_memory(basm, stack_size, 0);
+    const Memory_Addr stack_start_addr = stack_size;
 
-    bang->stack_top_var_addr =
-        basm_push_buffer_to_memory(
-            basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
     bang->stack_frame_var_addr =
         basm_push_buffer_to_memory(
             basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
@@ -721,7 +718,7 @@ void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_d
     bang_scope_push_var(bang->scope, new_var);
 }
 
-void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
 {
     Bang_Type type = 0;
     if (!bang_type_by_name(var_def.type_name, &type)) {
@@ -750,19 +747,80 @@ void compile_stack_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_de
         exit(1);
     }
 
-    (void) basm;
-    assert(false && "TODO(#458): compiling the stack variable is not implemented");
+    Bang_Type_Def type_def = bang_type_def(type);
+
+    Compiled_Var new_var = {0};
+    new_var.def = var_def;
+    new_var.type = type;
+    new_var.storage = BANG_VAR_STACK_STORAGE;
+    assert(type_def.size > 0);
+    bang->scope->frame_top_offset += type_def.size;
+    new_var.addr = bang->scope->frame_top_offset;
+
+    bang_scope_push_var(bang->scope, new_var);
 }
 
-void bang_push_new_scope(Bang *bang)
+static void compile_read_frame_addr(Bang *bang, Basm *basm)
 {
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_READ64U, word_u64(0));
+}
+
+static void compile_write_frame_addr(Bang *bang, Basm *basm)
+{
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_SWAP, word_u64(1));
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+}
+
+static void compile_push_new_frame(Bang *bang, Basm *basm)
+{
+    // 1. read frame addr
+    compile_read_frame_addr(bang, basm);
+
+    // 2. offset the frame addr to find the top of the stack
+    assert(bang->scope != NULL);
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->scope->frame_top_offset));
+    basm_push_inst(basm, INST_MINUSI, word_u64(0));
+
+    // 3. allocate memory to store the prev frame addr
+    // TODO(#470): get the actual size of the pointer from the definition of the ptr type
+    basm_push_inst(basm, INST_PUSH, word_u64(8));
+    basm_push_inst(basm, INST_MINUSI, word_u64(0));
+    basm_push_inst(basm, INST_DUP, word_u64(0));
+    compile_read_frame_addr(bang, basm);
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+
+    // 4. redirect the current frame
+    compile_write_frame_addr(bang, basm);
+}
+
+static void compile_pop_frame(Bang *bang, Basm *basm)
+{
+    // 1. read frame addr
+    compile_read_frame_addr(bang, basm);
+
+    // 2. read prev frame addr
+    basm_push_inst(basm, INST_READ64U, word_u64(0));
+
+    // 3. write the prev frame back to the current frame
+    compile_write_frame_addr(bang, basm);
+}
+
+void bang_push_new_scope(Bang *bang, Basm *basm)
+{
+    if (bang->scope) {
+        compile_push_new_frame(bang, basm);
+    }
+
     Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
     scope->parent = bang->scope;
     bang->scope = scope;
 }
 
-void bang_pop_scope(Bang *bang)
+void bang_pop_scope(Bang *bang, Basm *basm)
 {
+    compile_pop_frame(bang, basm);
     assert(bang->scope != NULL);
     bang->scope = bang->scope->parent;
 }
