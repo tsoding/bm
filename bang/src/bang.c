@@ -114,7 +114,7 @@ static void run_subcommand(int argc, char **argv)
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang, NULL);
+    bang_push_new_scope(&bang);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -264,7 +264,7 @@ static void build_subcommand(int argc, char **argv)
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang, NULL);
+    bang_push_new_scope(&bang);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 

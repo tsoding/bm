@@ -51,17 +51,12 @@ typedef struct {
     Inst_Addr addr;
 } Compiled_Proc;
 
-typedef struct {
-    Memory_Addr offset;
-} Bang_Frame;
-
 typedef struct Bang_Scope Bang_Scope;
 
 struct Bang_Scope {
     Bang_Scope *parent;
     Compiled_Var vars[BANG_SCOPE_VARS_CAPACITY];
     size_t vars_count;
-    Bang_Frame *frame;
 };
 
 Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View name);
@@ -78,6 +73,7 @@ typedef struct {
     Memory_Addr stack_frame_var_addr;
 
     Bang_Scope *scope;
+    size_t frame_size;
 
     Compiled_Proc procs[BANG_PROCS_CAPACITY];
     size_t procs_count;
@@ -99,7 +95,7 @@ void compile_typed_read(Basm *basm, Bang_Type type);
 void compile_typed_write(Basm *basm, Bang_Type type);
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
-void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block, Bang_Frame *frame);
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
 void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
@@ -112,10 +108,10 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
 void compile_get_var_addr(Bang *bang, Basm *basm, Compiled_Var *var);
 void compile_read_frame_addr(Bang *bang, Basm *basm);
 void compile_write_frame_addr(Bang *bang, Basm *basm);
-void compile_push_new_frame(Bang *bang, Basm *basm, Memory_Addr frame_top_offset);
+void compile_push_new_frame(Bang *bang, Basm *basm);
 void compile_pop_frame(Bang *bang, Basm *basm);
 
-void bang_push_new_scope(Bang *bang, Bang_Frame *frame);
+void bang_push_new_scope(Bang *bang);
 void bang_pop_scope(Bang *bang);
 
 void bang_generate_entry_point(Bang *bang, Basm *basm, String_View entry_proc_name);

@@ -359,7 +359,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                         SV_Arg(funcall.name));
                 exit(1);
             }
+            compile_push_new_frame(bang, basm);
             basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
+            compile_pop_frame(bang, basm);
             result.type = BANG_TYPE_VOID;
         }
     }
@@ -414,10 +416,10 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm_push_inst(basm, INST_NOT, word_u64(0));
 
     Inst_Addr then_jmp_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
-    compile_block_into_basm(bang, basm, eef.then, bang->scope->frame);
+    compile_block_into_basm(bang, basm, eef.then);
     Inst_Addr else_jmp_addr = basm_push_inst(basm, INST_JMP, word_u64(0));
     Inst_Addr else_addr = basm->program_size;
-    compile_block_into_basm(bang, basm, eef.elze, bang->scope->frame);
+    compile_block_into_basm(bang, basm, eef.elze);
     Inst_Addr end_addr = basm->program_size;
 
     basm->program[then_jmp_addr].operand = word_u64(else_addr);
@@ -507,7 +509,7 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 
     basm_push_inst(basm, INST_NOT, word_u64(0));
     Inst_Addr fallthrough_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
-    compile_block_into_basm(bang, basm, hwile.body, bang->scope->frame);
+    compile_block_into_basm(bang, basm, hwile.body);
     basm_push_inst(basm, INST_JMP, word_u64(cond_expr.addr));
 
     const Inst_Addr body_end_addr = basm->program_size;
@@ -549,9 +551,9 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
     }
 }
 
-void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block, Bang_Frame *frame)
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang, frame);
+    bang_push_new_scope(bang);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
@@ -587,10 +589,7 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;
 
-    compile_push_new_frame(bang, basm, bang->scope->frame ? bang->scope->frame->offset : 0);
-    Bang_Frame *frame = arena_alloc(&bang->arena, sizeof(*frame));
-    compile_block_into_basm(bang, basm, proc_def.body, frame);
-    compile_pop_frame(bang, basm);
+    compile_block_into_basm(bang, basm, proc_def.body);
 
     basm_push_inst(basm, INST_RET, word_u64(0));
 }
@@ -757,21 +756,20 @@ void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
     new_var.type = type;
     new_var.storage = BANG_VAR_STACK_STORAGE;
     assert(type_def.size > 0);
-    assert(bang->scope->frame != NULL);
-    bang->scope->frame->offset += type_def.size;
-    new_var.addr = bang->scope->frame->offset;
+    bang->frame_size += type_def.size;
+    new_var.addr = bang->frame_size;
 
     bang_scope_push_var(bang->scope, new_var);
 }
 
-void compile_push_new_frame(Bang *bang, Basm *basm, Memory_Addr frame_top_offset)
+void compile_push_new_frame(Bang *bang, Basm *basm)
 {
     // 1. read frame addr
     compile_read_frame_addr(bang, basm);
 
     // 2. offset the frame addr to find the top of the stack
     assert(bang->scope != NULL);
-    basm_push_inst(basm, INST_PUSH, word_u64(frame_top_offset));
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->frame_size));
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
 
     // 3. allocate memory to store the prev frame addr
@@ -798,11 +796,10 @@ void compile_pop_frame(Bang *bang, Basm *basm)
     compile_write_frame_addr(bang, basm);
 }
 
-void bang_push_new_scope(Bang *bang, Bang_Frame *frame)
+void bang_push_new_scope(Bang *bang)
 {
     Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
     scope->parent = bang->scope;
-    scope->frame = frame;
     bang->scope = scope;
 }
 
@@ -811,16 +808,14 @@ void bang_pop_scope(Bang *bang)
     assert(bang->scope != NULL);
     Bang_Scope *scope = bang->scope;
 
-    if (scope->frame) {
-        size_t dealloc_size = 0;
-        for (size_t i = 0; i < scope->vars_count; ++i) {
-            if (scope->vars[i].storage == BANG_VAR_STACK_STORAGE) {
-                Bang_Type_Def def = bang_type_def(scope->vars[i].type);
-                dealloc_size += def.size;
-            }
+    size_t dealloc_size = 0;
+    for (size_t i = 0; i < scope->vars_count; ++i) {
+        if (scope->vars[i].storage == BANG_VAR_STACK_STORAGE) {
+            Bang_Type_Def def = bang_type_def(scope->vars[i].type);
+            dealloc_size += def.size;
         }
-        scope->frame->offset -= dealloc_size;
     }
+    bang->frame_size -= dealloc_size;
 
     bang->scope = bang->scope->parent;
 }
