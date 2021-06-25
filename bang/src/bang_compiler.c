@@ -722,7 +722,7 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     case BANG_VAR_STATIC_STORAGE: {
         new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
 
-        // TODO: global variables cannot be initialized at the moment
+        // TODO(#476): global variables cannot be initialized at the moment
         if (var_def.has_init) {
             fprintf(stderr, Bang_Loc_Fmt": ERROR: global variables cannot be initialized at the moment.\n",
                     Bang_Loc_Arg(var_def.loc));
