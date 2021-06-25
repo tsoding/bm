@@ -11,7 +11,7 @@
 
 #define BANG_DEFAULT_STACK_SIZE 4096
 
-// TODO: move intersecting `bang run` and `bang build` flags to `bang`
+// TODO(#483): move intersecting `bang run` and `bang build` flags to `bang`
 
 static void build_usage(FILE *stream)
 {
