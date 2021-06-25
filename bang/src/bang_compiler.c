@@ -702,14 +702,32 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         exit(1);
     }
 
-    Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
-    if (existing_var) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.name));
-        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_var->def.loc));
-        exit(1);
+    // Existing Var Error
+    {
+        Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
+        if (existing_var) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
+                    Bang_Loc_Arg(var_def.loc),
+                    SV_Arg(var_def.name));
+            fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
+                    Bang_Loc_Arg(existing_var->def.loc));
+            exit(1);
+        }
+    }
+
+    // TODO(#480): bang does not warn about unused variables
+
+    // Shadowed Var Warning
+    {
+        // TODO(#481): bang has no option to treat warnings as errors
+        Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, var_def.name);
+        if (shadowed_var) {
+            fprintf(stderr, Bang_Loc_Fmt": WARNING: variable `"SV_Fmt"` is shadowing another variable with the same name\n",
+                    Bang_Loc_Arg(var_def.loc),
+                    SV_Arg(var_def.name));
+            fprintf(stderr, Bang_Loc_Fmt": NOTE: the shadowed variable is located here\n",
+                    Bang_Loc_Arg(shadowed_var->def.loc));
+        }
     }
 
     Compiled_Var new_var = {0};
