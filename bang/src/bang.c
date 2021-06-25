@@ -11,6 +11,8 @@
 
 #define BANG_DEFAULT_STACK_SIZE 4096
 
+// TODO: move intersecting `bang run` and `bang build` flags to `bang`
+
 static void build_usage(FILE *stream)
 {
     fprintf(stream, "Usage: bang build [OPTIONS] <input.bang>\n");
@@ -19,6 +21,7 @@ static void build_usage(FILE *stream)
     fprintf(stream, "    -t <target>    Output target. Default is `bm`.\n");
     fprintf(stream, "                   Provide `list` to get the list of all available targets.\n");
     fprintf(stream, "    -s <bytes>     Local variables stack size in bytes. (default %zu)\n", (size_t) BANG_DEFAULT_STACK_SIZE);
+    fprintf(stream, "    -werror        Treat warnings as errors\n");
     fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
@@ -53,6 +56,7 @@ static void run_usage(FILE *stream)
     fprintf(stream, "OPTIONS:\n");
     fprintf(stream, "    -t             Enable trace mode\n");
     fprintf(stream, "    -s <bytes>     Local variables stack size in bytes. (default %zu)\n", (size_t) BANG_DEFAULT_STACK_SIZE);
+    fprintf(stream, "    -werror        Treat warnings as errors\n");
     fprintf(stream, "    -h             Print this help to stdout\n");
 }
 
@@ -90,7 +94,14 @@ static void run_subcommand(int argc, char **argv)
                         stack_size_cstr);
                 exit(1);
             }
+        } else if (strcmp(flag, "-werror") == 0) {
+            bang.warnings_as_errors = true;
         } else {
+            if (input_file_path != NULL) {
+                fprintf(stderr, "ERROR: input file path is already specified as `%s`. Multiple file paths are not supported yet\n", input_file_path);
+                exit(1);
+            }
+
             input_file_path = flag;
         }
     }
@@ -231,6 +242,11 @@ static void build_subcommand(int argc, char **argv)
             build_usage(stdout);
             exit(0);
         } else {
+            if (input_file_path != NULL) {
+                fprintf(stderr, "ERROR: input file path is already specified as `%s`. Multiple file paths are not supported yet\n", input_file_path);
+                exit(1);
+            }
+
             input_file_path = flag;
         }
     }
