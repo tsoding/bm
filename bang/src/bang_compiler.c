@@ -721,6 +721,13 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     switch (storage) {
     case BANG_VAR_STATIC_STORAGE: {
         new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
+
+        // TODO: global variables cannot be initialized at the moment
+        if (var_def.has_init) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: global variables cannot be initialized at the moment.\n",
+                    Bang_Loc_Arg(var_def.loc));
+            exit(1);
+        }
     }
     break;
 
@@ -728,27 +735,27 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         assert(type_def.size > 0);
         bang->frame_size += type_def.size;
         new_var.addr = bang->frame_size;
+
+        if (var_def.has_init) {
+            compile_get_var_addr(bang, basm, &new_var);
+
+            Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_def.init);
+            if (expr.type != new_var.type) {
+                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                        Bang_Loc_Arg(var_def.loc),
+                        bang_type_def(expr.type).name,
+                        bang_type_def(new_var.type).name);
+                exit(1);
+            }
+
+            compile_typed_write(basm, expr.type);
+        }
     }
     break;
 
     default:
         assert(false && "unreachable");
         exit(1);
-    }
-
-    if (var_def.has_init) {
-        compile_get_var_addr(bang, basm, &new_var);
-
-        Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_def.init);
-        if (expr.type != new_var.type) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                    Bang_Loc_Arg(var_def.loc),
-                    bang_type_def(expr.type).name,
-                    bang_type_def(new_var.type).name);
-            exit(1);
-        }
-
-        compile_typed_write(basm, expr.type);
     }
 
     bang_scope_push_var(bang->scope, new_var);
