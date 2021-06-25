@@ -167,9 +167,8 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
         }
 
         if (n >= lexer->line.count) {
-            const Bang_Loc unclosed_loc = bang_lexer_loc(lexer);
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: unclosed string literal",
-                    Bang_Loc_Arg(unclosed_loc));
+            bang_diag_msg(bang_lexer_loc(lexer), BANG_DIAG_ERROR,
+                          "unclosed string_literal");
             exit(1);
         }
 
@@ -181,9 +180,9 @@ static bool bang_lexer_next_token_bypassing_peek_buffer(Bang_Lexer *lexer, Bang_
     }
 
     // Unknown token
-    const Bang_Loc unknown_loc = bang_lexer_loc(lexer);
-    fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown token starts with `%c`\n",
-            Bang_Loc_Arg(unknown_loc), *lexer->line.data);
+    bang_diag_msg(bang_lexer_loc(lexer), BANG_DIAG_ERROR,
+                  "unknown token starts with `%c`",
+                  *lexer->line.data);
     exit(1);
 }
 
@@ -214,18 +213,17 @@ Bang_Token bang_lexer_expect_token(Bang_Lexer *lexer, Bang_Token_Kind expected_k
     Bang_Token token = {0};
 
     if (!bang_lexer_next(lexer, &token)) {
-        Bang_Loc eof_loc = bang_lexer_loc(lexer);
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected token `%s` but reached the end of the file\n",
-                Bang_Loc_Arg(eof_loc),
-                bang_token_kind_name(expected_kind));
+        bang_diag_msg(bang_lexer_loc(lexer), BANG_DIAG_ERROR,
+                      "expected token `%s` but reached the end of the file",
+                      bang_token_kind_name(expected_kind));
         exit(1);
     }
 
     if (token.kind != expected_kind) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR expected token `%s` but got `%s`\n",
-                Bang_Loc_Arg(token.loc),
-                bang_token_kind_name(expected_kind),
-                bang_token_kind_name(token.kind));
+        bang_diag_msg(token.loc, BANG_DIAG_ERROR,
+                      "expected token `%s` but got `%s`",
+                      bang_token_kind_name(expected_kind),
+                      bang_token_kind_name(token.kind));
         exit(1);
     }
 
@@ -236,10 +234,10 @@ Bang_Token bang_lexer_expect_keyword(Bang_Lexer *lexer, String_View name)
 {
     Bang_Token token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
     if (!sv_eq(token.text, name)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected keyword `"SV_Fmt"` but got `"SV_Fmt"`\n",
-                Bang_Loc_Arg(token.loc),
-                SV_Arg(name),
-                SV_Arg(token.text));
+        bang_diag_msg(token.loc, BANG_DIAG_ERROR,
+                      "expected keyword `"SV_Fmt"` but got `"SV_Fmt"`",
+                      SV_Arg(name),
+                      SV_Arg(token.text));
         exit(1);
     }
 
