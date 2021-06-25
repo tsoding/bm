@@ -679,9 +679,10 @@ void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
     basm_push_byte_array_to_memory(basm, stack_size, 0);
     const Memory_Addr stack_start_addr = stack_size;
 
-    bang->stack_frame_var_addr =
-        basm_push_buffer_to_memory(
-            basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
+    Bang_Type_Def ptr_def = bang_type_def(BANG_TYPE_PTR);
+    assert(sizeof(stack_start_addr) == ptr_def.size);
+
+    bang->stack_frame_var_addr = basm_push_buffer_to_memory(basm, (uint8_t*) &stack_start_addr, ptr_def.size).as_u64;
 }
 
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
@@ -772,8 +773,8 @@ void compile_push_new_frame(Bang *bang, Basm *basm)
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
 
     // 3. allocate memory to store the prev frame addr
-    // TODO(#470): get the actual size of the pointer from the definition of the ptr type
-    basm_push_inst(basm, INST_PUSH, word_u64(8));
+    Bang_Type_Def ptr_def = bang_type_def(BANG_TYPE_PTR);
+    basm_push_inst(basm, INST_PUSH, word_u64(ptr_def.size));
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
     basm_push_inst(basm, INST_DUP, word_u64(0));
     compile_read_frame_addr(bang, basm);
