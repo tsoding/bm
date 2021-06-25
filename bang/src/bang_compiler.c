@@ -460,6 +460,19 @@ Compiled_Var *bang_get_compiled_var_by_name(Bang *bang, String_View name)
     return NULL;
 }
 
+static void compile_read_frame_addr(Bang *bang, Basm *basm)
+{
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_READ64U, word_u64(0));
+}
+
+static void compile_write_frame_addr(Bang *bang, Basm *basm)
+{
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
+    basm_push_inst(basm, INST_SWAP, word_u64(1));
+    basm_push_inst(basm, INST_WRITE64, word_u64(0));
+}
+
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign)
 {
     Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_assign.name);
@@ -473,25 +486,27 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
     switch (var->storage) {
     case BANG_VAR_STATIC_STORAGE: {
         basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-        Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
-        if (expr.type != var->type) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                    Bang_Loc_Arg(var_assign.loc),
-                    bang_type_def(expr.type).name,
-                    bang_type_def(var->type).name);
-            exit(1);
-        }
-
-        compile_typed_write(basm, expr.type);
     }
     break;
 
     case BANG_VAR_STACK_STORAGE: {
-        assert(false && "TODO(#456): assigning to stack variable is not implemented");
+        compile_read_frame_addr(bang, basm);
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        basm_push_inst(basm, INST_MINUSI, word_u64(0));
     }
     break;
     }
 
+    Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
+    if (expr.type != var->type) {
+        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                Bang_Loc_Arg(var_assign.loc),
+                bang_type_def(expr.type).name,
+                bang_type_def(var->type).name);
+        exit(1);
+    }
+
+    compile_typed_write(basm, expr.type);
 }
 
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
@@ -758,19 +773,6 @@ void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
     new_var.addr = bang->scope->frame_top_offset;
 
     bang_scope_push_var(bang->scope, new_var);
-}
-
-static void compile_read_frame_addr(Bang *bang, Basm *basm)
-{
-    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
-    basm_push_inst(basm, INST_READ64U, word_u64(0));
-}
-
-static void compile_write_frame_addr(Bang *bang, Basm *basm)
-{
-    basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
-    basm_push_inst(basm, INST_SWAP, word_u64(1));
-    basm_push_inst(basm, INST_WRITE64, word_u64(0));
 }
 
 static void compile_push_new_frame(Bang *bang, Basm *basm)
