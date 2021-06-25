@@ -364,13 +364,21 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
             return BDB_FAIL;
         }
 
-        for (uint64_t i = 0;
-                i < count.as_u64 && where.as_u64 + i < BM_MEMORY_CAPACITY;
-                ++i) {
-            printf("%02X ", state->bm.memory[where.as_u64 + i]);
-        }
-        printf("\n");
+        uint64_t bytes_per_line = 16, printed_bytes = 0;
+        for (Memory_Addr start = where.as_u64; start < where.as_u64 + count.as_u64; start += bytes_per_line) {
 
+            printf("%08lX:", (unsigned long)(start));
+
+            for (Memory_Addr addr = start;
+                    (addr < start + bytes_per_line)
+                    && (printed_bytes++ < count.as_u64)
+                    && (addr < BM_MEMORY_CAPACITY);
+                    ++addr) {
+                printf(" %02X", state->bm.memory[addr]);
+            }
+
+            printf("\n");
+        }
     }
     break;
     /*
@@ -502,7 +510,7 @@ ask_again:
                "c - continue program execution\n"
                "p - print a stack dump\n"
                "w - print location info\n"
-               "x - inspect the memory\n"
+               "x - inspect the memory (x <addr> <#bytes>)\n"
                "b - set breakpoint at address or label\n"
                "d - destroy breakpoint at address or label\n"
                "q - quit\n");
