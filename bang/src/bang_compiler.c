@@ -135,6 +135,23 @@ void compile_typed_write(Basm *basm, Bang_Type type)
     basm_push_inst(basm, bang_type_def(type).write, word_u64(0));
 }
 
+void compile_get_var_addr(Bang *bang, Basm *basm, Compiled_Var *var)
+{
+    switch (var->storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        compile_read_frame_addr(bang, basm);
+        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
+        basm_push_inst(basm, INST_MINUSI, word_u64(0));
+    }
+    break;
+    }
+}
+
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read)
 {
     Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_read.name);
@@ -145,18 +162,8 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
         exit(1);
     }
 
-    switch (var->storage) {
-    case BANG_VAR_STATIC_STORAGE: {
-        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-        compile_typed_read(basm, var->type);
-    }
-    break;
-
-    case BANG_VAR_STACK_STORAGE: {
-        assert(false && "TODO(#454): reading stack variables is not implemented");
-    }
-    break;
-    }
+    compile_get_var_addr(bang, basm, var);
+    compile_typed_read(basm, var->type);
 
     return var->type;
 }
@@ -460,13 +467,13 @@ Compiled_Var *bang_get_compiled_var_by_name(Bang *bang, String_View name)
     return NULL;
 }
 
-static void compile_read_frame_addr(Bang *bang, Basm *basm)
+void compile_read_frame_addr(Bang *bang, Basm *basm)
 {
     basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
     basm_push_inst(basm, INST_READ64U, word_u64(0));
 }
 
-static void compile_write_frame_addr(Bang *bang, Basm *basm)
+void compile_write_frame_addr(Bang *bang, Basm *basm)
 {
     basm_push_inst(basm, INST_PUSH, word_u64(bang->stack_frame_var_addr));
     basm_push_inst(basm, INST_SWAP, word_u64(1));
@@ -483,19 +490,7 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
         exit(1);
     }
 
-    switch (var->storage) {
-    case BANG_VAR_STATIC_STORAGE: {
-        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-    }
-    break;
-
-    case BANG_VAR_STACK_STORAGE: {
-        compile_read_frame_addr(bang, basm);
-        basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-        basm_push_inst(basm, INST_MINUSI, word_u64(0));
-    }
-    break;
-    }
+    compile_get_var_addr(bang, basm, var);
 
     Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
     if (expr.type != var->type) {
@@ -775,7 +770,7 @@ void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
     bang_scope_push_var(bang->scope, new_var);
 }
 
-static void compile_push_new_frame(Bang *bang, Basm *basm)
+void compile_push_new_frame(Bang *bang, Basm *basm)
 {
     // 1. read frame addr
     compile_read_frame_addr(bang, basm);
@@ -797,7 +792,7 @@ static void compile_push_new_frame(Bang *bang, Basm *basm)
     compile_write_frame_addr(bang, basm);
 }
 
-static void compile_pop_frame(Bang *bang, Basm *basm)
+void compile_pop_frame(Bang *bang, Basm *basm)
 {
     // 1. read frame addr
     compile_read_frame_addr(bang, basm);
