@@ -437,7 +437,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
         } else if (sv_eq(token.text, SV("var"))) {
             Bang_Stmt stmt = {0};
             stmt.kind = BANG_STMT_KIND_VAR_DEF;
-            stmt.as.var_def = parse_bang_var_def(lexer);
+            stmt.as.var_def = parse_bang_var_def(arena, lexer);
             return stmt;
         } else {
             Bang_Token next_token = {0};
@@ -531,7 +531,7 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
     return result;
 }
 
-Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
+Bang_Var_Def parse_bang_var_def(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Var_Def var_def = {0};
 
@@ -539,6 +539,16 @@ Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer)
     var_def.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
     var_def.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+
+    {
+        Bang_Token token = {0};
+        if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_EQ) {
+            bang_lexer_next(lexer, &token);
+            var_def.has_init = true;
+            var_def.init = parse_bang_expr(arena, lexer);
+        }
+    }
+
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_SEMICOLON);
 
     return var_def;
@@ -565,7 +575,7 @@ Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer)
             top->as.proc = parse_bang_proc_def(arena, lexer);
         } else if (sv_eq(token.text, SV("var"))) {
             top->kind = BANG_TOP_KIND_VAR;
-            top->as.var = parse_bang_var_def(lexer);
+            top->as.var = parse_bang_var_def(arena, lexer);
         } else {
             static_assert(COUNT_BANG_TOP_KINDS == 2, "The error message below assumes that there is only two top level definition kinds");
             (void) BANG_TOP_KIND_PROC; // The error message below assumes there is a proc top level definition. Please update the message if needed.
