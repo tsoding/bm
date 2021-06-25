@@ -138,6 +138,9 @@ struct Bang_Var_Def {
     Bang_Loc loc;
     String_View name;
     String_View type_name;
+
+    Bang_Expr init;
+    bool has_init;
 };
 
 union Bang_Stmt_As {
@@ -203,7 +206,7 @@ Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer);
 Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
-Bang_Var_Def parse_bang_var_def(Bang_Lexer *lexer);
+Bang_Var_Def parse_bang_var_def(Arena *arena, Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
 Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer);

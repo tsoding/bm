@@ -541,7 +541,7 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         break;
 
     case BANG_STMT_KIND_VAR_DEF:
-        compile_stack_var_def_into_basm(bang, stmt.as.var_def);
+        compile_var_def_into_basm(bang, basm, stmt.as.var_def, BANG_VAR_STACK_STORAGE);
         break;
 
     case COUNT_BANG_STMT_KINDS:
@@ -625,7 +625,7 @@ void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module)
         }
         break;
         case BANG_TOP_KIND_VAR: {
-            compile_static_var_def_into_basm(bang, basm, top->as.var);
+            compile_var_def_into_basm(bang, basm, top->as.var, BANG_VAR_STATIC_STORAGE);
         }
         break;
         case COUNT_BANG_TOP_KINDS:
@@ -684,7 +684,7 @@ void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
             basm, (uint8_t*) &stack_start_addr, sizeof(stack_start_addr)).as_u64;
 }
 
-void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def)
+void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
 {
     Bang_Type type = 0;
     if (!bang_type_by_name(var_def.type_name, &type)) {
@@ -713,51 +713,43 @@ void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_d
 
     Compiled_Var new_var = {0};
     new_var.def = var_def;
-    new_var.storage = BANG_VAR_STATIC_STORAGE;
-    new_var.addr = basm_push_byte_array_to_memory(basm, bang_type_def(type).size, 0).as_u64;
     new_var.type = type;
-
-    bang_scope_push_var(bang->scope, new_var);
-}
-
-void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
-{
-    Bang_Type type = 0;
-    if (!bang_type_by_name(var_def.type_name, &type)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.type_name));
-        exit(1);
-    }
-
-    if (type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
-                Bang_Loc_Arg(var_def.loc),
-                bang_type_def(type).name);
-        exit(1);
-    }
-
-    // TODO(#457): bang compile does not warn about shadowing of the variable
-
-    Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
-    if (existing_var) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.name));
-        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_var->def.loc));
-        exit(1);
-    }
+    new_var.storage = storage;
 
     Bang_Type_Def type_def = bang_type_def(type);
 
-    Compiled_Var new_var = {0};
-    new_var.def = var_def;
-    new_var.type = type;
-    new_var.storage = BANG_VAR_STACK_STORAGE;
-    assert(type_def.size > 0);
-    bang->frame_size += type_def.size;
-    new_var.addr = bang->frame_size;
+    switch (storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        assert(type_def.size > 0);
+        bang->frame_size += type_def.size;
+        new_var.addr = bang->frame_size;
+    }
+    break;
+
+    default:
+        assert(false && "unreachable");
+        exit(1);
+    }
+
+    if (var_def.has_init) {
+        compile_get_var_addr(bang, basm, &new_var);
+
+        Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_def.init);
+        if (expr.type != new_var.type) {
+            fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
+                    Bang_Loc_Arg(var_def.loc),
+                    bang_type_def(expr.type).name,
+                    bang_type_def(new_var.type).name);
+            exit(1);
+        }
+
+        compile_typed_write(basm, expr.type);
+    }
 
     bang_scope_push_var(bang->scope, new_var);
 }
