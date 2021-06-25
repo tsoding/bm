@@ -92,8 +92,8 @@ String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
                 Bang_Loc loc = token.loc;
                 loc.col += i + 1;
 
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: unfinished string literal escape sequence\n",
-                        Bang_Loc_Arg(loc));
+                bang_diag_msg(loc, BANG_DIAG_ERROR,
+                              "unfinished string literal escape sequence");
                 exit(1);
             }
 
@@ -112,8 +112,9 @@ String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer)
                 Bang_Loc loc = token.loc;
                 loc.col += i + 2;
 
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown escape character `%c`",
-                        Bang_Loc_Arg(loc), lit_str.data[i + 1]);
+                bang_diag_msg(loc, BANG_DIAG_ERROR,
+                              "unknown escape character `%c`",
+                              lit_str.data[i + 1]);
                 exit(1);
             }
             }
@@ -186,9 +187,8 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     Bang_Token token = {0};
 
     if (!bang_lexer_peek(lexer, &token, 0)) {
-        const Bang_Loc eof_loc = bang_lexer_loc(lexer);
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected expression but got end of the file\n",
-                Bang_Loc_Arg(eof_loc));
+        bang_diag_msg(bang_lexer_loc(lexer), BANG_DIAG_ERROR,
+                      "expected expression but got end of the file");
         exit(1);
     }
 
@@ -243,8 +243,9 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
             } else {
                 Bang_Loc ch_loc = token.loc;
                 ch_loc.col += i;
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: incorrect character `%c` inside of the integer literal\n",
-                        Bang_Loc_Arg(ch_loc), ch);
+                bang_diag_msg(ch_loc, BANG_DIAG_ERROR,
+                              "incorrect character `%c` inside of the integer literal",
+                              ch);
                 exit(1);
             }
         }
@@ -289,9 +290,9 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_EQ:
     case BANG_TOKEN_KIND_EQ_EQ:
     case BANG_TOKEN_KIND_SEMICOLON: {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: no primary expression starts with `%s`\n",
-                Bang_Loc_Arg(token.loc),
-                bang_token_kind_name(token.kind));
+        bang_diag_msg(token.loc, BANG_DIAG_ERROR,
+                      "no primary expression starts with `%s`",
+                      bang_token_kind_name(token.kind));
         exit(1);
     }
     break;
@@ -414,13 +415,15 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Token token = {0};
     if (!bang_lexer_peek(lexer, &token, 0)) {
-        const Bang_Loc eof_loc = bang_lexer_loc(lexer);
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected statement but reached the end of the file\n",
-                Bang_Loc_Arg(eof_loc));
+        bang_diag_msg(bang_lexer_loc(lexer), BANG_DIAG_ERROR,
+                      "expected statement but reached the end of the file");
         exit(1);
     }
 
-    static_assert(COUNT_BANG_STMT_KINDS == 5, "The amount of statements have changed. Please update the parse_bang_stmt function to take that into account");
+    static_assert(
+        COUNT_BANG_STMT_KINDS == 5,
+        "The amount of statements have changed. "
+        "Please update the parse_bang_stmt function to take that into account");
 
     switch (token.kind) {
     case BANG_TOKEN_KIND_NAME: {
@@ -561,10 +564,10 @@ Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer)
 
     while (bang_lexer_peek(lexer, &token, 0)) {
         if (token.kind != BANG_TOKEN_KIND_NAME) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: expected token `%s` but got `%s`",
-                    Bang_Loc_Arg(token.loc),
-                    bang_token_kind_name(BANG_TOKEN_KIND_NAME),
-                    bang_token_kind_name(token.kind));
+            bang_diag_msg(token.loc, BANG_DIAG_ERROR,
+                          "expected token `%s` but got `%s`",
+                          bang_token_kind_name(BANG_TOKEN_KIND_NAME),
+                          bang_token_kind_name(token.kind));
             exit(1);
         }
 
@@ -580,9 +583,9 @@ Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer)
             static_assert(COUNT_BANG_TOP_KINDS == 2, "The error message below assumes that there is only two top level definition kinds");
             (void) BANG_TOP_KIND_PROC; // The error message below assumes there is a proc top level definition. Please update the message if needed.
             (void) BANG_TOP_KIND_VAR; // The error message below assumes there is a var top level definition. Please update the message if needed.
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: expected top level module definition (proc or var) but got `"SV_Fmt"`",
-                    Bang_Loc_Arg(token.loc),
-                    SV_Arg(token.text));
+            bang_diag_msg(token.loc, BANG_DIAG_ERROR,
+                          "expected top level module definition (proc or var) but got `"SV_Fmt"`",
+                          SV_Arg(token.text));
             exit(1);
         }
 

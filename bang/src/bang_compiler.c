@@ -156,9 +156,9 @@ Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_r
 {
     Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_read.name);
     if (var == NULL) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: could not read non-existing variable `"SV_Fmt"`\n",
-                Bang_Loc_Arg(var_read.loc),
-                SV_Arg(var_read.name));
+        bang_diag_msg(var_read.loc, BANG_DIAG_ERROR,
+                      "could not read non-existing variable `"SV_Fmt"`",
+                      SV_Arg(var_read.name));
         exit(1);
     }
 
@@ -174,21 +174,21 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
     const Compiled_Expr compiled_rhs = compile_bang_expr_into_basm(bang, basm, binary_op.rhs);
 
     if (compiled_lhs.type != compiled_rhs.type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: LHS of `%s` has type `%s` but RHS has type `%s`\n",
-                Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
-                bang_type_def(compiled_lhs.type).name,
-                bang_type_def(compiled_rhs.type).name);
+        bang_diag_msg(binary_op.loc, BANG_DIAG_ERROR,
+                      "LHS of `%s` has type `%s` but RHS has type `%s`",
+                      bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
+                      bang_type_def(compiled_lhs.type).name,
+                      bang_type_def(compiled_rhs.type).name);
         exit(1);
     }
     const Bang_Type type = compiled_lhs.type;
 
     Binary_Op_Of_Type boot = binary_op_of_type(type, binary_op.kind);
     if (!boot.exists) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: binary operation `%s` does not exist for type `%s`\n",
-                Bang_Loc_Arg(binary_op.loc),
-                bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
-                bang_type_def(type).name);
+        bang_diag_msg(binary_op.loc, BANG_DIAG_ERROR,
+                      "binary operation `%s` does not exist for type `%s`",
+                      bang_token_kind_name(bang_binary_op_def(binary_op.kind).token_kind),
+                      bang_type_def(type).name);
         exit(1);
     }
 
@@ -200,16 +200,16 @@ Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op bin
 static Bang_Type reinterpret_expr_as_type(Bang_Expr type_arg)
 {
     if (type_arg.kind != BANG_EXPR_KIND_VAR_READ) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type name\n",
-                Bang_Loc_Arg(type_arg.loc));
+        bang_diag_msg(type_arg.loc, BANG_DIAG_ERROR,
+                      "expected type name");
         exit(1);
     }
 
     Bang_Type type = 0;
     if (!bang_type_by_name(type_arg.as.var_read.name, &type)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: `"SV_Fmt"` is not a valid type\n",
-                Bang_Loc_Arg(type_arg.loc),
-                SV_Arg(type_arg.as.var_read.name));
+        bang_diag_msg(type_arg.loc, BANG_DIAG_ERROR,
+                      "`"SV_Fmt"` is not a valid type",
+                      SV_Arg(type_arg.as.var_read.name));
         exit(1);
     }
 
@@ -219,10 +219,10 @@ static Bang_Type reinterpret_expr_as_type(Bang_Expr type_arg)
 static void type_check_expr(Compiled_Expr expr, Bang_Type expected_type)
 {
     if (expr.type != expected_type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but `%s`\n",
-                Bang_Loc_Arg(expr.ast.loc),
-                bang_type_def(expected_type).name,
-                bang_type_def(expr.type).name);
+        bang_diag_msg(expr.ast.loc, BANG_DIAG_ERROR,
+                      "expected type `%s` but `%s`",
+                      bang_type_def(expected_type).name,
+                      bang_type_def(expr.type).name);
         exit(1);
     }
 }
@@ -255,8 +255,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             bang_funcall_expect_arity(funcall, 1);
             Bang_Expr arg = funcall.args->value;
             if (arg.kind != BANG_EXPR_KIND_VAR_READ) {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: expected variable name as the argument of `ptr` function\n",
-                        Bang_Loc_Arg(funcall.loc));
+                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                              "expected variable name as the argument of `ptr` function");
                 exit(1);
             }
 
@@ -295,10 +295,10 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             } else if (value.type == BANG_TYPE_U8 && type == BANG_TYPE_PTR) {
                 result.type = type;
             } else {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: can't convert value of type `%s` to `%s`\n",
-                        Bang_Loc_Arg(funcall.loc),
-                        bang_type_def(value.type).name,
-                        bang_type_def(type).name);
+                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                              "can't convert value of type `%s` to `%s`",
+                              bang_type_def(value.type).name,
+                              bang_type_def(type).name);
                 exit(1);
             }
 
@@ -312,9 +312,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot store `%s` types\n",
-                        Bang_Loc_Arg(funcall.loc),
-                        bang_type_def(BANG_TYPE_VOID).name);
+                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                              "cannot store `%s` types",
+                              bang_type_def(BANG_TYPE_VOID).name);
                 exit(1);
             }
 
@@ -335,9 +335,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot load `%s` types\n",
-                        Bang_Loc_Arg(funcall.loc),
-                        bang_type_def(BANG_TYPE_VOID).name);
+                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                              "cannot load `%s` types",
+                              bang_type_def(BANG_TYPE_VOID).name);
                 exit(1);
             }
 
@@ -354,9 +354,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
         } else {
             Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
             if (proc == NULL) {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: unknown function `"SV_Fmt"`\n",
-                        Bang_Loc_Arg(funcall.loc),
-                        SV_Arg(funcall.name));
+                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                              "unknown function `"SV_Fmt"`",
+                              SV_Arg(funcall.name));
                 exit(1);
             }
             compile_push_new_frame(bang, basm);
@@ -406,10 +406,10 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
 {
     const Compiled_Expr cond_expr = compile_bang_expr_into_basm(bang, basm, eef.condition);
     if (cond_expr.type != BANG_TYPE_BOOL) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but got `%s`\n",
-                Bang_Loc_Arg(eef.loc),
-                bang_type_def(BANG_TYPE_BOOL).name,
-                bang_type_def(cond_expr.type).name);
+        bang_diag_msg(eef.loc, BANG_DIAG_ERROR,
+                      "expected type `%s` but got `%s`",
+                      bang_type_def(BANG_TYPE_BOOL).name,
+                      bang_type_def(cond_expr.type).name);
         exit(1);
     }
 
@@ -476,9 +476,9 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
 {
     Compiled_Var *var = bang_get_compiled_var_by_name(bang, var_assign.name);
     if (var == NULL) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign non-existing variable `"SV_Fmt"`\n",
-                Bang_Loc_Arg(var_assign.loc),
-                SV_Arg(var_assign.name));
+        bang_diag_msg(var_assign.loc, BANG_DIAG_ERROR,
+                      "cannot assign non-existing variable `"SV_Fmt"`",
+                      SV_Arg(var_assign.name));
         exit(1);
     }
 
@@ -486,10 +486,10 @@ void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign v
 
     Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_assign.value);
     if (expr.type != var->type) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                Bang_Loc_Arg(var_assign.loc),
-                bang_type_def(expr.type).name,
-                bang_type_def(var->type).name);
+        bang_diag_msg(var_assign.loc, BANG_DIAG_ERROR,
+                      "cannot assign expression of type `%s` to a variable of type `%s`",
+                      bang_type_def(expr.type).name,
+                      bang_type_def(var->type).name);
         exit(1);
     }
 
@@ -500,10 +500,10 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 {
     const Compiled_Expr cond_expr = compile_bang_expr_into_basm(bang, basm, hwile.condition);
     if (cond_expr.type != BANG_TYPE_BOOL) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: expected type `%s` but got `%s`\n",
-                Bang_Loc_Arg(hwile.loc),
-                bang_type_def(BANG_TYPE_BOOL).name,
-                bang_type_def(cond_expr.type).name);
+        bang_diag_msg(hwile.loc, BANG_DIAG_ERROR,
+                      "expected type `%s` but got `%s`",
+                      bang_type_def(BANG_TYPE_BOOL).name,
+                      bang_type_def(cond_expr.type).name);
         exit(1);
     }
 
@@ -575,11 +575,11 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
 {
     Compiled_Proc *existing_proc = bang_get_compiled_proc_by_name(bang, proc_def.name);
     if (existing_proc) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: procedure `"SV_Fmt"` is already defined\n",
-                Bang_Loc_Arg(proc_def.loc),
-                SV_Arg(proc_def.name));
-        fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                Bang_Loc_Arg(existing_proc->def.loc));
+        bang_diag_msg(proc_def.loc, BANG_DIAG_ERROR,
+                      "procedure `"SV_Fmt"` is already defined",
+                      SV_Arg(proc_def.name));
+        bang_diag_msg(existing_proc->def.loc, BANG_DIAG_NOTE,
+                      "the first definition is located here");
         exit(1);
     }
 
@@ -607,11 +607,11 @@ void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
     }
 
     if (expected_arity != actual_arity) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: function `"SV_Fmt"` expects %zu amount of arguments but provided %zu\n",
-                Bang_Loc_Arg(funcall.loc),
-                SV_Arg(funcall.name),
-                expected_arity,
-                actual_arity);
+        bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                      "function `"SV_Fmt"` expects %zu amount of arguments but provided %zu",
+                      SV_Arg(funcall.name),
+                      expected_arity,
+                      actual_arity);
         exit(1);
     }
 }
@@ -659,11 +659,11 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
     if (heap_base_var != NULL) {
         assert(heap_base_var->storage == BANG_VAR_STATIC_STORAGE);
         if (heap_base_var->type != BANG_TYPE_PTR) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`\n",
-                    Bang_Loc_Arg(heap_base_var->def.loc),
-                    SV_Arg(heap_base_var_name),
-                    bang_type_def(BANG_TYPE_PTR).name,
-                    bang_type_def(heap_base_var->type).name);
+            bang_diag_msg(heap_base_var->def.loc, BANG_DIAG_ERROR,
+                          "the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`",
+                          SV_Arg(heap_base_var_name),
+                          bang_type_def(BANG_TYPE_PTR).name,
+                          bang_type_def(heap_base_var->type).name);
             exit(1);
         }
 
@@ -689,16 +689,16 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 {
     Bang_Type type = 0;
     if (!bang_type_by_name(var_def.type_name, &type)) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: type `"SV_Fmt"` does not exist\n",
-                Bang_Loc_Arg(var_def.loc),
-                SV_Arg(var_def.type_name));
+        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                      "type `"SV_Fmt"` does not exist",
+                      SV_Arg(var_def.type_name));
         exit(1);
     }
 
     if (type == BANG_TYPE_VOID) {
-        fprintf(stderr, Bang_Loc_Fmt": ERROR: defining variables with type %s is not allowed\n",
-                Bang_Loc_Arg(var_def.loc),
-                bang_type_def(type).name);
+        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                      "defining variables with type %s is not allowed",
+                      bang_type_def(type).name);
         exit(1);
     }
 
@@ -706,11 +706,11 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     {
         Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
         if (existing_var) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: variable `"SV_Fmt"` is already defined\n",
-                    Bang_Loc_Arg(var_def.loc),
-                    SV_Arg(var_def.name));
-            fprintf(stderr, Bang_Loc_Fmt": NOTE: the first definition is located here\n",
-                    Bang_Loc_Arg(existing_var->def.loc));
+            bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                          "variable `"SV_Fmt"` is already defined",
+                          SV_Arg(var_def.name));
+            bang_diag_msg(existing_var->def.loc, BANG_DIAG_ERROR,
+                          "the first definition is located here");
             exit(1);
         }
     }
@@ -746,8 +746,8 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 
         // TODO(#476): global variables cannot be initialized at the moment
         if (var_def.has_init) {
-            fprintf(stderr, Bang_Loc_Fmt": ERROR: global variables cannot be initialized at the moment.\n",
-                    Bang_Loc_Arg(var_def.loc));
+            bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                          "global variables cannot be initialized at the moment");
             exit(1);
         }
     }
@@ -763,10 +763,10 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 
             Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, var_def.init);
             if (expr.type != new_var.type) {
-                fprintf(stderr, Bang_Loc_Fmt": ERROR: cannot assign expression of type `%s` to a variable of type `%s`\n",
-                        Bang_Loc_Arg(var_def.loc),
-                        bang_type_def(expr.type).name,
-                        bang_type_def(new_var.type).name);
+                bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                              "cannot assign expression of type `%s` to a variable of type `%s`",
+                              bang_type_def(expr.type).name,
+                              bang_type_def(new_var.type).name);
                 exit(1);
             }
 
