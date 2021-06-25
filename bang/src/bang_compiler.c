@@ -719,7 +719,7 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 
     // Shadowed Var Warning
     {
-        // TODO: bang has no option to treat warnings as errors
+        // TODO(#481): bang has no option to treat warnings as errors
         Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, var_def.name);
         if (shadowed_var) {
             fprintf(stderr, Bang_Loc_Fmt": WARNING: variable `"SV_Fmt"` is shadowing another variable with the same name\n",
