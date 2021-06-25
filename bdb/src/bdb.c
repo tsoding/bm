@@ -367,7 +367,7 @@ Bdb_Err bdb_run_command(Bdb_State *state, String_View command_word, String_View 
         uint64_t bytes_per_line = 16, printed_bytes = 0;
         for (Memory_Addr start = where.as_u64; start < where.as_u64 + count.as_u64; start += bytes_per_line) {
 
-            printf("%08lX:", start);
+            printf("%08lX:", (unsigned long)(start));
 
             for (Memory_Addr addr = start;
                     (addr < start + bytes_per_line)
