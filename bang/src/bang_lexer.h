@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "./sv.h"
+#include "./bang_diag.h"
 
 typedef enum {
     BANG_TOKEN_KIND_NAME = 0,
@@ -30,15 +31,6 @@ typedef enum {
 } Bang_Token_Kind;
 
 const char *bang_token_kind_name(Bang_Token_Kind kind);
-
-typedef struct {
-    size_t row;
-    size_t col;
-    const char *file_path;
-} Bang_Loc;
-
-#define Bang_Loc_Fmt "%s:%zu:%zu"
-#define Bang_Loc_Arg(loc) (loc).file_path, (loc).row, (loc).col
 
 typedef struct {
     Bang_Token_Kind kind;
