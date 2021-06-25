@@ -715,7 +715,7 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         }
     }
 
-    // TODO: bang does not warn about unused variables
+    // TODO(#480): bang does not warn about unused variables
 
     // Shadowed Var Warning
     {
