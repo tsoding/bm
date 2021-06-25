@@ -38,8 +38,7 @@ proc print_state_current() {
   var cell_ptr: ptr;
   var cell: u8;
 
-  var i: i64;
-  i = 0;
+  var i: i64 = 0;
   while i < state_size {
     cell_ptr = states_base + cast(ptr, state_current * state_size + i);
     cell = load_ptr(u8, cell_ptr);
@@ -65,8 +64,7 @@ proc next_state() {
 
   state_next = 1 - state_current;
 
-  var i: i64;
-  i = 1;
+  var i: i64 = 1;
   while i < state_size - 1 {
     table_index = cast(u8, 0);
 
@@ -95,8 +93,7 @@ proc next_state() {
 
 proc main() {
   init();
-  var i: i64;
-  i = 0;
+  var i: i64 = 0;
   while i < state_size - 2 {
     print_state_current();
     next_state();
