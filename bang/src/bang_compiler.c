@@ -261,18 +261,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             }
 
             Compiled_Var *var = bang_get_compiled_var_by_name(bang, arg.as.var_read.name);
-            switch (var->storage) {
-            case BANG_VAR_STATIC_STORAGE: {
-                basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-                result.type = BANG_TYPE_PTR;
-            }
-            break;
-
-            case BANG_VAR_STACK_STORAGE: {
-                assert(false && "TODO(#455): Taking a pointer to stack variable is not implemented");
-            }
-            break;
-            }
+            compile_get_var_addr(bang, basm, var);
+            result.type = BANG_TYPE_PTR;
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
             Bang_Funcall_Arg *args = funcall.args;
@@ -369,7 +359,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
                         SV_Arg(funcall.name));
                 exit(1);
             }
+            compile_push_new_frame(bang, basm);
             basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
+            compile_pop_frame(bang, basm);
             result.type = BANG_TYPE_VOID;
         }
     }
@@ -561,12 +553,12 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang, basm);
+    bang_push_new_scope(bang);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
-    bang_pop_scope(bang, basm);
+    bang_pop_scope(bang);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
@@ -764,8 +756,8 @@ void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def)
     new_var.type = type;
     new_var.storage = BANG_VAR_STACK_STORAGE;
     assert(type_def.size > 0);
-    bang->scope->frame_top_offset += type_def.size;
-    new_var.addr = bang->scope->frame_top_offset;
+    bang->frame_size += type_def.size;
+    new_var.addr = bang->frame_size;
 
     bang_scope_push_var(bang->scope, new_var);
 }
@@ -777,7 +769,7 @@ void compile_push_new_frame(Bang *bang, Basm *basm)
 
     // 2. offset the frame addr to find the top of the stack
     assert(bang->scope != NULL);
-    basm_push_inst(basm, INST_PUSH, word_u64(bang->scope->frame_top_offset));
+    basm_push_inst(basm, INST_PUSH, word_u64(bang->frame_size));
     basm_push_inst(basm, INST_MINUSI, word_u64(0));
 
     // 3. allocate memory to store the prev frame addr
@@ -804,20 +796,26 @@ void compile_pop_frame(Bang *bang, Basm *basm)
     compile_write_frame_addr(bang, basm);
 }
 
-void bang_push_new_scope(Bang *bang, Basm *basm)
+void bang_push_new_scope(Bang *bang)
 {
-    if (bang->scope) {
-        compile_push_new_frame(bang, basm);
-    }
-
     Bang_Scope *scope = arena_alloc(&bang->arena, sizeof(Bang_Scope));
     scope->parent = bang->scope;
     bang->scope = scope;
 }
 
-void bang_pop_scope(Bang *bang, Basm *basm)
+void bang_pop_scope(Bang *bang)
 {
-    compile_pop_frame(bang, basm);
     assert(bang->scope != NULL);
+    Bang_Scope *scope = bang->scope;
+
+    size_t dealloc_size = 0;
+    for (size_t i = 0; i < scope->vars_count; ++i) {
+        if (scope->vars[i].storage == BANG_VAR_STACK_STORAGE) {
+            Bang_Type_Def def = bang_type_def(scope->vars[i].type);
+            dealloc_size += def.size;
+        }
+    }
+    bang->frame_size -= dealloc_size;
+
     bang->scope = bang->scope->parent;
 }

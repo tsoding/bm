@@ -9,18 +9,6 @@ var board_next: i64;
 
 var display_base: ptr;
 
-var cell_ptr: ptr;
-var cell: u8;
-
-var row: i64;
-var col: i64;
-var drow: i64;
-var dcol: i64;
-
-var nbors: i64;
-
-var i: i64;
-
 proc init() {
   boards_base = heap_base;
   board_rows = 10;
@@ -38,8 +26,13 @@ proc init() {
 }
 
 proc print_board_current() {
+  var row: i64;
   row = 0;
   while row < board_rows {
+    var cell_ptr: ptr;
+    var cell: u8;
+
+    var col: i64;
     col = 0;
     while col < board_cols {
       cell_ptr = boards_base + cast(ptr, board_size * board_current + row * board_cols + col);
@@ -66,14 +59,23 @@ proc print_board_current() {
 proc next_board() {
   board_next = 1 - board_current;
 
+  var row: i64;
   row = 0;
   while row < board_rows {
+    var cell_ptr: ptr;
+    var cell: u8;
+
+    var col: i64;
     col = 0;
     while col < board_cols {
       # Nbors begin
+      var nbors: i64;
       nbors = 0;
+
+      var drow: i64;
       drow = row - 1;
       while drow < row + 2 {
+        var dcol: i64;
         dcol = col - 1;
         while dcol < col + 2 {
           if drow >= 0 && drow < board_rows {
@@ -122,6 +124,7 @@ proc next_board() {
 
 proc main() {
   init();
+  var i: i64;
   i = 0;
   while i < 10 {
     print_board_current();
