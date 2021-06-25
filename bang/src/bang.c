@@ -114,7 +114,7 @@ static void run_subcommand(int argc, char **argv)
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang, &basm);
+    bang_push_new_scope(&bang, NULL);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -122,7 +122,7 @@ static void run_subcommand(int argc, char **argv)
         bang_generate_heap_base(&bang, &basm, SV("heap_base"));
         assert(basm.has_entry);
     }
-    bang_pop_scope(&bang, &basm);
+    bang_pop_scope(&bang);
 
     basm_save_to_bm(&basm, &bm);
 
@@ -264,7 +264,7 @@ static void build_subcommand(int argc, char **argv)
     bang.write_id = basm_push_external_native(&basm, SV("write"));
     bang_prepare_var_stack(&bang, &basm, stack_size);
 
-    bang_push_new_scope(&bang, &basm);
+    bang_push_new_scope(&bang, NULL);
     {
         compile_bang_module_into_basm(&bang, &basm, module);
 
@@ -273,7 +273,7 @@ static void build_subcommand(int argc, char **argv)
         assert(basm.has_entry);
         basm_save_to_file_as_target(&basm, output_file_path, output_target);
     }
-    bang_pop_scope(&bang, &basm);
+    bang_pop_scope(&bang);
 
     arena_free(&basm.arena);
     arena_free(&bang.arena);
