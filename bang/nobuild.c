@@ -24,7 +24,8 @@
                    PATH("..", "basm", "src", "verifier.c")
 #define BANG_UNITS PATH("src", "bang_compiler.c"), \
                    PATH("src", "bang_lexer.c"), \
-                   PATH("src", "bang_parser.c")
+                   PATH("src", "bang_parser.c"), \
+                   PATH("src", "bang_diag.c")
 #define UNITS BM_UNITS, COMMON_UNITS, BASM_UNITS, BANG_UNITS
 #define LIBS "-lm"
 

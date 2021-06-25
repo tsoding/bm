@@ -79,6 +79,8 @@ typedef struct {
     size_t procs_count;
 
     Bang_Loc entry_loc;
+
+    bool warnings_as_errors;
 } Bang;
 
 Compiled_Var *bang_get_compiled_var_by_name(Bang *bang, String_View name);
