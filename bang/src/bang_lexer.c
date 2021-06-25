@@ -77,8 +77,6 @@ static void bang_lexer_next_line(Bang_Lexer *lexer)
     lexer->line_start = lexer->line.data;
 }
 
-
-
 Bang_Loc bang_lexer_loc(Bang_Lexer *lexer)
 {
     Bang_Loc result = {0};
