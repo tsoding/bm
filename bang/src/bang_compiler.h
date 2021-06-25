@@ -105,6 +105,11 @@ void compile_static_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_d
 void compile_stack_var_def_into_basm(Bang *bang, Bang_Var_Def var_def);
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);
+void compile_get_var_addr(Bang *bang, Basm *basm, Compiled_Var *var);
+void compile_read_frame_addr(Bang *bang, Basm *basm);
+void compile_write_frame_addr(Bang *bang, Basm *basm);
+void compile_push_new_frame(Bang *bang, Basm *basm);
+void compile_pop_frame(Bang *bang, Basm *basm);
 
 void bang_push_new_scope(Bang *bang, Basm *basm);
 void bang_pop_scope(Bang *bang, Basm *basm);
