@@ -261,18 +261,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             }
 
             Compiled_Var *var = bang_get_compiled_var_by_name(bang, arg.as.var_read.name);
-            switch (var->storage) {
-            case BANG_VAR_STATIC_STORAGE: {
-                basm_push_inst(basm, INST_PUSH, word_u64(var->addr));
-                result.type = BANG_TYPE_PTR;
-            }
-            break;
-
-            case BANG_VAR_STACK_STORAGE: {
-                assert(false && "TODO(#455): Taking a pointer to stack variable is not implemented");
-            }
-            break;
-            }
+            compile_get_var_addr(bang, basm, var);
+            result.type = BANG_TYPE_PTR;
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
             Bang_Funcall_Arg *args = funcall.args;
