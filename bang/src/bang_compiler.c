@@ -683,6 +683,7 @@ void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
     assert(sizeof(stack_start_addr) == ptr_def.size);
 
     bang->stack_frame_var_addr = basm_push_buffer_to_memory(basm, (uint8_t*) &stack_start_addr, ptr_def.size).as_u64;
+    basm->memory_base = stack_size;
 }
 
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)

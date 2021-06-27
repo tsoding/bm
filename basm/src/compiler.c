@@ -308,7 +308,8 @@ void basm_save_to_file_as_bm(Basm *basm, const char *file_path)
         .version = BM_FILE_VERSION,
         .entry = basm->entry,
         .program_size = basm->program_size,
-        .memory_size = basm->memory_size,
+        .memory_base = basm->memory_base,
+        .memory_size = basm->memory_size - basm->memory_base,
         .memory_capacity = basm->memory_capacity,
         .externals_size = basm->external_natives_size,
     };
@@ -327,7 +328,7 @@ void basm_save_to_file_as_bm(Basm *basm, const char *file_path)
         exit(1);
     }
 
-    fwrite(basm->memory, sizeof(basm->memory[0]), basm->memory_size, f);
+    fwrite(basm->memory + basm->memory_base, sizeof(basm->memory[0]), basm->memory_size - basm->memory_base, f);
     if (ferror(f)) {
         fprintf(stderr, "ERROR: Could not write to file `%s`: %s\n",
                 file_path, strerror(errno));
@@ -403,6 +404,10 @@ void basm_translate_block_statement(Basm *basm, Block_Statement *block)
                 basm_translate_macrodef_statement(basm, statement.value.as_macrodef, statement.location);
                 break;
 
+            case STATEMENT_KIND_BASE:
+                basm_translate_base_statement(basm, statement.value.as_base, statement.location);
+                break;
+
             case STATEMENT_KIND_MACROCALL:
             case STATEMENT_KIND_FUNCDEF:
             case STATEMENT_KIND_FOR:
@@ -470,6 +475,7 @@ void basm_translate_block_statement(Basm *basm, Block_Statement *block)
             case STATEMENT_KIND_ASSERT:
             case STATEMENT_KIND_INCLUDE:
             case STATEMENT_KIND_CONST:
+            case STATEMENT_KIND_BASE:
                 // NOTE: ignored at the second pass
                 break;
 
@@ -1286,6 +1292,19 @@ Macrodef *basm_resolve_macrodef(Basm *basm, String_View name)
     }
 
     return NULL;
+}
+
+
+void basm_translate_base_statement(Basm *basm, Base_Statement base_statement, File_Location location)
+{
+    if (basm->memory_size != 0 || basm->memory_base != 0) {
+        fprintf(stderr, FL_Fmt": ERROR: %%base should precede every memory related statements\n",
+                FL_Arg(location));
+        exit(1);
+    }
+
+    basm_push_byte_array_to_memory(basm, base_statement.size, 0);
+    basm->memory_base = basm->memory_size;
 }
 
 Native_ID basm_push_external_native(Basm *basm, String_View native_name)

@@ -24,7 +24,8 @@ typedef enum {
     STATEMENT_KIND_FOR,
     STATEMENT_KIND_FUNCDEF,
     STATEMENT_KIND_MACROCALL,
-    STATEMENT_KIND_MACRODEF
+    STATEMENT_KIND_MACRODEF,
+    STATEMENT_KIND_BASE
 } Statement_Kind;
 
 typedef struct {
@@ -92,6 +93,10 @@ typedef struct {
     Block_Statement *body;
 } Macrodef_Statement;
 
+typedef struct {
+    uint64_t size;
+} Base_Statement;
+
 typedef union {
     Emit_Inst_Statement as_emit_inst;
     Label_Statement as_label;
@@ -108,6 +113,7 @@ typedef union {
     Fundef_Statement as_fundef;
     Macrocall_Statement as_macrocall;
     Macrodef_Statement as_macrodef;
+    Base_Statement as_base;
 } Statement_Value;
 
 struct Statement {

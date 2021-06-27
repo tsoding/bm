@@ -126,6 +126,7 @@ typedef struct {
     size_t string_lengths_size;
 
     uint8_t memory[BM_MEMORY_CAPACITY];
+    size_t memory_base;
     size_t memory_size;
     size_t memory_capacity;
 
@@ -179,6 +180,7 @@ bool basm_resolve_include_file_path(Basm *basm,
 Macrodef *basm_resolve_macrodef(Basm *basm, String_View name);
 void basm_translate_macrocall_statement(Basm *basm, Macrocall_Statement macrocall, File_Location location);
 void basm_translate_macrodef_statement(Basm *basm, Macrodef_Statement macrodef, File_Location location);
+void basm_translate_base_statement(Basm *basm, Base_Statement base_statement, File_Location location);
 void basm_translate_block_statement(Basm *basm, Block_Statement *block);
 void basm_translate_const_statement(Basm *basm, Const_Statement konst, File_Location location);
 void basm_translate_native_statement(Basm *basm, Native_Statement native, File_Location location);

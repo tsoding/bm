@@ -125,6 +125,14 @@ void dump_statement(FILE *stream, Statement statement, int level)
         exit(1);
     }
     break;
+
+    case STATEMENT_KIND_BASE: {
+        uint64_t size = statement.value.as_base.size;
+
+        fprintf(stream, "%*sBase:\n", level * 2, "");
+        fprintf(stream, "%*s%"PRIu64"\n", (level + 1) * 2, "", size);
+    }
+    break;
     }
 }
 
@@ -422,6 +430,20 @@ int dump_statement_as_dot_edges(FILE *stream, Statement statement, int *counter)
         int body_id = dump_block_as_dot_edges(stream, statement.value.as_macrodef.body, counter);
         fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, body_id);
 
+        return id;
+    }
+    break;
+
+    case STATEMENT_KIND_BASE: {
+        int id = (*counter)++;
+        int child_id = (*counter)++;
+
+        uint64_t size = statement.value.as_base.size;
+
+        fprintf(stream, "Expr_%d [shape=diamond label=\"%%base\"]\n", id);
+        fprintf(stream, "Expr_%d [shape=circle label=\"%"PRIu64"\"]\n",
+                child_id, size);
+        fprintf(stream, "Expr_%d -> Expr_%d [style=dotted]\n", id, child_id);
         return id;
     }
     break;
@@ -731,6 +753,23 @@ void parse_directive_from_line(Arena *arena, Linizer *linizer, Block_List *outpu
                     FL_Arg(statement.location));
             exit(1);
         }
+
+        block_list_push(arena, output, statement);
+    } else if (sv_eq(name, sv_from_cstr("base"))) {
+        Statement statement = {0};
+        statement.location = location;
+        statement.kind = STATEMENT_KIND_BASE;
+
+        Tokenizer tokenizer = tokenizer_from_sv(body);
+        Expr base_size = parse_expr_from_tokens(arena, &tokenizer, location);
+        if (base_size.kind != EXPR_KIND_LIT_INT) {
+            fprintf(stderr, FL_Fmt": ERROR: expected memory base for %%base\n",
+                    FL_Arg(location));
+            exit(1);
+        }
+
+        statement.value.as_base.size = base_size.value.as_lit_int;
+        expect_no_tokens(&tokenizer, location);
 
         block_list_push(arena, output, statement);
     } else {

@@ -188,6 +188,7 @@ struct Bm {
     // The program is allowed to access memory beyond the `expected_memory_size`.
     // This variable is needed for debasm to reliably recover the source code.
     size_t expected_memory_size;
+    size_t memory_base;
 
     bool halt;
 };
@@ -199,13 +200,14 @@ void bm_dump_stack(FILE *stream, const Bm *bm);
 void bm_load_program_from_file(Bm *bm, const char *file_path);
 
 #define BM_FILE_MAGIC 0xa4016d62
-#define BM_FILE_VERSION 7
+#define BM_FILE_VERSION 8
 
 PACK(struct Bm_File_Meta {
     uint32_t magic;
     uint16_t version;
     uint64_t program_size;
     uint64_t entry;
+    uint64_t memory_base;
     uint64_t memory_size;
     uint64_t memory_capacity;
     uint64_t externals_size;
