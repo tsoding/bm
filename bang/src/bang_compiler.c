@@ -558,7 +558,7 @@ void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
 {
     for (size_t i = 0; i < bang->procs_count; ++i) {
-        if (sv_eq(bang->procs[i].def.name, name)) {
+        if (sv_eq(bang->procs[i].name, name)) {
             return &bang->procs[i];
         }
     }
@@ -572,13 +572,14 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
         bang_diag_msg(proc_def.loc, BANG_DIAG_ERROR,
                       "procedure `"SV_Fmt"` is already defined",
                       SV_Arg(proc_def.name));
-        bang_diag_msg(existing_proc->def.loc, BANG_DIAG_NOTE,
+        bang_diag_msg(existing_proc->loc, BANG_DIAG_NOTE,
                       "the first definition is located here");
         exit(1);
     }
 
     Compiled_Proc proc = {0};
-    proc.def = proc_def;
+    proc.name = proc_def.name;
+    proc.loc = proc_def.loc;
     proc.addr = basm->program_size;
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;

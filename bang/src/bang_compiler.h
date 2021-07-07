@@ -47,7 +47,8 @@ typedef struct {
 } Compiled_Var;
 
 typedef struct {
-    Bang_Proc_Def def;
+    String_View name;
+    Bang_Loc loc;
     Inst_Addr addr;
 } Compiled_Proc;
 
