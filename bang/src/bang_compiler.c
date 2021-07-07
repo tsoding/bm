@@ -1,13 +1,7 @@
+#include "./error.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
-
-#define UNIMPLEMENTED \
-    do { \
-        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
-                __FILE__, __LINE__, __func__); \
-        abort(); \
-    } while(0)
 
 typedef struct {
     bool exists;
@@ -227,6 +221,57 @@ static void type_check_expr(Compiled_Expr expr, Bang_Type expected_type)
     }
 }
 
+void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall)
+{
+    Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
+    if (proc == NULL) {
+        bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                      "unknown function `"SV_Fmt"`",
+                      SV_Arg(funcall.name));
+        exit(1);
+    }
+
+    // Check arity
+    {
+        size_t params_arity = proc->params.size;
+        size_t args_arity = funcall.args.size;
+
+        if (params_arity != args_arity) {
+            bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                          "Function `"SV_Fmt"` expects %zu amount of arguments but got %zu\n",
+                          SV_Arg(funcall.name),
+                          params_arity,
+                          args_arity);
+            exit(1);
+        }
+    }
+
+    // Compile Funcall args
+    {
+        size_t n = proc->params.size;
+
+        for (size_t i = 0; i < n; ++i) {
+            Bang_Proc_Param param = proc->params.items[i];
+            Bang_Funcall_Arg arg = funcall.args.items[i];
+
+            Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, arg.value);
+            Bang_Type param_type = 0;
+            if (!bang_type_by_name(param.type_name, &param_type)) {
+                bang_diag_msg(param.loc, BANG_DIAG_ERROR,
+                              "`"SV_Fmt"` is not a valid type",
+                              SV_Arg(param.type_name));
+                exit(1);
+            }
+
+            type_check_expr(expr, param_type);
+        }
+    }
+
+    compile_push_new_frame(bang, basm);
+    basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
+    compile_pop_frame(bang, basm);
+}
+
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     Compiled_Expr result = {0};
@@ -248,12 +293,12 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
         if (sv_eq(funcall.name, SV("write"))) {
             bang_funcall_expect_arity(funcall, 1);
-            compile_bang_expr_into_basm(bang, basm, funcall.args->value);
+            compile_bang_expr_into_basm(bang, basm, funcall.args.items[0].value);
             basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("ptr"))) {
             bang_funcall_expect_arity(funcall, 1);
-            Bang_Expr arg = funcall.args->value;
+            Bang_Expr arg = funcall.args.items[0].value;
             if (arg.kind != BANG_EXPR_KIND_VAR_READ) {
                 bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
                               "expected variable name as the argument of `ptr` function");
@@ -265,9 +310,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_PTR;
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Compiled_Expr buffer = compile_bang_expr_into_basm(bang, basm, arg0);
             type_check_expr(buffer, BANG_TYPE_PTR);
@@ -280,9 +324,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("cast"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
 
@@ -305,10 +348,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             // TODO(#432): there is no special syntax for dereferencing the pointer
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
-            Bang_Expr arg2 = args->next->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
+            Bang_Expr arg2 = funcall.args.items[2].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
@@ -329,9 +371,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("load_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
@@ -352,16 +393,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             basm_push_inst(basm, INST_HALT, word_u64(0));
             result.type = BANG_TYPE_VOID;
         } else {
-            Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
-            if (proc == NULL) {
-                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
-                              "unknown function `"SV_Fmt"`",
-                              SV_Arg(funcall.name));
-                exit(1);
-            }
-            compile_push_new_frame(bang, basm);
-            basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
-            compile_pop_frame(bang, basm);
+            compile_bang_funcall_into_basm(bang, basm, funcall);
             result.type = BANG_TYPE_VOID;
         }
     }
@@ -416,10 +448,18 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm_push_inst(basm, INST_NOT, word_u64(0));
 
     Inst_Addr then_jmp_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, eef.then);
+    bang_pop_scope(bang);
+
     Inst_Addr else_jmp_addr = basm_push_inst(basm, INST_JMP, word_u64(0));
     Inst_Addr else_addr = basm->program_size;
+
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, eef.elze);
+    bang_pop_scope(bang);
+
     Inst_Addr end_addr = basm->program_size;
 
     basm->program[then_jmp_addr].operand = word_u64(else_addr);
@@ -438,7 +478,7 @@ Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View
     assert(scope);
 
     for (size_t i = 0; i < scope->vars_count; ++i) {
-        if (sv_eq(scope->vars[i].def.name, name)) {
+        if (sv_eq(scope->vars[i].name, name)) {
             return &scope->vars[i];
         }
     }
@@ -509,7 +549,9 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 
     basm_push_inst(basm, INST_NOT, word_u64(0));
     Inst_Addr fallthrough_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, hwile.body);
+    bang_pop_scope(bang);
     basm_push_inst(basm, INST_JMP, word_u64(cond_expr.addr));
 
     const Inst_Addr body_end_addr = basm->program_size;
@@ -553,18 +595,16 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
-    bang_pop_scope(bang);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
 {
     for (size_t i = 0; i < bang->procs_count; ++i) {
-        if (sv_eq(bang->procs[i].def.name, name)) {
+        if (sv_eq(bang->procs[i].name, name)) {
             return &bang->procs[i];
         }
     }
@@ -578,34 +618,47 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
         bang_diag_msg(proc_def.loc, BANG_DIAG_ERROR,
                       "procedure `"SV_Fmt"` is already defined",
                       SV_Arg(proc_def.name));
-        bang_diag_msg(existing_proc->def.loc, BANG_DIAG_NOTE,
+        bang_diag_msg(existing_proc->loc, BANG_DIAG_NOTE,
                       "the first definition is located here");
         exit(1);
     }
 
     Compiled_Proc proc = {0};
-    proc.def = proc_def;
+    proc.name = proc_def.name;
+    proc.loc = proc_def.loc;
+    proc.params = proc_def.params;
     proc.addr = basm->program_size;
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;
 
+    bang_push_new_scope(bang);
+
+    for (size_t i = proc.params.size; i > 0; --i) {
+        Bang_Proc_Param param = proc.params.items[i - 1];
+        Bang_Type type = 0;
+        if (!bang_type_by_name(param.type_name, &type)) {
+            bang_diag_msg(param.loc, BANG_DIAG_ERROR,
+                          "type `"SV_Fmt"` does not exist",
+                          SV_Arg(param.type_name));
+            exit(1);
+        }
+        Compiled_Var var = compile_var_into_basm(bang, basm, param.loc, param.name, type, BANG_VAR_STACK_STORAGE);
+
+        basm_push_inst(basm, INST_SWAP, word_u64(1));
+        compile_get_var_addr(bang, basm, &var);
+        basm_push_inst(basm, INST_SWAP, word_u64(1));
+        compile_typed_write(basm, var.type);
+    }
+
     compile_block_into_basm(bang, basm, proc_def.body);
+    bang_pop_scope(bang);
 
     basm_push_inst(basm, INST_RET, word_u64(0));
 }
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
 {
-    size_t actual_arity = 0;
-
-    {
-        Bang_Funcall_Arg *args = funcall.args;
-        while (args != NULL) {
-            actual_arity += 1;
-            args = args->next;
-        }
-    }
-
+    const size_t actual_arity = funcall.args.size;
     if (expected_arity != actual_arity) {
         bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
                       "function `"SV_Fmt"` expects %zu amount of arguments but provided %zu",
@@ -659,7 +712,7 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
     if (heap_base_var != NULL) {
         assert(heap_base_var->storage == BANG_VAR_STATIC_STORAGE);
         if (heap_base_var->type != BANG_TYPE_PTR) {
-            bang_diag_msg(heap_base_var->def.loc, BANG_DIAG_ERROR,
+            bang_diag_msg(heap_base_var->loc, BANG_DIAG_ERROR,
                           "the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`",
                           SV_Arg(heap_base_var_name),
                           bang_type_def(BANG_TYPE_PTR).name,
@@ -685,6 +738,77 @@ void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
     bang->stack_frame_var_addr = basm_push_buffer_to_memory(basm, (uint8_t*) &stack_start_addr, ptr_def.size).as_u64;
 }
 
+Compiled_Var compile_var_into_basm(Bang *bang, Basm *basm, Bang_Loc loc, String_View name, Bang_Type type, Bang_Var_Storage storage)
+{
+    if (type == BANG_TYPE_VOID) {
+        bang_diag_msg(loc, BANG_DIAG_ERROR,
+                      "defining variables with type %s is not allowed",
+                      bang_type_def(type).name);
+        exit(1);
+    }
+
+    // Existing Var Error
+    {
+        Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, name);
+        if (existing_var) {
+            bang_diag_msg(loc, BANG_DIAG_ERROR,
+                          "variable `"SV_Fmt"` is already defined",
+                          SV_Arg(name));
+            bang_diag_msg(existing_var->loc, BANG_DIAG_ERROR,
+                          "the first definition is located here");
+            exit(1);
+        }
+    }
+
+    // TODO(#480): bang does not warn about unused variables
+
+    // Shadowed Var Warning
+    {
+        Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, name);
+        if (shadowed_var) {
+            bang_diag_msg(loc, bang->warnings_as_errors ? BANG_DIAG_ERROR : BANG_DIAG_WARNING,
+                          "variable `"SV_Fmt"` is shadowing another variable with the same name",
+                          SV_Arg(name));
+            bang_diag_msg(shadowed_var->loc, BANG_DIAG_NOTE,
+                          "the shadowed variable is located here");
+
+            if (bang->warnings_as_errors) {
+                exit(1);
+            }
+        }
+    }
+
+    Compiled_Var new_var = {0};
+    new_var.name = name;
+    new_var.loc = loc;
+    new_var.type = type;
+    new_var.storage = storage;
+
+    Bang_Type_Def type_def = bang_type_def(type);
+
+    switch (storage) {
+    case BANG_VAR_STATIC_STORAGE: {
+        new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
+    }
+    break;
+
+    case BANG_VAR_STACK_STORAGE: {
+        assert(type_def.size > 0);
+        bang->frame_size += type_def.size;
+        new_var.addr = bang->frame_size;
+    }
+    break;
+
+    default:
+        assert(false && "unreachable");
+        exit(1);
+    }
+
+    bang_scope_push_var(bang->scope, new_var);
+
+    return new_var;
+}
+
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
 {
     Bang_Type type = 0;
@@ -695,55 +819,10 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         exit(1);
     }
 
-    if (type == BANG_TYPE_VOID) {
-        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
-                      "defining variables with type %s is not allowed",
-                      bang_type_def(type).name);
-        exit(1);
-    }
-
-    // Existing Var Error
-    {
-        Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
-        if (existing_var) {
-            bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
-                          "variable `"SV_Fmt"` is already defined",
-                          SV_Arg(var_def.name));
-            bang_diag_msg(existing_var->def.loc, BANG_DIAG_ERROR,
-                          "the first definition is located here");
-            exit(1);
-        }
-    }
-
-    // TODO(#480): bang does not warn about unused variables
-
-    // Shadowed Var Warning
-    {
-        Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, var_def.name);
-        if (shadowed_var) {
-            bang_diag_msg(var_def.loc, bang->warnings_as_errors ? BANG_DIAG_ERROR : BANG_DIAG_WARNING,
-                          "variable `"SV_Fmt"` is shadowing another variable with the same name",
-                          SV_Arg(var_def.name));
-            bang_diag_msg(shadowed_var->def.loc, BANG_DIAG_NOTE,
-                          "the shadowed variable is located here");
-
-            if (bang->warnings_as_errors) {
-                exit(1);
-            }
-        }
-    }
-
-    Compiled_Var new_var = {0};
-    new_var.def = var_def;
-    new_var.type = type;
-    new_var.storage = storage;
-
-    Bang_Type_Def type_def = bang_type_def(type);
+    Compiled_Var new_var = compile_var_into_basm(bang, basm, var_def.loc, var_def.name, type, storage);
 
     switch (storage) {
     case BANG_VAR_STATIC_STORAGE: {
-        new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
-
         // TODO(#476): global variables cannot be initialized at the moment
         if (var_def.has_init) {
             bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
@@ -754,10 +833,6 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     break;
 
     case BANG_VAR_STACK_STORAGE: {
-        assert(type_def.size > 0);
-        bang->frame_size += type_def.size;
-        new_var.addr = bang->frame_size;
-
         if (var_def.has_init) {
             compile_get_var_addr(bang, basm, &new_var);
 
@@ -779,8 +854,6 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         assert(false && "unreachable");
         exit(1);
     }
-
-    bang_scope_push_var(bang->scope, new_var);
 }
 
 void compile_push_new_frame(Bang *bang, Basm *basm)
@@ -840,3 +913,8 @@ void bang_pop_scope(Bang *bang)
 
     bang->scope = bang->scope->parent;
 }
+
+// TODO: bang should fail compilation if main function accepts any arguments
+// Right now the compiler generates the code that tries to accept the arguments
+// and corrupts the stack because of that
+// TODO: bang does not support procedures that return results
