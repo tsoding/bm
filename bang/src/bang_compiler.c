@@ -448,10 +448,18 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef)
     basm_push_inst(basm, INST_NOT, word_u64(0));
 
     Inst_Addr then_jmp_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, eef.then);
+    bang_pop_scope(bang);
+
     Inst_Addr else_jmp_addr = basm_push_inst(basm, INST_JMP, word_u64(0));
     Inst_Addr else_addr = basm->program_size;
+
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, eef.elze);
+    bang_pop_scope(bang);
+
     Inst_Addr end_addr = basm->program_size;
 
     basm->program[then_jmp_addr].operand = word_u64(else_addr);
@@ -541,7 +549,9 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 
     basm_push_inst(basm, INST_NOT, word_u64(0));
     Inst_Addr fallthrough_addr = basm_push_inst(basm, INST_JMP_IF, word_u64(0));
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, hwile.body);
+    bang_pop_scope(bang);
     basm_push_inst(basm, INST_JMP, word_u64(cond_expr.addr));
 
     const Inst_Addr body_end_addr = basm->program_size;
@@ -585,12 +595,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
 {
-    bang_push_new_scope(bang);
     while (block) {
         compile_stmt_into_basm(bang, basm, block->stmt);
         block = block->next;
     }
-    bang_pop_scope(bang);
 }
 
 Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name)
@@ -623,7 +631,9 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;
 
+    bang_push_new_scope(bang);
     compile_block_into_basm(bang, basm, proc_def.body);
+    bang_pop_scope(bang);
 
     basm_push_inst(basm, INST_RET, word_u64(0));
 }
