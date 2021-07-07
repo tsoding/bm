@@ -1,31 +1,4 @@
-var heap_base: ptr;
-
-var boards_base: ptr;
-var board_rows: i64;
-var board_cols: i64;
-var board_size: i64;
-var board_current: i64;
-var board_next: i64;
-
-var display_base: ptr;
-
-proc init() {
-  boards_base = heap_base;
-  board_rows = 10;
-  board_cols = 10;
-  board_size = board_rows * board_cols;
-  board_current = 0;
-
-  store_ptr(u8, boards_base + cast(ptr, board_cols * 0 + 1), cast(u8, 1));
-  store_ptr(u8, boards_base + cast(ptr, board_cols * 1 + 2), cast(u8, 1));
-  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 2), cast(u8, 1));
-  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 1), cast(u8, 1));
-  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 0), cast(u8, 1));
-
-  display_base = boards_base + cast(ptr, board_size * 2);
-}
-
-proc print_board_current() {
+proc print_board(board: ptr, board_rows: i64, board_cols: i64, display: ptr) {
   var row: i64 = 0;
   while row < board_rows {
     var cell_ptr: ptr;
@@ -33,10 +6,10 @@ proc print_board_current() {
 
     var col: i64 = 0;
     while col < board_cols {
-      cell_ptr = boards_base + cast(ptr, board_size * board_current + row * board_cols + col);
+      cell_ptr = board + cast(ptr, row * board_cols + col);
       cell = load_ptr(u8, cell_ptr);
 
-      cell_ptr = display_base + cast(ptr, col);
+      cell_ptr = display + cast(ptr, col);
       if cell < cast(u8, 1) {
         store_ptr(u8, cell_ptr, cast(u8, 32));
       } else {
@@ -46,17 +19,15 @@ proc print_board_current() {
       col = col + 1;
     }
 
-    cell_ptr = display_base + cast(ptr, board_cols);
+    cell_ptr = display + cast(ptr, board_cols);
     store_ptr(u8, cell_ptr, cast(u8, 10));
-    write_ptr(display_base, board_cols + 1);
+    write_ptr(display, board_cols + 1);
 
     row = row + 1;
   }
 }
 
-proc next_board() {
-  board_next = 1 - board_current;
-
+proc next_board(board_curr: ptr, board_next: ptr, board_rows: i64, board_cols: i64) {
   var row: i64 = 0;
   while row < board_rows {
     var cell_ptr: ptr;
@@ -74,7 +45,7 @@ proc next_board() {
           if drow >= 0 && drow < board_rows {
             if dcol >= 0 && dcol < board_cols {
               if drow != row || dcol != col {
-                cell_ptr = boards_base + cast(ptr, board_size * board_current + drow * board_cols + dcol);
+                cell_ptr = board_curr + cast(ptr, drow * board_cols + dcol);
                 cell = load_ptr(u8, cell_ptr);
                 if cell >= cast(u8, 1) {
                   nbors = nbors + 1;
@@ -88,10 +59,10 @@ proc next_board() {
       }
       # Nbors end
 
-      cell_ptr = boards_base + cast(ptr, board_size * board_current + row * board_cols + col);
+      cell_ptr = board_curr + cast(ptr, row * board_cols + col);
       cell = load_ptr(u8, cell_ptr);
 
-      cell_ptr = boards_base + cast(ptr, board_size * board_next + row * board_cols + col);
+      cell_ptr = board_next + cast(ptr, row * board_cols + col);
 
       if cell == cast(u8, 0) {
         if nbors == 3 {
@@ -111,16 +82,36 @@ proc next_board() {
     }
     row = row + 1;
   }
-
-  board_current = board_next;
 }
 
+var heap_base: ptr;
+
 proc main() {
-  init();
+  var boards_base: ptr = heap_base;
+  var board_rows: i64 = 10;
+  var board_cols: i64 = 10;
+  var board_size: i64 = board_rows * board_cols;
+  var board_current: i64 = 0;
+
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 0 + 1), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 1 + 2), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 2), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 1), cast(u8, 1));
+  store_ptr(u8, boards_base + cast(ptr, board_cols * 2 + 0), cast(u8, 1));
+
+  var display_base: ptr = boards_base + cast(ptr, board_size * 2);
+
   var i: i64 = 0;
   while i < 10 {
-    print_board_current();
-    next_board();
+    print_board(boards_base + cast(ptr, board_current * board_size),
+                board_rows, board_cols,
+                display_base);
+    var board_next: i64 = 1 - board_current;
+    next_board(boards_base + cast(ptr, board_current * board_size),
+               boards_base + cast(ptr, board_next * board_size),
+               board_rows,
+               board_cols);
+    board_current = board_next;
     write("------------------------------\n");
     i = i + 1;
   }
