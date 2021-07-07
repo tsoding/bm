@@ -1,4 +1,5 @@
 #include "./error.h"
+#include "./ll.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
@@ -221,6 +222,65 @@ static void type_check_expr(Compiled_Expr expr, Bang_Type expected_type)
     }
 }
 
+void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall)
+{
+    Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
+    if (proc == NULL) {
+        bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                      "unknown function `"SV_Fmt"`",
+                      SV_Arg(funcall.name));
+        exit(1);
+    }
+
+    // Check arity
+    {
+        size_t params_arity = 0;
+        LL_FOREACH(Bang_Proc_Param, param, proc->params) {
+            params_arity += 1;
+        }
+
+        size_t args_arity = 0;
+        LL_FOREACH(Bang_Funcall_Arg, arg, funcall.args) {
+            args_arity += 1;
+        }
+
+        if (params_arity != args_arity) {
+            bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
+                          "Function `"SV_Fmt"` expects %zu amount of arguments but got %zu\n",
+                          SV_Arg(funcall.name),
+                          params_arity,
+                          args_arity);
+            exit(1);
+        }
+    }
+
+    // Compile Funcall args
+    {
+        Bang_Proc_Param *param = proc->params;
+        Bang_Funcall_Arg *arg = funcall.args;
+
+        while (arg && param) {
+            Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, arg->value);
+            Bang_Type param_type = 0;
+            if (!bang_type_by_name(param->type_name, &param_type)) {
+                bang_diag_msg(param->loc, BANG_DIAG_ERROR,
+                              "`"SV_Fmt"` is not a valid type",
+                              SV_Arg(param->type_name));
+                exit(1);
+            }
+
+            type_check_expr(expr, param_type);
+
+            arg = arg->next;
+            param = param->next;
+        }
+    }
+
+    compile_push_new_frame(bang, basm);
+    basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
+    compile_pop_frame(bang, basm);
+}
+
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr)
 {
     Compiled_Expr result = {0};
@@ -346,16 +406,7 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             basm_push_inst(basm, INST_HALT, word_u64(0));
             result.type = BANG_TYPE_VOID;
         } else {
-            Compiled_Proc *proc = bang_get_compiled_proc_by_name(bang, funcall.name);
-            if (proc == NULL) {
-                bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
-                              "unknown function `"SV_Fmt"`",
-                              SV_Arg(funcall.name));
-                exit(1);
-            }
-            compile_push_new_frame(bang, basm);
-            basm_push_inst(basm, INST_CALL, word_u64(proc->addr));
-            compile_pop_frame(bang, basm);
+            compile_bang_funcall_into_basm(bang, basm, funcall);
             result.type = BANG_TYPE_VOID;
         }
     }
@@ -580,6 +631,7 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
     Compiled_Proc proc = {0};
     proc.name = proc_def.name;
     proc.loc = proc_def.loc;
+    proc.params = proc_def.params;
     proc.addr = basm->program_size;
     assert(bang->procs_count < BANG_PROCS_CAPACITY);
     bang->procs[bang->procs_count++] = proc;

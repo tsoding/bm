@@ -50,6 +50,7 @@ typedef struct {
 typedef struct {
     String_View name;
     Bang_Loc loc;
+    Bang_Proc_Param *params;
     Inst_Addr addr;
 } Compiled_Proc;
 
@@ -97,6 +98,7 @@ Compiled_Proc *bang_get_compiled_proc_by_name(Bang *bang, String_View name);
 
 void compile_typed_read(Basm *basm, Bang_Type type);
 void compile_typed_write(Basm *basm, Bang_Type type);
+void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall);
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
 void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);

@@ -526,7 +526,9 @@ Bang_Proc_Param *parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer)
 
     {
         Bang_Proc_Param *param = arena_alloc(arena, sizeof(*param));
-        param->name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+        param->loc = token.loc;
+        param->name = token.text;
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param->type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
         LL_APPEND(begin, end, param);
@@ -541,7 +543,9 @@ Bang_Proc_Param *parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer)
         bang_lexer_next(lexer, &token);
 
         Bang_Proc_Param *param = arena_alloc(arena, sizeof(*param));
-        param->name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        token = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME);
+        param->loc = token.loc;
+        param->name = token.text;
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param->type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
         LL_APPEND(begin, end, param);
@@ -558,7 +562,7 @@ Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 
     result.loc = bang_lexer_expect_keyword(lexer, SV("proc")).loc;
     result.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
-    parse_bang_proc_params(arena, lexer);
+    result.params = parse_bang_proc_params(arena, lexer);
     result.body = parse_curly_bang_block(arena, lexer);
 
     return result;

@@ -168,6 +168,7 @@ struct Bang_Block {
 };
 
 struct Bang_Proc_Param {
+    Bang_Loc loc;
     String_View name;
     String_View type_name;
     Bang_Proc_Param *next;
