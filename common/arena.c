@@ -77,6 +77,17 @@ void *arena_alloc(Arena *arena, size_t size)
     return arena_alloc_aligned(arena, size, sizeof(void*));
 }
 
+void *arena_realloc(Arena *arena, void *old_ptr, size_t old_size, size_t new_size)
+{
+    if (old_size < new_size) {
+        void *new_ptr = arena_alloc(arena, new_size);
+        memcpy(new_ptr, old_ptr, old_size);
+        return new_ptr;
+    } else {
+        return old_ptr;
+    }
+}
+
 void arena_clean(Arena *arena)
 {
     for (Region *iter = arena->first;

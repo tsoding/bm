@@ -24,6 +24,8 @@ typedef struct Bang_Var_Read Bang_Var_Read;
 typedef struct Bang_While Bang_While;
 typedef struct Bang_Binary_Op Bang_Binary_Op;
 typedef struct Bang_Binary_Op_Def Bang_Binary_Op_Def;
+typedef struct Dynarray_Of_Bang_Proc_Param Dynarray_Of_Bang_Proc_Param;
+typedef struct Dynarray_Of_Bang_Funcall_Arg Dynarray_Of_Bang_Funcall_Arg;
 
 typedef enum {
     BANG_BINARY_OP_KIND_PLUS = 0,
@@ -54,10 +56,16 @@ struct Bang_Binary_Op_Def {
 
 // TODO(#440): there are no unary operators in Bang
 
+struct Dynarray_Of_Bang_Funcall_Arg {
+    size_t size;
+    size_t capacity;
+    Bang_Funcall_Arg *items;
+};
+
 struct Bang_Funcall {
     Bang_Loc loc;
     String_View name;
-    Bang_Funcall_Arg *args;
+    Dynarray_Of_Bang_Funcall_Arg args;
 };
 
 typedef enum {
@@ -171,13 +179,18 @@ struct Bang_Proc_Param {
     Bang_Loc loc;
     String_View name;
     String_View type_name;
-    Bang_Proc_Param *next;
+};
+
+struct Dynarray_Of_Bang_Proc_Param {
+    size_t size;
+    size_t capacity;
+    Bang_Proc_Param *items;
 };
 
 struct Bang_Proc_Def {
     Bang_Loc loc;
     String_View name;
-    Bang_Proc_Param *params;
+    Dynarray_Of_Bang_Proc_Param params;
     Bang_Block *body;
 };
 
@@ -207,13 +220,13 @@ void bang_module_push_top(Bang_Module *module, Bang_Top *top);
 
 Bang_Binary_Op_Def bang_binary_op_def(Bang_Binary_Op_Kind kind);
 String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer);
-Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
+Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);
 Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
-Bang_Proc_Param *parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer);
+Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer);
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer);
 Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Def parse_bang_var_def(Arena *arena, Bang_Lexer *lexer);

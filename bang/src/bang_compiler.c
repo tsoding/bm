@@ -1,5 +1,4 @@
 #include "./error.h"
-#include "./ll.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
@@ -234,15 +233,8 @@ void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall
 
     // Check arity
     {
-        size_t params_arity = 0;
-        LL_FOREACH(Bang_Proc_Param, param, proc->params) {
-            params_arity += 1;
-        }
-
-        size_t args_arity = 0;
-        LL_FOREACH(Bang_Funcall_Arg, arg, funcall.args) {
-            args_arity += 1;
-        }
+        size_t params_arity = proc->params.size;
+        size_t args_arity = funcall.args.size;
 
         if (params_arity != args_arity) {
             bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
@@ -256,23 +248,22 @@ void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall
 
     // Compile Funcall args
     {
-        Bang_Proc_Param *param = proc->params;
-        Bang_Funcall_Arg *arg = funcall.args;
+        size_t n = proc->params.size;
 
-        while (arg && param) {
-            Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, arg->value);
+        for (size_t i = 0; i < n; ++i) {
+            Bang_Proc_Param param = proc->params.items[i];
+            Bang_Funcall_Arg arg = funcall.args.items[i];
+
+            Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, arg.value);
             Bang_Type param_type = 0;
-            if (!bang_type_by_name(param->type_name, &param_type)) {
-                bang_diag_msg(param->loc, BANG_DIAG_ERROR,
+            if (!bang_type_by_name(param.type_name, &param_type)) {
+                bang_diag_msg(param.loc, BANG_DIAG_ERROR,
                               "`"SV_Fmt"` is not a valid type",
-                              SV_Arg(param->type_name));
+                              SV_Arg(param.type_name));
                 exit(1);
             }
 
             type_check_expr(expr, param_type);
-
-            arg = arg->next;
-            param = param->next;
         }
     }
 
@@ -302,12 +293,12 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
 
         if (sv_eq(funcall.name, SV("write"))) {
             bang_funcall_expect_arity(funcall, 1);
-            compile_bang_expr_into_basm(bang, basm, funcall.args->value);
+            compile_bang_expr_into_basm(bang, basm, funcall.args.items[0].value);
             basm_push_inst(basm, INST_NATIVE, word_u64(bang->write_id));
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("ptr"))) {
             bang_funcall_expect_arity(funcall, 1);
-            Bang_Expr arg = funcall.args->value;
+            Bang_Expr arg = funcall.args.items[0].value;
             if (arg.kind != BANG_EXPR_KIND_VAR_READ) {
                 bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
                               "expected variable name as the argument of `ptr` function");
@@ -319,9 +310,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_PTR;
         } else if (sv_eq(funcall.name, SV("write_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Compiled_Expr buffer = compile_bang_expr_into_basm(bang, basm, arg0);
             type_check_expr(buffer, BANG_TYPE_PTR);
@@ -334,9 +324,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("cast"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
 
@@ -359,10 +348,9 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             // TODO(#432): there is no special syntax for dereferencing the pointer
         } else if (sv_eq(funcall.name, SV("store_ptr"))) {
             bang_funcall_expect_arity(funcall, 3);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
-            Bang_Expr arg2 = args->next->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
+            Bang_Expr arg2 = funcall.args.items[2].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
@@ -383,9 +371,8 @@ Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr
             result.type = BANG_TYPE_VOID;
         } else if (sv_eq(funcall.name, SV("load_ptr"))) {
             bang_funcall_expect_arity(funcall, 2);
-            Bang_Funcall_Arg *args = funcall.args;
-            Bang_Expr arg0 = args->value;
-            Bang_Expr arg1 = args->next->value;
+            Bang_Expr arg0 = funcall.args.items[0].value;
+            Bang_Expr arg1 = funcall.args.items[1].value;
 
             Bang_Type type = reinterpret_expr_as_type(arg0);
             if (type == BANG_TYPE_VOID) {
@@ -643,16 +630,7 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
 
 void bang_funcall_expect_arity(Bang_Funcall funcall, size_t expected_arity)
 {
-    size_t actual_arity = 0;
-
-    {
-        Bang_Funcall_Arg *args = funcall.args;
-        while (args != NULL) {
-            actual_arity += 1;
-            args = args->next;
-        }
-    }
-
+    const size_t actual_arity = funcall.args.size;
     if (expected_arity != actual_arity) {
         bang_diag_msg(funcall.loc, BANG_DIAG_ERROR,
                       "function `"SV_Fmt"` expects %zu amount of arguments but provided %zu",

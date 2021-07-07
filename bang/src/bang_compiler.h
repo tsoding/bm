@@ -50,7 +50,7 @@ typedef struct {
 typedef struct {
     String_View name;
     Bang_Loc loc;
-    Bang_Proc_Param *params;
+    Dynarray_Of_Bang_Proc_Param params;
     Inst_Addr addr;
 } Compiled_Proc;
 
