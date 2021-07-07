@@ -107,6 +107,7 @@ void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);
+Compiled_Var compile_var_into_basm(Bang *bang, Basm *basm, Bang_Loc loc, String_View name, Bang_Type type, Bang_Var_Storage storage);
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage);
 Bang_Type compile_var_read_into_basm(Bang *bang, Basm *basm, Bang_Var_Read var_read);
 Bang_Type compile_binary_op_into_basm(Bang *bang, Basm *basm, Bang_Binary_Op binary_op);

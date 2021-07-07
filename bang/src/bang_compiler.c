@@ -632,6 +632,24 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
     bang->procs[bang->procs_count++] = proc;
 
     bang_push_new_scope(bang);
+
+    for (size_t i = proc.params.size; i > 0; --i) {
+        Bang_Proc_Param param = proc.params.items[i - 1];
+        Bang_Type type = 0;
+        if (!bang_type_by_name(param.type_name, &type)) {
+            bang_diag_msg(param.loc, BANG_DIAG_ERROR,
+                          "type `"SV_Fmt"` does not exist",
+                          SV_Arg(param.type_name));
+            exit(1);
+        }
+        Compiled_Var var = compile_var_into_basm(bang, basm, param.loc, param.name, type, BANG_VAR_STACK_STORAGE);
+
+        basm_push_inst(basm, INST_SWAP, word_u64(1));
+        compile_get_var_addr(bang, basm, &var);
+        basm_push_inst(basm, INST_SWAP, word_u64(1));
+        compile_typed_write(basm, var.type);
+    }
+
     compile_block_into_basm(bang, basm, proc_def.body);
     bang_pop_scope(bang);
 
@@ -720,18 +738,10 @@ void bang_prepare_var_stack(Bang *bang, Basm *basm, size_t stack_size)
     bang->stack_frame_var_addr = basm_push_buffer_to_memory(basm, (uint8_t*) &stack_start_addr, ptr_def.size).as_u64;
 }
 
-void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
+Compiled_Var compile_var_into_basm(Bang *bang, Basm *basm, Bang_Loc loc, String_View name, Bang_Type type, Bang_Var_Storage storage)
 {
-    Bang_Type type = 0;
-    if (!bang_type_by_name(var_def.type_name, &type)) {
-        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
-                      "type `"SV_Fmt"` does not exist",
-                      SV_Arg(var_def.type_name));
-        exit(1);
-    }
-
     if (type == BANG_TYPE_VOID) {
-        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+        bang_diag_msg(loc, BANG_DIAG_ERROR,
                       "defining variables with type %s is not allowed",
                       bang_type_def(type).name);
         exit(1);
@@ -739,11 +749,11 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 
     // Existing Var Error
     {
-        Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, var_def.name);
+        Compiled_Var *existing_var = bang_scope_get_compiled_var_by_name(bang->scope, name);
         if (existing_var) {
-            bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+            bang_diag_msg(loc, BANG_DIAG_ERROR,
                           "variable `"SV_Fmt"` is already defined",
-                          SV_Arg(var_def.name));
+                          SV_Arg(name));
             bang_diag_msg(existing_var->loc, BANG_DIAG_ERROR,
                           "the first definition is located here");
             exit(1);
@@ -754,11 +764,11 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
 
     // Shadowed Var Warning
     {
-        Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, var_def.name);
+        Compiled_Var *shadowed_var = bang_get_compiled_var_by_name(bang, name);
         if (shadowed_var) {
-            bang_diag_msg(var_def.loc, bang->warnings_as_errors ? BANG_DIAG_ERROR : BANG_DIAG_WARNING,
+            bang_diag_msg(loc, bang->warnings_as_errors ? BANG_DIAG_ERROR : BANG_DIAG_WARNING,
                           "variable `"SV_Fmt"` is shadowing another variable with the same name",
-                          SV_Arg(var_def.name));
+                          SV_Arg(name));
             bang_diag_msg(shadowed_var->loc, BANG_DIAG_NOTE,
                           "the shadowed variable is located here");
 
@@ -769,8 +779,8 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     }
 
     Compiled_Var new_var = {0};
-    new_var.name = var_def.name;
-    new_var.loc = var_def.loc;
+    new_var.name = name;
+    new_var.loc = loc;
     new_var.type = type;
     new_var.storage = storage;
 
@@ -779,7 +789,40 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     switch (storage) {
     case BANG_VAR_STATIC_STORAGE: {
         new_var.addr = basm_push_byte_array_to_memory(basm, type_def.size, 0).as_u64;
+    }
+    break;
 
+    case BANG_VAR_STACK_STORAGE: {
+        assert(type_def.size > 0);
+        bang->frame_size += type_def.size;
+        new_var.addr = bang->frame_size;
+    }
+    break;
+
+    default:
+        assert(false && "unreachable");
+        exit(1);
+    }
+
+    bang_scope_push_var(bang->scope, new_var);
+
+    return new_var;
+}
+
+void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
+{
+    Bang_Type type = 0;
+    if (!bang_type_by_name(var_def.type_name, &type)) {
+        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
+                      "type `"SV_Fmt"` does not exist",
+                      SV_Arg(var_def.type_name));
+        exit(1);
+    }
+
+    Compiled_Var new_var = compile_var_into_basm(bang, basm, var_def.loc, var_def.name, type, storage);
+
+    switch (storage) {
+    case BANG_VAR_STATIC_STORAGE: {
         // TODO(#476): global variables cannot be initialized at the moment
         if (var_def.has_init) {
             bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
@@ -790,10 +833,6 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     break;
 
     case BANG_VAR_STACK_STORAGE: {
-        assert(type_def.size > 0);
-        bang->frame_size += type_def.size;
-        new_var.addr = bang->frame_size;
-
         if (var_def.has_init) {
             compile_get_var_addr(bang, basm, &new_var);
 
@@ -815,8 +854,6 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
         assert(false && "unreachable");
         exit(1);
     }
-
-    bang_scope_push_var(bang->scope, new_var);
 }
 
 void compile_push_new_frame(Bang *bang, Basm *basm)
@@ -876,3 +913,8 @@ void bang_pop_scope(Bang *bang)
 
     bang->scope = bang->scope->parent;
 }
+
+// TODO: bang should fail compilation if main function accepts any arguments
+// Right now the compiler generates the code that tries to accept the arguments
+// and corrupts the stack because of that
+// TODO: bang does not support procedures that return results
