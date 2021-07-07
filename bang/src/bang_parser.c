@@ -1,19 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <ctype.h>
+#include "./error.h"
+#include "./ll.h"
 #include "./bang_parser.h"
-
-#define APPEND_LINKED_LIST(begin, end, node) \
-    do {                                     \
-        if ((end) == NULL) {                 \
-            assert((begin) == NULL);         \
-            (begin) = (end) = (node);        \
-        } else {                             \
-            assert((begin) != NULL);         \
-            (end)->next = node;              \
-            (end) = node;                    \
-        }                                    \
-    } while (0)
 
 static Bang_Binary_Op_Def binary_op_defs[COUNT_BANG_BINARY_OP_KINDS] = {
     [BANG_BINARY_OP_KIND_AND] = {
@@ -146,7 +136,7 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
     if (bang_lexer_peek(lexer, &token, 0) && token.kind != BANG_TOKEN_KIND_CLOSE_PAREN) {
         Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
         node->value = parse_bang_expr(arena, lexer);
-        APPEND_LINKED_LIST(begin, end, node);
+        LL_APPEND(begin, end, node);
     }
 
     // Rest args
@@ -155,7 +145,7 @@ Bang_Funcall_Arg *parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer)
 
         Bang_Funcall_Arg *node = arena_alloc(arena, sizeof(*node));
         node->value = parse_bang_expr(arena, lexer);
-        APPEND_LINKED_LIST(begin, end, node);
+        LL_APPEND(begin, end, node);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
@@ -521,14 +511,54 @@ Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
     return begin;
 }
 
+Bang_Proc_Param *parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Proc_Param *begin = NULL;
+    Bang_Proc_Param *end = NULL;
+
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
+    
+    Bang_Token token = {0};
+    if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
+        bang_lexer_next(lexer, &token);
+        return begin;
+    }
+
+    {
+        Bang_Proc_Param *param = arena_alloc(arena, sizeof(*param));
+        param->name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
+        param->type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        LL_APPEND(begin, end, param);
+    }
+
+    if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
+        bang_lexer_next(lexer, &token);
+        return begin;
+    }
+
+    while (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_COMMA) {
+        bang_lexer_next(lexer, &token);
+
+        Bang_Proc_Param *param = arena_alloc(arena, sizeof(*param));
+        param->name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
+        param->type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+        LL_APPEND(begin, end, param);
+    }
+
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+
+    return begin;
+}
+
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_Proc_Def result = {0};
 
     result.loc = bang_lexer_expect_keyword(lexer, SV("proc")).loc;
     result.name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_PAREN);
-    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
+    parse_bang_proc_params(arena, lexer);
     result.body = parse_curly_bang_block(arena, lexer);
 
     return result;

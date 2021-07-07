@@ -14,6 +14,7 @@ typedef struct Bang_If Bang_If;
 typedef union Bang_Stmt_As Bang_Stmt_As;
 typedef struct Bang_Block Bang_Block;
 typedef struct Bang_Proc_Def Bang_Proc_Def;
+typedef struct Bang_Proc_Param Bang_Proc_Param;
 typedef struct Bang_Var_Def Bang_Var_Def;
 typedef union Bang_Top_As Bang_Top_As;
 typedef struct Bang_Top Bang_Top;
@@ -35,7 +36,7 @@ typedef enum {
     BANG_BINARY_OP_KIND_OR,
     BANG_BINARY_OP_KIND_EQ,
     COUNT_BANG_BINARY_OP_KINDS,
-}  Bang_Binary_Op_Kind;
+} Bang_Binary_Op_Kind;
 
 typedef enum {
     BINARY_OP_PREC0 = 0,
@@ -166,9 +167,16 @@ struct Bang_Block {
     Bang_Block *next;
 };
 
+struct Bang_Proc_Param {
+    String_View name;
+    String_View type_name;
+    Bang_Proc_Param *next;
+};
+
 struct Bang_Proc_Def {
     Bang_Loc loc;
     String_View name;
+    Bang_Proc_Param *params;
     Bang_Block *body;
 };
 
@@ -204,6 +212,7 @@ Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
 Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
+Bang_Proc_Param *parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer);
 Bang_Proc_Def parse_bang_proc_def(Arena *arena, Bang_Lexer *lexer);
 Bang_Top parse_bang_top(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Def parse_bang_var_def(Arena *arena, Bang_Lexer *lexer);

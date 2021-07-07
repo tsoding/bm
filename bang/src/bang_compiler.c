@@ -1,13 +1,7 @@
+#include "./error.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
-
-#define UNIMPLEMENTED \
-    do { \
-        fprintf(stderr, "%s:%d: %s is not implemented yet\n", \
-                __FILE__, __LINE__, __func__); \
-        abort(); \
-    } while(0)
 
 typedef struct {
     bool exists;
