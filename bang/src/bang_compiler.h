@@ -36,7 +36,8 @@ typedef struct {
 Bang_Type_Def bang_type_def(Bang_Type type);
 
 typedef struct {
-    Bang_Var_Def def;
+    String_View name;
+    Bang_Loc loc;
     Bang_Type type;
     Bang_Var_Storage storage;
     // when storage == BANG_VAR_STATIC_STORAGE:

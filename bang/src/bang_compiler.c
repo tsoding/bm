@@ -432,7 +432,7 @@ Compiled_Var *bang_scope_get_compiled_var_by_name(Bang_Scope *scope, String_View
     assert(scope);
 
     for (size_t i = 0; i < scope->vars_count; ++i) {
-        if (sv_eq(scope->vars[i].def.name, name)) {
+        if (sv_eq(scope->vars[i].name, name)) {
             return &scope->vars[i];
         }
     }
@@ -654,7 +654,7 @@ void bang_generate_heap_base(Bang *bang, Basm *basm, String_View heap_base_var_n
     if (heap_base_var != NULL) {
         assert(heap_base_var->storage == BANG_VAR_STATIC_STORAGE);
         if (heap_base_var->type != BANG_TYPE_PTR) {
-            bang_diag_msg(heap_base_var->def.loc, BANG_DIAG_ERROR,
+            bang_diag_msg(heap_base_var->loc, BANG_DIAG_ERROR,
                           "the special `"SV_Fmt"` variable is expected to be of type `%s` but it was defined as type `%s`",
                           SV_Arg(heap_base_var_name),
                           bang_type_def(BANG_TYPE_PTR).name,
@@ -704,7 +704,7 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
             bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
                           "variable `"SV_Fmt"` is already defined",
                           SV_Arg(var_def.name));
-            bang_diag_msg(existing_var->def.loc, BANG_DIAG_ERROR,
+            bang_diag_msg(existing_var->loc, BANG_DIAG_ERROR,
                           "the first definition is located here");
             exit(1);
         }
@@ -719,7 +719,7 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
             bang_diag_msg(var_def.loc, bang->warnings_as_errors ? BANG_DIAG_ERROR : BANG_DIAG_WARNING,
                           "variable `"SV_Fmt"` is shadowing another variable with the same name",
                           SV_Arg(var_def.name));
-            bang_diag_msg(shadowed_var->def.loc, BANG_DIAG_NOTE,
+            bang_diag_msg(shadowed_var->loc, BANG_DIAG_NOTE,
                           "the shadowed variable is located here");
 
             if (bang->warnings_as_errors) {
@@ -729,7 +729,8 @@ void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Ban
     }
 
     Compiled_Var new_var = {0};
-    new_var.def = var_def;
+    new_var.name = var_def.name;
+    new_var.loc = var_def.loc;
     new_var.type = type;
     new_var.storage = storage;
 
