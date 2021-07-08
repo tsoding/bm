@@ -132,25 +132,31 @@ struct Bang_Range {
     Bang_Expr high;
 };
 
+struct Bang_Block {
+    size_t size;
+    size_t capacity;
+    Bang_Stmt *items;
+};
+
 struct Bang_For {
     Bang_Loc loc;
     String_View iter_name;
     String_View iter_type_name;
     Bang_Range range;
-    Bang_Block *body;
+    Bang_Block body;
 };
 
 struct Bang_While {
     Bang_Loc loc;
     Bang_Expr condition;
-    Bang_Block *body;
+    Bang_Block body;
 };
 
 struct Bang_If {
     Bang_Loc loc;
     Bang_Expr condition;
-    Bang_Block *then;
-    Bang_Block *elze;
+    Bang_Block then;
+    Bang_Block elze;
 };
 
 struct Bang_Var_Assign {
@@ -187,11 +193,6 @@ struct Bang_Stmt {
     Bang_Stmt_As as;
 };
 
-struct Bang_Block {
-    Bang_Stmt stmt;
-    Bang_Block *next;
-};
-
 struct Bang_Proc_Param {
     Bang_Loc loc;
     String_View name;
@@ -208,7 +209,7 @@ struct Bang_Proc_Def {
     Bang_Loc loc;
     String_View name;
     Dynarray_Of_Bang_Proc_Param params;
-    Bang_Block *body;
+    Bang_Block body;
 };
 
 typedef enum {
@@ -240,7 +241,7 @@ String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer);
 Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);
 Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
-Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
+Bang_Block parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
 Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer);

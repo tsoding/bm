@@ -515,31 +515,23 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
-Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
+Bang_Block parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
 {
-    Bang_Block *begin = NULL;
-    Bang_Block *end = NULL;
+    Bang_Block result = {0};
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_CURLY);
 
     Bang_Token token = {0};
     while (bang_lexer_peek(lexer, &token, 0) &&
             token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
-        Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->stmt = parse_bang_stmt(arena, lexer);
 
-        if (end) {
-            end->next = node;
-            end = node;
-        } else {
-            assert(begin == NULL);
-            begin = end = node;
-        }
+        Bang_Stmt stmt = parse_bang_stmt(arena, lexer);
+        DYNARRAY_PUSH(arena, result, stmt);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_CURLY);
 
-    return begin;
+    return result;
 }
 
 Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer)

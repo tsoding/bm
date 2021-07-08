@@ -590,11 +590,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
     }
 }
 
-void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block block)
 {
-    while (block) {
-        compile_stmt_into_basm(bang, basm, block->stmt);
-        block = block->next;
+    for (size_t i = 0; i < block.size; ++i) {
+        compile_stmt_into_basm(bang, basm, block.items[i]);
     }
 }
 
