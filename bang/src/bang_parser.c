@@ -136,7 +136,7 @@ Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *l
         Bang_Funcall_Arg arg = {
             .value = parse_bang_expr(arena, lexer),
         };
-        DYNARRAY_PUSH(arena, args, Bang_Funcall_Arg, arg);
+        DYNARRAY_PUSH(arena, args, arg);
     }
 
     // Rest args
@@ -146,7 +146,7 @@ Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *l
         Bang_Funcall_Arg arg = {
             .value = parse_bang_expr(arena, lexer),
         };
-        DYNARRAY_PUSH(arena, args, Bang_Funcall_Arg, arg);
+        DYNARRAY_PUSH(arena, args, arg);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
@@ -562,7 +562,7 @@ Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lex
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
 
-        DYNARRAY_PUSH(arena, params, Bang_Proc_Param, param);
+        DYNARRAY_PUSH(arena, params, param);
     }
 
     if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
@@ -579,7 +579,7 @@ Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lex
         param.name = token.text;
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
-        DYNARRAY_PUSH(arena, params, Bang_Proc_Param, param);
+        DYNARRAY_PUSH(arena, params, param);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
