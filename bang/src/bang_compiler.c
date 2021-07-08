@@ -1,4 +1,5 @@
 #include "./error.h"
+#include "./dynarray.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
@@ -546,10 +547,86 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
 
 void compile_bang_for_into_basm(Bang *bang, Basm *basm, Bang_For forr)
 {
-    (void) bang;
-    (void) basm;
-    (void) forr;
-    UNIMPLEMENTED;
+    bang_push_new_scope(bang);
+    Bang_Type iter_type = bang_type_by_name(forr.loc, forr.iter_type_name);
+    Compiled_Var iter_var = compile_var_into_basm(bang, basm, forr.loc, forr.iter_name, iter_type, BANG_VAR_STACK_STORAGE);
+    Compiled_Expr low_expr = compile_bang_expr_into_basm(bang, basm, forr.range.low);
+    type_check_expr(low_expr, iter_type);
+    compile_get_var_addr(bang, basm, &iter_var);
+    basm_push_inst(basm, INST_SWAP, word_u64(1));
+    compile_typed_write(basm, iter_type);
+
+    Bang_While hwile = {0};
+    hwile.loc = forr.loc;
+
+    // Condition
+    {
+        hwile.condition.loc = forr.loc;
+        hwile.condition.kind = BANG_EXPR_KIND_BINARY_OP;
+        // i < high
+        {
+            hwile.condition.as.binary_op = arena_alloc(&bang->arena, sizeof(Bang_Binary_Op));
+            hwile.condition.as.binary_op->loc = forr.loc;
+            hwile.condition.as.binary_op->kind = BANG_BINARY_OP_KIND_LT;
+
+            // LHS
+            {
+                hwile.condition.as.binary_op->lhs.loc = forr.loc;
+                hwile.condition.as.binary_op->lhs.kind = BANG_EXPR_KIND_VAR_READ;
+                hwile.condition.as.binary_op->lhs.as.var_read.loc = forr.loc;
+                hwile.condition.as.binary_op->lhs.as.var_read.name = forr.iter_name;
+            }
+
+            // RHS
+            {
+                hwile.condition.as.binary_op->rhs = forr.range.high;
+            }
+        }
+    }
+
+    // Body
+    {
+        // i = i + 1
+        Bang_Stmt inc_stmt = {0};
+        {
+            inc_stmt.kind = BANG_STMT_KIND_VAR_ASSIGN;
+            inc_stmt.as.var_assign.loc = forr.loc;
+            inc_stmt.as.var_assign.name = forr.iter_name;
+            {
+                inc_stmt.as.var_assign.value.loc = forr.loc;
+                inc_stmt.as.var_assign.value.kind = BANG_EXPR_KIND_BINARY_OP;
+                {
+                    inc_stmt.as.var_assign.value.as.binary_op = arena_alloc(&bang->arena, sizeof(Bang_Binary_Op));
+                    inc_stmt.as.var_assign.value.as.binary_op->loc = forr.loc;
+                    inc_stmt.as.var_assign.value.as.binary_op->kind = BANG_BINARY_OP_KIND_PLUS;
+
+                    // LHS
+                    {
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.kind = BANG_EXPR_KIND_VAR_READ;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.as.var_read.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.as.var_read.name = forr.iter_name;
+                    }
+
+                    // RHS
+                    {
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.kind = BANG_EXPR_KIND_LIT_INT;
+                        
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.as.lit_int = 1;
+                    }
+                }
+            }
+        }
+
+        Bang_Block body = forr.body;
+        DYNARRAY_PUSH(&bang->arena, body, inc_stmt);
+        hwile.body = body;
+    }
+
+    compile_bang_while_into_basm(bang, basm, hwile);
+
+    bang_pop_scope(bang);
 }
 
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
