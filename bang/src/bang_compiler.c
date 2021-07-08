@@ -612,7 +612,7 @@ void compile_bang_for_into_basm(Bang *bang, Basm *basm, Bang_For forr)
                     {
                         inc_stmt.as.var_assign.value.as.binary_op->rhs.loc = forr.loc;
                         inc_stmt.as.var_assign.value.as.binary_op->rhs.kind = BANG_EXPR_KIND_LIT_INT;
-                        
+
                         inc_stmt.as.var_assign.value.as.binary_op->rhs.as.lit_int = 1;
                     }
                 }
