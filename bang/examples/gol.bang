@@ -1,11 +1,9 @@
 proc print_board(board: ptr, board_rows: i64, board_cols: i64, display: ptr) {
-  var row: i64 = 0;
-  while row < board_rows {
+  for row: i64 in 0..board_rows {
     var cell_ptr: ptr;
     var cell: u8;
 
-    var col: i64 = 0;
-    while col < board_cols {
+    for col: i64  in 0..board_cols {
       cell_ptr = board + cast(ptr, row * board_cols + col);
       cell = load_ptr(u8, cell_ptr);
 
@@ -15,33 +13,25 @@ proc print_board(board: ptr, board_rows: i64, board_cols: i64, display: ptr) {
       } else {
         store_ptr(u8, cell_ptr, cast(u8, 42));
       }
-
-      col = col + 1;
     }
 
     cell_ptr = display + cast(ptr, board_cols);
     store_ptr(u8, cell_ptr, cast(u8, 10));
     write_ptr(display, board_cols + 1);
-
-    row = row + 1;
   }
 }
 
 proc next_board(board_curr: ptr, board_next: ptr, board_rows: i64, board_cols: i64) {
-  var row: i64 = 0;
-  while row < board_rows {
+  for row: i64 in 0..board_rows {
     var cell_ptr: ptr;
     var cell: u8;
 
-    var col: i64 = 0;
-    while col < board_cols {
+    for col: i64 in 0..board_cols {
       # Nbors begin
       var nbors: i64 = 0;
 
-      var drow: i64 = row - 1;
-      while drow < row + 2 {
-        var dcol: i64 = col - 1;
-        while dcol < col + 2 {
+      for drow: i64 in row - 1 .. row + 2 {
+        for dcol: i64 in  col - 1 .. col + 2 {
           if drow >= 0 && drow < board_rows {
             if dcol >= 0 && dcol < board_cols {
               if drow != row || dcol != col {
@@ -53,9 +43,7 @@ proc next_board(board_curr: ptr, board_next: ptr, board_rows: i64, board_cols: i
               }
             }
           }
-          dcol = dcol + 1;
         }
-        drow = drow + 1;
       }
       # Nbors end
 
@@ -77,10 +65,7 @@ proc next_board(board_curr: ptr, board_next: ptr, board_rows: i64, board_cols: i
           store_ptr(u8, cell_ptr, cast(u8, 0));
         }
       }
-
-      col = col + 1;
     }
-    row = row + 1;
   }
 }
 
@@ -101,8 +86,7 @@ proc main() {
 
   var display_base: ptr = boards_base + cast(ptr, board_size * 2);
 
-  var i: i64 = 0;
-  while i < 10 {
+  for i: i64 in 0..10 {
     print_board(boards_base + cast(ptr, board_current * board_size),
                 board_rows, board_cols,
                 display_base);
@@ -113,6 +97,5 @@ proc main() {
                board_cols);
     board_current = board_next;
     write("------------------------------\n");
-    i = i + 1;
   }
 }

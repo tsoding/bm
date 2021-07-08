@@ -1,4 +1,5 @@
 #include "./error.h"
+#include "./dynarray.h"
 #include "./bang_compiler.h"
 
 // TODO(#426): bang does not support type casting
@@ -106,17 +107,18 @@ Bang_Type_Def bang_type_def(Bang_Type type)
     return bang_type_defs[type];
 }
 
-bool bang_type_by_name(String_View name, Bang_Type *out_type)
+Bang_Type bang_type_by_name(Bang_Loc loc, String_View name)
 {
     for (Bang_Type type = 0; type < COUNT_BANG_TYPES; ++type) {
         if (sv_eq(name, sv_from_cstr(bang_type_def(type).name))) {
-            if (out_type) {
-                *out_type = type;
-            }
-            return true;
+            return type;
         }
     }
-    return false;
+
+    bang_diag_msg(loc, BANG_DIAG_ERROR,
+                  "`"SV_Fmt"` is not a valid type",
+                  SV_Arg(name));
+    exit(1);
 }
 
 void compile_typed_read(Basm *basm, Bang_Type type)
@@ -199,15 +201,7 @@ static Bang_Type reinterpret_expr_as_type(Bang_Expr type_arg)
         exit(1);
     }
 
-    Bang_Type type = 0;
-    if (!bang_type_by_name(type_arg.as.var_read.name, &type)) {
-        bang_diag_msg(type_arg.loc, BANG_DIAG_ERROR,
-                      "`"SV_Fmt"` is not a valid type",
-                      SV_Arg(type_arg.as.var_read.name));
-        exit(1);
-    }
-
-    return type;
+    return bang_type_by_name(type_arg.loc, type_arg.as.var_read.name);
 }
 
 static void type_check_expr(Compiled_Expr expr, Bang_Type expected_type)
@@ -255,14 +249,7 @@ void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall
             Bang_Funcall_Arg arg = funcall.args.items[i];
 
             Compiled_Expr expr = compile_bang_expr_into_basm(bang, basm, arg.value);
-            Bang_Type param_type = 0;
-            if (!bang_type_by_name(param.type_name, &param_type)) {
-                bang_diag_msg(param.loc, BANG_DIAG_ERROR,
-                              "`"SV_Fmt"` is not a valid type",
-                              SV_Arg(param.type_name));
-                exit(1);
-            }
-
+            Bang_Type param_type = bang_type_by_name(param.loc, param.type_name);
             type_check_expr(expr, param_type);
         }
     }
@@ -558,6 +545,89 @@ void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile)
     basm->program[fallthrough_addr].operand = word_u64(body_end_addr);
 }
 
+void compile_bang_for_into_basm(Bang *bang, Basm *basm, Bang_For forr)
+{
+    bang_push_new_scope(bang);
+    Bang_Type iter_type = bang_type_by_name(forr.loc, forr.iter_type_name);
+    Compiled_Var iter_var = compile_var_into_basm(bang, basm, forr.loc, forr.iter_name, iter_type, BANG_VAR_STACK_STORAGE);
+    Compiled_Expr low_expr = compile_bang_expr_into_basm(bang, basm, forr.range.low);
+    type_check_expr(low_expr, iter_type);
+    compile_get_var_addr(bang, basm, &iter_var);
+    basm_push_inst(basm, INST_SWAP, word_u64(1));
+    compile_typed_write(basm, iter_type);
+
+    Bang_While hwile = {0};
+    hwile.loc = forr.loc;
+
+    // Condition
+    {
+        hwile.condition.loc = forr.loc;
+        hwile.condition.kind = BANG_EXPR_KIND_BINARY_OP;
+        // i < high
+        {
+            hwile.condition.as.binary_op = arena_alloc(&bang->arena, sizeof(Bang_Binary_Op));
+            hwile.condition.as.binary_op->loc = forr.loc;
+            hwile.condition.as.binary_op->kind = BANG_BINARY_OP_KIND_LT;
+
+            // LHS
+            {
+                hwile.condition.as.binary_op->lhs.loc = forr.loc;
+                hwile.condition.as.binary_op->lhs.kind = BANG_EXPR_KIND_VAR_READ;
+                hwile.condition.as.binary_op->lhs.as.var_read.loc = forr.loc;
+                hwile.condition.as.binary_op->lhs.as.var_read.name = forr.iter_name;
+            }
+
+            // RHS
+            {
+                hwile.condition.as.binary_op->rhs = forr.range.high;
+            }
+        }
+    }
+
+    // Body
+    {
+        // i = i + 1
+        Bang_Stmt inc_stmt = {0};
+        {
+            inc_stmt.kind = BANG_STMT_KIND_VAR_ASSIGN;
+            inc_stmt.as.var_assign.loc = forr.loc;
+            inc_stmt.as.var_assign.name = forr.iter_name;
+            {
+                inc_stmt.as.var_assign.value.loc = forr.loc;
+                inc_stmt.as.var_assign.value.kind = BANG_EXPR_KIND_BINARY_OP;
+                {
+                    inc_stmt.as.var_assign.value.as.binary_op = arena_alloc(&bang->arena, sizeof(Bang_Binary_Op));
+                    inc_stmt.as.var_assign.value.as.binary_op->loc = forr.loc;
+                    inc_stmt.as.var_assign.value.as.binary_op->kind = BANG_BINARY_OP_KIND_PLUS;
+
+                    // LHS
+                    {
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.kind = BANG_EXPR_KIND_VAR_READ;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.as.var_read.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->lhs.as.var_read.name = forr.iter_name;
+                    }
+
+                    // RHS
+                    {
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.loc = forr.loc;
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.kind = BANG_EXPR_KIND_LIT_INT;
+
+                        inc_stmt.as.var_assign.value.as.binary_op->rhs.as.lit_int = 1;
+                    }
+                }
+            }
+        }
+
+        Bang_Block body = forr.body;
+        DYNARRAY_PUSH(&bang->arena, body, inc_stmt);
+        hwile.body = body;
+    }
+
+    compile_bang_while_into_basm(bang, basm, hwile);
+
+    bang_pop_scope(bang);
+}
 
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
 {
@@ -586,6 +656,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
         compile_var_def_into_basm(bang, basm, stmt.as.var_def, BANG_VAR_STACK_STORAGE);
         break;
 
+    case BANG_STMT_KIND_FOR:
+        compile_bang_for_into_basm(bang, basm, stmt.as.forr);
+        break;
+
     case COUNT_BANG_STMT_KINDS:
     default:
         assert(false && "compile_stmt_into_basm: unreachable");
@@ -593,11 +667,10 @@ void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt)
     }
 }
 
-void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block)
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block block)
 {
-    while (block) {
-        compile_stmt_into_basm(bang, basm, block->stmt);
-        block = block->next;
+    for (size_t i = 0; i < block.size; ++i) {
+        compile_stmt_into_basm(bang, basm, block.items[i]);
     }
 }
 
@@ -635,13 +708,7 @@ void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def)
 
     for (size_t i = proc.params.size; i > 0; --i) {
         Bang_Proc_Param param = proc.params.items[i - 1];
-        Bang_Type type = 0;
-        if (!bang_type_by_name(param.type_name, &type)) {
-            bang_diag_msg(param.loc, BANG_DIAG_ERROR,
-                          "type `"SV_Fmt"` does not exist",
-                          SV_Arg(param.type_name));
-            exit(1);
-        }
+        Bang_Type type = bang_type_by_name(param.loc, param.type_name);
         Compiled_Var var = compile_var_into_basm(bang, basm, param.loc, param.name, type, BANG_VAR_STACK_STORAGE);
 
         basm_push_inst(basm, INST_SWAP, word_u64(1));
@@ -811,14 +878,7 @@ Compiled_Var compile_var_into_basm(Bang *bang, Basm *basm, Bang_Loc loc, String_
 
 void compile_var_def_into_basm(Bang *bang, Basm *basm, Bang_Var_Def var_def, Bang_Var_Storage storage)
 {
-    Bang_Type type = 0;
-    if (!bang_type_by_name(var_def.type_name, &type)) {
-        bang_diag_msg(var_def.loc, BANG_DIAG_ERROR,
-                      "type `"SV_Fmt"` does not exist",
-                      SV_Arg(var_def.type_name));
-        exit(1);
-    }
-
+    Bang_Type type = bang_type_by_name(var_def.loc, var_def.type_name);
     Compiled_Var new_var = compile_var_into_basm(bang, basm, var_def.loc, var_def.name, type, storage);
 
     switch (storage) {

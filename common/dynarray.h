@@ -3,7 +3,7 @@
 
 #define DYNARRAY_INIT_CAP 16
 
-#define DYNARRAY_PUSH(arena, dynarray, item_type, item)                       \
+#define DYNARRAY_PUSH(arena, dynarray, item)                                  \
     do {                                                                      \
         if (dynarray.size >= dynarray.capacity) {                             \
             size_t new_capacity = dynarray.capacity;                          \
@@ -12,15 +12,16 @@
             } else {                                                          \
                 new_capacity *= 2;                                            \
             }                                                                 \
-            dynarray.items = arena_realloc(arena,                             \
-                                           dynarray.items,                    \
-                                           dynarray.capacity *                \
-                                           sizeof(item_type),                 \
-                                           new_capacity * sizeof(item_type)); \
+            dynarray.items = arena_realloc(                                   \
+                                 arena,                                       \
+                                 dynarray.items,                              \
+                                 dynarray.capacity * sizeof(*dynarray.items), \
+                                 new_capacity * sizeof(*dynarray.items));     \
             dynarray.capacity = new_capacity;                                 \
         }                                                                     \
                                                                               \
         dynarray.items[dynarray.size++] = item;                               \
-    } while (0)
+    } while (0);
+
 
 #endif // DYNARRAY_H_

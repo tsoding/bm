@@ -22,10 +22,12 @@ typedef struct Bang_Module Bang_Module;
 typedef struct Bang_Var_Assign Bang_Var_Assign;
 typedef struct Bang_Var_Read Bang_Var_Read;
 typedef struct Bang_While Bang_While;
+typedef struct Bang_For Bang_For;
 typedef struct Bang_Binary_Op Bang_Binary_Op;
 typedef struct Bang_Binary_Op_Def Bang_Binary_Op_Def;
 typedef struct Dynarray_Of_Bang_Proc_Param Dynarray_Of_Bang_Proc_Param;
 typedef struct Dynarray_Of_Bang_Funcall_Arg Dynarray_Of_Bang_Funcall_Arg;
+typedef struct Bang_Range Bang_Range;
 
 typedef enum {
     BANG_BINARY_OP_KIND_PLUS = 0,
@@ -121,20 +123,40 @@ typedef enum {
     BANG_STMT_KIND_VAR_ASSIGN,
     BANG_STMT_KIND_VAR_DEF,
     BANG_STMT_KIND_WHILE,
+    BANG_STMT_KIND_FOR,
     COUNT_BANG_STMT_KINDS,
 } Bang_Stmt_Kind;
+
+struct Bang_Range {
+    Bang_Expr low;
+    Bang_Expr high;
+};
+
+struct Bang_Block {
+    size_t size;
+    size_t capacity;
+    Bang_Stmt *items;
+};
+
+struct Bang_For {
+    Bang_Loc loc;
+    String_View iter_name;
+    String_View iter_type_name;
+    Bang_Range range;
+    Bang_Block body;
+};
 
 struct Bang_While {
     Bang_Loc loc;
     Bang_Expr condition;
-    Bang_Block *body;
+    Bang_Block body;
 };
 
 struct Bang_If {
     Bang_Loc loc;
     Bang_Expr condition;
-    Bang_Block *then;
-    Bang_Block *elze;
+    Bang_Block then;
+    Bang_Block elze;
 };
 
 struct Bang_Var_Assign {
@@ -158,9 +180,10 @@ union Bang_Stmt_As {
     Bang_Var_Assign var_assign;
     Bang_While hwile;
     Bang_Var_Def var_def;
+    Bang_For forr;
 };
 static_assert(
-    COUNT_BANG_STMT_KINDS == 5,
+    COUNT_BANG_STMT_KINDS == 6,
     "The amount of statement kinds has changed. "
     "Please update the union of those statements accordingly. "
     "Thanks!");
@@ -168,11 +191,6 @@ static_assert(
 struct Bang_Stmt {
     Bang_Stmt_Kind kind;
     Bang_Stmt_As as;
-};
-
-struct Bang_Block {
-    Bang_Stmt stmt;
-    Bang_Block *next;
 };
 
 struct Bang_Proc_Param {
@@ -191,7 +209,7 @@ struct Bang_Proc_Def {
     Bang_Loc loc;
     String_View name;
     Dynarray_Of_Bang_Proc_Param params;
-    Bang_Block *body;
+    Bang_Block body;
 };
 
 typedef enum {
@@ -223,7 +241,7 @@ String_View parse_bang_lit_str(Arena *arena, Bang_Lexer *lexer);
 Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *lexer);
 Bang_Funcall parse_bang_funcall(Arena *arena, Bang_Lexer *lexer);
 Bang_Expr parse_bang_expr(Arena *arena, Bang_Lexer *lexer);
-Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
+Bang_Block parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer);
 Bang_If parse_bang_if(Arena *arena, Bang_Lexer *lexer);
 Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer);
 Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer);
@@ -233,6 +251,8 @@ Bang_Var_Def parse_bang_var_def(Arena *arena, Bang_Lexer *lexer);
 Bang_Module parse_bang_module(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer);
 Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer);
+Bang_For parse_bang_for(Arena *arena, Bang_Lexer *lexer);
+Bang_Range parse_bang_range(Arena *arena, Bang_Lexer *lexer);
 Bang_Var_Read parse_var_read(Bang_Lexer *lexer);
 
 

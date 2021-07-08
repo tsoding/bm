@@ -24,7 +24,7 @@ typedef enum {
     COUNT_BANG_TYPES,
 } Bang_Type;
 
-bool bang_type_by_name(String_View name, Bang_Type *out_type);
+Bang_Type bang_type_by_name(Bang_Loc loc, String_View name);
 
 typedef struct {
     const char *name;
@@ -101,9 +101,10 @@ void compile_typed_write(Basm *basm, Bang_Type type);
 void compile_bang_funcall_into_basm(Bang *bang, Basm *basm, Bang_Funcall funcall);
 Compiled_Expr compile_bang_expr_into_basm(Bang *bang, Basm *basm, Bang_Expr expr);
 void compile_stmt_into_basm(Bang *bang, Basm *basm, Bang_Stmt stmt);
-void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block *block);
+void compile_block_into_basm(Bang *bang, Basm *basm, Bang_Block block);
 void compile_proc_def_into_basm(Bang *bang, Basm *basm, Bang_Proc_Def proc_def);
 void compile_bang_if_into_basm(Bang *bang, Basm *basm, Bang_If eef);
+void compile_bang_for_into_basm(Bang *bang, Basm *basm, Bang_For forr);
 void compile_bang_while_into_basm(Bang *bang, Basm *basm, Bang_While hwile);
 void compile_bang_var_assign_into_basm(Bang *bang, Basm *basm, Bang_Var_Assign var_assign);
 void compile_bang_module_into_basm(Bang *bang, Basm *basm, Bang_Module module);

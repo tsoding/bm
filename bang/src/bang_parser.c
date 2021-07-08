@@ -136,7 +136,7 @@ Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *l
         Bang_Funcall_Arg arg = {
             .value = parse_bang_expr(arena, lexer),
         };
-        DYNARRAY_PUSH(arena, args, Bang_Funcall_Arg, arg);
+        DYNARRAY_PUSH(arena, args, arg);
     }
 
     // Rest args
@@ -146,7 +146,7 @@ Dynarray_Of_Bang_Funcall_Arg parse_bang_funcall_args(Arena *arena, Bang_Lexer *l
         Bang_Funcall_Arg arg = {
             .value = parse_bang_expr(arena, lexer),
         };
-        DYNARRAY_PUSH(arena, args, Bang_Funcall_Arg, arg);
+        DYNARRAY_PUSH(arena, args, arg);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
@@ -280,6 +280,7 @@ static Bang_Expr parse_primary_expr(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQ:
     case BANG_TOKEN_KIND_EQ_EQ:
+    case BANG_TOKEN_KIND_DOT_DOT:
     case BANG_TOKEN_KIND_SEMICOLON: {
         bang_diag_msg(token.loc, BANG_DIAG_ERROR,
                       "no primary expression starts with `%s`",
@@ -393,6 +394,29 @@ Bang_Var_Assign parse_bang_var_assign(Arena *arena, Bang_Lexer *lexer)
     return var_assign;
 }
 
+Bang_Range parse_bang_range(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_Range result = {0};
+    result.low = parse_bang_expr(arena, lexer);
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_DOT_DOT);
+    result.high = parse_bang_expr(arena, lexer);
+    return result;
+}
+
+Bang_For parse_bang_for(Arena *arena, Bang_Lexer *lexer)
+{
+    Bang_For result = {0};
+
+    result.loc = bang_lexer_expect_keyword(lexer, SV("for")).loc;
+    result.iter_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+    bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
+    result.iter_type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
+    bang_lexer_expect_keyword(lexer, SV("in"));
+    result.range = parse_bang_range(arena, lexer);
+    result.body = parse_curly_bang_block(arena, lexer);
+    return result;
+}
+
 Bang_While parse_bang_while(Arena *arena, Bang_Lexer *lexer)
 {
     Bang_While result = {0};
@@ -412,7 +436,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
 
     static_assert(
-        COUNT_BANG_STMT_KINDS == 5,
+        COUNT_BANG_STMT_KINDS == 6,
         "The amount of statements have changed. "
         "Please update the parse_bang_stmt function to take that into account");
 
@@ -427,6 +451,11 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
             Bang_Stmt stmt = {0};
             stmt.kind = BANG_STMT_KIND_WHILE;
             stmt.as.hwile = parse_bang_while(arena, lexer);
+            return stmt;
+        } else if (sv_eq(token.text, SV("for"))) {
+            Bang_Stmt stmt = {0};
+            stmt.kind = BANG_STMT_KIND_FOR;
+            stmt.as.forr = parse_bang_for(arena, lexer);
             return stmt;
         } else if (sv_eq(token.text, SV("var"))) {
             Bang_Stmt stmt = {0};
@@ -463,6 +492,7 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     case BANG_TOKEN_KIND_COLON:
     case BANG_TOKEN_KIND_EQ:
     case BANG_TOKEN_KIND_EQ_EQ:
+    case BANG_TOKEN_KIND_DOT_DOT:
     case BANG_TOKEN_KIND_NUMBER:
     case BANG_TOKEN_KIND_LIT_STR: {
         // This is probably an expression, let's just fall through the entire switch construction and try to parse it as the expression
@@ -485,31 +515,23 @@ Bang_Stmt parse_bang_stmt(Arena *arena, Bang_Lexer *lexer)
     }
 }
 
-Bang_Block *parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
+Bang_Block parse_curly_bang_block(Arena *arena, Bang_Lexer *lexer)
 {
-    Bang_Block *begin = NULL;
-    Bang_Block *end = NULL;
+    Bang_Block result = {0};
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_OPEN_CURLY);
 
     Bang_Token token = {0};
     while (bang_lexer_peek(lexer, &token, 0) &&
             token.kind != BANG_TOKEN_KIND_CLOSE_CURLY) {
-        Bang_Block *node = arena_alloc(arena, sizeof(*node));
-        node->stmt = parse_bang_stmt(arena, lexer);
 
-        if (end) {
-            end->next = node;
-            end = node;
-        } else {
-            assert(begin == NULL);
-            begin = end = node;
-        }
+        Bang_Stmt stmt = parse_bang_stmt(arena, lexer);
+        DYNARRAY_PUSH(arena, result, stmt);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_CURLY);
 
-    return begin;
+    return result;
 }
 
 Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lexer)
@@ -532,7 +554,7 @@ Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lex
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
 
-        DYNARRAY_PUSH(arena, params, Bang_Proc_Param, param);
+        DYNARRAY_PUSH(arena, params, param);
     }
 
     if (bang_lexer_peek(lexer, &token, 0) && token.kind == BANG_TOKEN_KIND_CLOSE_PAREN) {
@@ -549,7 +571,7 @@ Dynarray_Of_Bang_Proc_Param parse_bang_proc_params(Arena *arena, Bang_Lexer *lex
         param.name = token.text;
         bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_COLON);
         param.type_name = bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_NAME).text;
-        DYNARRAY_PUSH(arena, params, Bang_Proc_Param, param);
+        DYNARRAY_PUSH(arena, params, param);
     }
 
     bang_lexer_expect_token(lexer, BANG_TOKEN_KIND_CLOSE_PAREN);
