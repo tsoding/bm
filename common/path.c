@@ -115,3 +115,12 @@ bool path_file_exist(const char *file_path)
             !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #endif
 }
+
+char *shift(int *argc, char ***argv)
+{
+    assert(*argc > 0);
+    char *result = **argv;
+    *argv += 1;
+    *argc -= 1;
+    return result;
+}

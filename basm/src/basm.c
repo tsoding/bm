@@ -4,15 +4,6 @@
 #include "./verifier.h"
 #include "./target.h"
 
-static char *shift(int *argc, char ***argv)
-{
-    assert(*argc > 0);
-    char *result = **argv;
-    *argv += 1;
-    *argc -= 1;
-    return result;
-}
-
 static void usage(FILE *stream, const char *program)
 {
     fprintf(stream, "Usage: %s [OPTIONS] <input.basm>\n", program);

@@ -1,5 +1,6 @@
 #include "./bm.h"
 #include "./arena.h"
+#include "./path.h"
 
 #include <stdarg.h>
 
@@ -69,15 +70,6 @@ static void panic_errno(const char *fmt, ...)
     fprintf(stderr, ": %s\n", strerror(errno));
 
     exit(1);
-}
-
-static char *shift(int *argc, char ***argv)
-{
-    assert(*argc > 0);
-    char *result = **argv;
-    *argv += 1;
-    *argc -= 1;
-    return result;
 }
 
 static const char *parse_cstr_value(const char *flag, int *argc, char ***argv)

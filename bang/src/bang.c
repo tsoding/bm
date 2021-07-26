@@ -33,14 +33,6 @@ static void usage(FILE *stream)
     fprintf(stream, "    help    Print this message to stdout.\n");
 }
 
-static char *shift(int *argc, char ***argv)
-{
-    assert(*argc > 0);
-    char *result = **argv;
-    *argv += 1;
-    *argc -= 1;
-    return result;
-}
 
 static void help_subcommand(int argc, char **argv)
 {
