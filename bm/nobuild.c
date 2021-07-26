@@ -5,7 +5,8 @@
 #define INCLUDES     INCLUDE_FLAG(PATH("..", "common"))
 #define CFLAGS       COMMON_FLAGS
 #define COMMON_UNITS PATH("..", "common", "sv.c"), \
-                     PATH("..", "common", "arena.c")
+                     PATH("..", "common", "arena.c"), \
+                     PATH("..", "common", "path.c")
 #define BM_UNITS     PATH("src", "bm.c"), \
                      PATH("src", "native_loader.c"), \
                      PATH("src", "types.c")
