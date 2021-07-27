@@ -891,11 +891,11 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
-    if (meta.memory_size > meta.memory_capacity) {
+    if (meta.memory_base + meta.memory_size > meta.memory_capacity) {
         fprintf(stderr,
                 "ERROR: %s: memory size %"PRIu64" is greater than declared memory capacity %"PRIu64"\n",
                 file_path,
-                meta.memory_size,
+                meta.memory_base + meta.memory_size,
                 meta.memory_capacity);
         exit(1);
     }
@@ -919,8 +919,9 @@ void bm_load_program_from_file(Bm *bm, const char *file_path)
         exit(1);
     }
 
-    n = fread(bm->memory, sizeof(bm->memory[0]), meta.memory_size, f);
+    n = fread(bm->memory + meta.memory_base, sizeof(bm->memory[0]), meta.memory_size, f);
     bm->expected_memory_size = meta.memory_size;
+    bm->memory_base = meta.memory_base;
 
     if (n != meta.memory_size) {
         fprintf(stderr, "ERROR: %s: read %zd bytes of memory section, but expected %"PRIu64" bytes.\n",

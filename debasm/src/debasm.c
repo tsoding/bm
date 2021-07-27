@@ -20,8 +20,9 @@ int main(int argc, char *argv[])
         printf("%%native %s\n", bm.externals[i].name);
     }
 
+    printf("%%base %zu\n", bm.memory_base);
     printf("%%const MEMORY = \"");
-    for (size_t i = 0; i < bm.expected_memory_size; ++i) {
+    for (size_t i = bm.memory_base; i < bm.expected_memory_size + bm.memory_base; ++i) {
         if (32 <= bm.memory[i] && bm.memory[i] < 127) {
             printf("%c", bm.memory[i]);
         } else {
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
         }
     }
     printf("\"\n");
-    printf("%%assert MEMORY == 0\n");
+    printf("%%assert MEMORY == %zu\n", bm.memory_base);
 
     for (Inst_Addr i = 0; i < bm.program_size; ++i) {
         if (i == bm.ip) {
